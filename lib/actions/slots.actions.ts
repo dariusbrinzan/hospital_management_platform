@@ -2,6 +2,7 @@
 
 import { appointmentHelpers } from "../db-helpers";
 import { generateTimeSlots, parseStringify } from "../utils";
+import { Doctors } from "@/constants";
 
 /**
  * Obține slot-urile disponibile pentru un doctor într-o anumită zi
@@ -11,8 +12,13 @@ export const getAvailableSlots = async (
   date: Date
 ): Promise<{ time: Date; available: boolean }[]> => {
   try {
+    // Verifică dacă doctorul este de analize medicale (folosește sloturi de 15 minute)
+    const doctor = Doctors.find((d) => d.name === doctorName);
+    const isAnalysisDoctor = doctor?.specialty === "Analize medicale";
+    const intervalMinutes = isAnalysisDoctor ? 15 : 30;
+    
     // Generează toate slot-urile posibile pentru acea zi
-    const allSlots = generateTimeSlots(date);
+    const allSlots = generateTimeSlots(date, intervalMinutes);
     
     if (allSlots.length === 0) {
       return [];
@@ -37,9 +43,21 @@ export const getAvailableSlots = async (
     const occupiedSlots = new Set(
       doctorAppointments.map((apt: any) => {
         const aptDate = new Date(apt.schedule);
-        // Normalizează la începutul slot-ului (00 sau 30 minute)
+        // Normalizează la începutul slot-ului (00, 15, 30 sau 45 minute)
         const minutes = aptDate.getMinutes();
-        const normalizedMinutes = minutes < 30 ? 0 : 30;
+        let normalizedMinutes: number;
+        
+        if (intervalMinutes === 15) {
+          // Pentru sloturi de 15 minute: normalizează la 0, 15, 30 sau 45
+          if (minutes < 15) normalizedMinutes = 0;
+          else if (minutes < 30) normalizedMinutes = 15;
+          else if (minutes < 45) normalizedMinutes = 30;
+          else normalizedMinutes = 45;
+        } else {
+          // Pentru sloturi de 30 minute: normalizează la 0 sau 30
+          normalizedMinutes = minutes < 30 ? 0 : 30;
+        }
+        
         const normalizedDate = new Date(aptDate);
         normalizedDate.setMinutes(normalizedMinutes, 0, 0);
         return normalizedDate.getTime();

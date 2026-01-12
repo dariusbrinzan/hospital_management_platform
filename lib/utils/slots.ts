@@ -1,8 +1,10 @@
 /**
- * Generează slot-uri de 30 de minute pentru o zi specifică
+ * Generează slot-uri pentru o zi specifică
  * Medici lucrează luni-vineri, 10:00-20:00
+ * @param date - Data pentru care se generează slot-urile
+ * @param intervalMinutes - Intervalul între slot-uri (15 sau 30 minute). Default: 30
  */
-export const generateTimeSlots = (date: Date): Date[] => {
+export const generateTimeSlots = (date: Date, intervalMinutes: number = 30): Date[] => {
   const slots: Date[] = [];
   const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 5 = Friday, 6 = Saturday
   
@@ -15,9 +17,15 @@ export const generateTimeSlots = (date: Date): Date[] => {
   const month = date.getMonth();
   const day = date.getDate();
 
-  // Generează slot-uri de la 10:00 la 19:30 (ultimul slot începe la 19:30 și se termină la 20:00)
+  // Generează slot-uri de la 10:00 la 20:00 (exclusiv)
+  // Pentru 30 minute: ultimul slot începe la 19:30
+  // Pentru 15 minute: ultimul slot începe la 19:45
   for (let hour = 10; hour < 20; hour++) {
-    for (let minute = 0; minute < 60; minute += 30) {
+    for (let minute = 0; minute < 60; minute += intervalMinutes) {
+      // Nu adăugăm slot-uri care depășesc 20:00
+      if (hour === 19 && minute + intervalMinutes > 60) {
+        break;
+      }
       const slot = new Date(year, month, day, hour, minute, 0);
       slots.push(slot);
     }
@@ -56,9 +64,9 @@ export const formatSlotTime = (date: Date): string => {
 };
 
 /**
- * Verifică dacă un slot este aliniat la 30 de minute
+ * Verifică dacă un slot este aliniat la intervalul specificat
  */
-export const isSlotAligned = (date: Date): boolean => {
+export const isSlotAligned = (date: Date, intervalMinutes: number = 30): boolean => {
   const minutes = date.getMinutes();
-  return minutes === 0 || minutes === 30;
+  return minutes % intervalMinutes === 0;
 };

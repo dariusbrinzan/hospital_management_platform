@@ -102,3 +102,17 @@ export const getPatient = async (userId: string) => {
     return null;
   }
 };
+
+// GET PATIENT BY ID
+export const getPatientById = async (patientId: string) => {
+  try {
+    const patient = patientHelpers.getById(patientId);
+    return patient ? parseStringify(patient) : null;
+  } catch (error) {
+    console.error(
+      "An error occurred while retrieving the patient details:",
+      error
+    );
+    return null;
+  }
+};

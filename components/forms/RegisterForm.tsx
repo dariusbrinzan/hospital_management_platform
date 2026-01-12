@@ -16,6 +16,10 @@ import {
   GenderOptions,
   IdentificationTypes,
   PatientFormDefaultValues,
+  BloodTypes,
+  SmokingStatusOptions,
+  AlcoholConsumptionOptions,
+  ExerciseFrequencyOptions,
 } from "@/constants";
 import { registerPatient } from "@/lib/actions/patient.actions";
 import { PatientFormValidation } from "@/lib/validation";
@@ -83,6 +87,16 @@ const RegisterForm = ({ user }: { user: User | null }) => {
           ? formData
           : undefined,
         privacyConsent: values.privacyConsent,
+        bloodType: values.bloodType,
+        height: values.height,
+        weight: values.weight,
+        cardiovascularDiseases: values.cardiovascularDiseases,
+        chronicDiseases: values.chronicDiseases,
+        surgeries: values.surgeries,
+        vaccinations: values.vaccinations,
+        smokingStatus: values.smokingStatus,
+        alcoholConsumption: values.alcoholConsumption,
+        exerciseFrequency: values.exerciseFrequency,
       };
 
       const newPatient = await registerPatient(patient);
@@ -303,6 +317,132 @@ const RegisterForm = ({ user }: { user: User | null }) => {
               label="Istoric medical personal"
               placeholder="Istoric medical personal"
             />
+          </div>
+
+          {/* VITAL SIGNS & HEALTH METRICS */}
+          <div className="mb-9 space-y-1">
+            <h3 className="text-16-semibold text-dark-700">Parametri vitali și metrici de sănătate</h3>
+          </div>
+
+          <div className="flex flex-col gap-6 xl:flex-row">
+            <CustomFormField
+              fieldType={FormFieldType.SELECT}
+              control={form.control}
+              name="bloodType"
+              label="Grupă sanguină"
+              placeholder="Selectează grupa sanguină"
+            >
+              {BloodTypes.map((type, i) => (
+                <SelectItem key={type + i} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </CustomFormField>
+
+            <CustomFormField
+              fieldType={FormFieldType.INPUT}
+              control={form.control}
+              name="height"
+              label="Înălțime (cm)"
+              placeholder="175"
+              type="number"
+            />
+
+            <CustomFormField
+              fieldType={FormFieldType.INPUT}
+              control={form.control}
+              name="weight"
+              label="Greutate (kg)"
+              placeholder="70"
+              type="number"
+            />
+          </div>
+
+          {/* CARDIOVASCULAR & CHRONIC DISEASES */}
+          <div className="flex flex-col gap-6 xl:flex-row">
+            <CustomFormField
+              fieldType={FormFieldType.TEXTAREA}
+              control={form.control}
+              name="cardiovascularDiseases"
+              label="Boli cardiovasculare (dacă există)"
+              placeholder="Hipertensiune, boli de inimă, etc."
+            />
+
+            <CustomFormField
+              fieldType={FormFieldType.TEXTAREA}
+              control={form.control}
+              name="chronicDiseases"
+              label="Boli cronice (dacă există)"
+              placeholder="Diabet, astm, etc."
+            />
+          </div>
+
+          {/* SURGERIES & VACCINATIONS */}
+          <div className="flex flex-col gap-6 xl:flex-row">
+            <CustomFormField
+              fieldType={FormFieldType.TEXTAREA}
+              control={form.control}
+              name="surgeries"
+              label="Intervenții chirurgicale (dacă există)"
+              placeholder="Listați intervențiile chirurgicale anterioare"
+            />
+
+            <CustomFormField
+              fieldType={FormFieldType.TEXTAREA}
+              control={form.control}
+              name="vaccinations"
+              label="Vaccinări (dacă există)"
+              placeholder="Listați vaccinările recente"
+            />
+          </div>
+
+          {/* LIFESTYLE FACTORS */}
+          <div className="mb-9 space-y-1">
+            <h3 className="text-16-semibold text-dark-700">Factori de stil de viață</h3>
+          </div>
+
+          <div className="flex flex-col gap-6 xl:flex-row">
+            <CustomFormField
+              fieldType={FormFieldType.SELECT}
+              control={form.control}
+              name="smokingStatus"
+              label="Status fumat"
+              placeholder="Selectează statusul"
+            >
+              {SmokingStatusOptions.map((status, i) => (
+                <SelectItem key={status + i} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </CustomFormField>
+
+            <CustomFormField
+              fieldType={FormFieldType.SELECT}
+              control={form.control}
+              name="alcoholConsumption"
+              label="Consum alcool"
+              placeholder="Selectează frecvența"
+            >
+              {AlcoholConsumptionOptions.map((option, i) => (
+                <SelectItem key={option + i} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </CustomFormField>
+
+            <CustomFormField
+              fieldType={FormFieldType.SELECT}
+              control={form.control}
+              name="exerciseFrequency"
+              label="Frecvență exerciții fizice"
+              placeholder="Selectează frecvența"
+            >
+              {ExerciseFrequencyOptions.map((option, i) => (
+                <SelectItem key={option + i} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </CustomFormField>
           </div>
         </section>
 

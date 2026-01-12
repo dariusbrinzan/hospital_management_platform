@@ -57,6 +57,16 @@ export const PatientFormValidation = z.object({
   identificationType: z.string().optional(),
   identificationNumber: z.string().optional(),
   identificationDocument: z.custom<File[]>().optional(),
+  bloodType: z.string().optional(),
+  height: z.coerce.number().min(50).max(250).optional(),
+  weight: z.coerce.number().min(1).max(300).optional(),
+  cardiovascularDiseases: z.string().optional(),
+  chronicDiseases: z.string().optional(),
+  surgeries: z.string().optional(),
+  vaccinations: z.string().optional(),
+  smokingStatus: z.string().optional(),
+  alcoholConsumption: z.string().optional(),
+  exerciseFrequency: z.string().optional(),
   treatmentConsent: z
     .boolean()
     .default(false)
@@ -78,14 +88,26 @@ export const PatientFormValidation = z.object({
 });
 
 export const CreateAppointmentSchema = z.object({
-  primaryPhysician: z.string().min(2, "Selectați cel puțin un doctor"),
+  primaryPhysician: z.string().optional(), // Opțional pentru că poate fi "Analize medicale" fără doctor
   schedule: z.coerce.date(),
   reason: z
     .string()
     .min(2, "Motivul trebuie să aibă cel puțin 2 caractere")
-    .max(500, "Motivul trebuie să aibă cel mult 500 de caractere"),
+    .max(500, "Motivul trebuie să aibă cel mult 500 de caractere")
+    .optional(),
   note: z.string().optional(),
   cancellationReason: z.string().optional(),
+  analysisPackage: z.string().optional(), // Pachet de analize (opțional)
+  isInsured: z.boolean().default(false), // Status asigurare CASMB
+}).refine((data) => {
+  // Dacă nu este pachet de analize, trebuie să existe doctor
+  if (!data.analysisPackage && !data.primaryPhysician) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Selectați fie un doctor, fie un pachet de analize",
+  path: ["primaryPhysician"],
 });
 
 export const ScheduleAppointmentSchema = z.object({

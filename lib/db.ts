@@ -15,6 +15,35 @@ const db = new Database(dbPath);
 // Activează foreign keys
 db.pragma("foreign_keys = ON");
 
+// Migrare pentru câmpuri noi în tabelul patients
+try {
+  const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='patients';").get();
+  if (tableExists) {
+    const tableInfo = db.prepare("PRAGMA table_info(patients)").all() as any[];
+    const hasBloodType = tableInfo.some((col) => col.name === "bloodType");
+    
+    if (!hasBloodType) {
+      db.pragma("foreign_keys = OFF");
+      db.exec(`
+        ALTER TABLE patients ADD COLUMN bloodType TEXT;
+        ALTER TABLE patients ADD COLUMN height REAL;
+        ALTER TABLE patients ADD COLUMN weight REAL;
+        ALTER TABLE patients ADD COLUMN cardiovascularDiseases TEXT;
+        ALTER TABLE patients ADD COLUMN chronicDiseases TEXT;
+        ALTER TABLE patients ADD COLUMN surgeries TEXT;
+        ALTER TABLE patients ADD COLUMN vaccinations TEXT;
+        ALTER TABLE patients ADD COLUMN smokingStatus TEXT;
+        ALTER TABLE patients ADD COLUMN alcoholConsumption TEXT;
+        ALTER TABLE patients ADD COLUMN exerciseFrequency TEXT;
+      `);
+      db.pragma("foreign_keys = ON");
+    }
+  }
+} catch (error) {
+  console.error("Migration error:", error);
+  db.pragma("foreign_keys = ON");
+}
+
 // Creează tabelele dacă nu există
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -50,6 +79,16 @@ db.exec(`
     identificationDocumentId TEXT,
     identificationDocumentUrl TEXT,
     privacyConsent INTEGER NOT NULL DEFAULT 0,
+    bloodType TEXT,
+    height REAL,
+    weight REAL,
+    cardiovascularDiseases TEXT,
+    chronicDiseases TEXT,
+    surgeries TEXT,
+    vaccinations TEXT,
+    smokingStatus TEXT,
+    alcoholConsumption TEXT,
+    exerciseFrequency TEXT,
     createdAt TEXT NOT NULL DEFAULT (datetime('now')),
     updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (userId) REFERENCES users(id)

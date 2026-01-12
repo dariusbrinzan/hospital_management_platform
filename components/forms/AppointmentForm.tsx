@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { SelectItem, Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Doctors, MedicalSpecialties } from "@/constants";
+import { Doctors, MedicalSpecialties, AnalysisPackages, AnalysisPackage } from "@/constants";
 import {
   createAppointment,
   updateAppointment,
@@ -22,6 +22,7 @@ import ReactDatePicker from "react-datepicker";
 import CustomFormField, { FormFieldType } from "../CustomFormField";
 import SubmitButton from "../SubmitButton";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
+import { Checkbox } from "../ui/checkbox";
 import { SlotSelector } from "../SlotSelector";
 import { isValidAppointmentDate } from "@/lib/utils";
 
@@ -31,12 +32,14 @@ export const AppointmentForm = ({
   type = "create",
   appointment,
   setOpen,
+  patientGender,
 }: {
   userId: string;
   patientId: string;
   type: "create" | "schedule" | "cancel";
   appointment?: Appointment;
   setOpen?: Dispatch<SetStateAction<boolean>>;
+  patientGender?: "Bărbat" | "Femeie";
 }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -59,17 +62,34 @@ export const AppointmentForm = ({
       reason: appointment ? appointment.reason : "",
       note: appointment?.note || "",
       cancellationReason: appointment?.cancellationReason || "",
+      analysisPackage: "",
+      isInsured: false, // Default: nu este asigurat
     },
   });
 
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
+  const [selectedAnalysisPackage, setSelectedAnalysisPackage] = useState<string>("");
   const watchedDoctor = form.watch("primaryPhysician");
   const watchedSchedule = form.watch("schedule");
+  const isInsured = form.watch("isInsured"); // Verifică dacă este asigurat
 
   // Filtrează doctorii după specializarea selectată
   const filteredDoctors = selectedSpecialty
     ? Doctors.filter((doctor) => doctor.specialty === selectedSpecialty)
     : [];
+
+  // Filtrează pachetele de analize după specializare și gen
+  const filteredAnalysisPackages = AnalysisPackages.filter((pkg) => {
+    // Verifică dacă specializarea selectată este în lista de specializări ale pachetului
+    const matchesSpecialty = pkg.specialties.includes(selectedSpecialty);
+    
+    // Verifică genul (dacă este specificat)
+    const matchesGender = !pkg.gender || 
+      pkg.gender === "Ambele" || 
+      (patientGender && pkg.gender === patientGender);
+    
+    return matchesSpecialty && matchesGender;
+  });
 
   // Când se schimbă doctorul, actualizează specializarea
   useEffect(() => {
@@ -104,16 +124,32 @@ export const AppointmentForm = ({
   ) => {
     setIsLoading(true);
 
-    // Pentru programări noi, folosim slot-ul selectat
-    const scheduleDate = type === "create" && selectedSlot 
-      ? selectedSlot 
-      : new Date(values.schedule);
-
-    // Verifică dacă slot-ul este valid pentru programări noi
-    if (type === "create" && !selectedSlot) {
-      alert("Vă rugăm să selectați un slot disponibil");
-      setIsLoading(false);
-      return;
+    // Determină data programării
+    let scheduleDate: Date;
+    
+    if (type === "create") {
+      // Pentru pachete de analize, folosim data selectată direct
+      if (selectedAnalysisPackage && !selectedSlot) {
+        const formDate = new Date(values.schedule);
+        formDate.setHours(10, 0, 0, 0); // Setăm la ora 10:00 pentru analize
+        scheduleDate = formDate;
+      } else if (selectedSlot) {
+        // Pentru programări normale, folosim slot-ul selectat
+        scheduleDate = selectedSlot;
+      } else {
+        // Fallback la data din formular
+        scheduleDate = new Date(values.schedule);
+      }
+      
+      // Verifică dacă slot-ul este valid pentru programări noi (doar dacă nu este pachet de analize)
+      if (!selectedAnalysisPackage && !selectedSlot) {
+        alert("Vă rugăm să selectați un slot disponibil");
+        setIsLoading(false);
+        return;
+      }
+    } else {
+      // Pentru update, folosim data din formular
+      scheduleDate = new Date(values.schedule);
     }
 
     if (type === "create" && !isValidAppointmentDate(scheduleDate)) {
@@ -137,14 +173,31 @@ export const AppointmentForm = ({
 
     try {
       if (type === "create" && patientId) {
+        // Dacă este selectat un pachet de analize, folosim doctorul selectat sau "Analize medicale" ca fallback
+        const primaryPhysician = selectedAnalysisPackage 
+          ? (values.primaryPhysician || "Analize medicale")
+          : values.primaryPhysician || "";
+        
+        // Construiește nota cu informații despre pachetul de analize dacă este selectat
+        let note = values.note || "";
+        if (selectedAnalysisPackage) {
+          const selectedPkg = AnalysisPackages.find(pkg => pkg.id === selectedAnalysisPackage);
+          if (selectedPkg) {
+            const priceInfo = isInsured 
+              ? "Decontat de Casa de Asigurări de Sănătate" 
+              : `${selectedPkg.price} RON`;
+            note = `Pachet Analize: ${selectedPkg.name} (${priceInfo})\n${note ? note + '\n' : ''}Analize incluse: ${selectedPkg.tests.join(', ')}`;
+          }
+        }
+
         const appointment = {
           userId,
           patient: patientId,
-          primaryPhysician: values.primaryPhysician,
+          primaryPhysician: primaryPhysician,
           schedule: scheduleDate,
-          reason: values.reason!,
+          reason: values.reason || (selectedAnalysisPackage ? "Analize medicale" : ""),
           status: status as Status,
-          note: values.note,
+          note: note,
         };
 
         const newAppointment = await createAppointment(appointment);
@@ -242,6 +295,131 @@ export const AppointmentForm = ({
                     </FormItem>
                   )}
                 />
+                {/* Afișează pachetele de analize dacă specializarea este "Analize medicale" */}
+                {selectedSpecialty === "Analize medicale" && (
+                  <>
+                    {/* Checkbox pentru asigurare */}
+                    <FormField
+                      control={form.control}
+                      name="isInsured"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border border-dark-200 p-4">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel className="text-14-medium text-dark-700 cursor-pointer">
+                              Sunt asigurat cu Casa de Asigurări de Sănătate
+                            </FormLabel>
+                            <p className="text-12-regular text-dark-500">
+                              Analizele vor fi decontate de către CASMB
+                            </p>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="analysisPackage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Pachet Analize Medicale</FormLabel>
+                          <FormControl>
+                            <Select
+                              value={selectedAnalysisPackage}
+                              onValueChange={(value) => {
+                                setSelectedAnalysisPackage(value);
+                                field.onChange(value);
+                              }}
+                            >
+                              <SelectTrigger className="shad-select-trigger">
+                                <SelectValue placeholder="Selectează un pachet de analize" />
+                              </SelectTrigger>
+                            <SelectContent className="shad-select-content max-h-[400px]">
+                              {filteredAnalysisPackages.map((pkg) => (
+                                <SelectItem key={pkg.id} value={pkg.id}>
+                                  <div className="flex flex-col gap-1 py-1">
+                                    <p className="text-14-semibold text-dark-700">{pkg.name}</p>
+                                    <p className="text-12-regular text-dark-500">
+                                      {pkg.description}
+                                    </p>
+                                    <div className="mt-1">
+                                      {!isInsured && (
+                                        <p className="text-14-medium text-green-500 font-semibold">
+                                          {pkg.price} RON
+                                        </p>
+                                      )}
+                                      {isInsured && (
+                                        <p className="text-14-medium text-green-500 font-semibold">
+                                          Decontat de CASMB
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+
+                {/* Afișează detaliile pachetului selectat */}
+                {selectedAnalysisPackage && selectedSpecialty === "Analize medicale" && (
+                  <div className="rounded-lg border border-dark-200 bg-white p-6">
+                    {(() => {
+                      const selectedPkg = AnalysisPackages.find(
+                        (pkg) => pkg.id === selectedAnalysisPackage
+                      );
+                      if (!selectedPkg) return null;
+                      return (
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-18-semibold text-dark-700 mb-2">
+                              {selectedPkg.name}
+                            </p>
+                            <p className="text-14-regular text-dark-600 mb-4">
+                              {selectedPkg.description}
+                            </p>
+                            <div className="flex items-center">
+                              {!isInsured ? (
+                                <p className="text-20-semibold text-green-500">
+                                  {selectedPkg.price} RON
+                                </p>
+                              ) : (
+                                <p className="text-18-semibold text-green-500">
+                                  Decontat de Casa de Asigurări de Sănătate
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-14-semibold text-dark-700 mb-2">
+                              Analize incluse:
+                            </p>
+                            <ul className="list-disc list-inside space-y-1">
+                              {selectedPkg.tests.map((test, i) => (
+                                <li key={i} className="text-14-regular text-dark-600">
+                                  {test}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* Afișează selectorul de doctori pentru toate specializările, inclusiv Analize medicale */}
                 {selectedSpecialty && filteredDoctors.length > 0 && (
                   <CustomFormField
                     fieldType={FormFieldType.SELECT}
@@ -340,6 +518,7 @@ export const AppointmentForm = ({
                     </FormItem>
                   )}
                 />
+                {/* Slot Selector - pentru toate programările cu doctor (inclusiv analize medicale cu doctor) */}
                 {watchedDoctor && selectedDate && (
                   <FormField
                     control={form.control}
@@ -362,6 +541,15 @@ export const AppointmentForm = ({
                       </FormItem>
                     )}
                   />
+                )}
+                
+                {/* Mesaj pentru analize medicale fără doctor selectat */}
+                {selectedSpecialty === "Analize medicale" && selectedAnalysisPackage && !watchedDoctor && (
+                  <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                    <p className="text-14-regular text-dark-700">
+                      Pentru analize medicale, vă rugăm să selectați data programării. Programările pentru analize se fac de luni până vineri, între orele 10:00-20:00.
+                    </p>
+                  </div>
                 )}
               </>
             ) : (

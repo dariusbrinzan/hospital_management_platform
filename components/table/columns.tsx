@@ -2,6 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import Image from "next/image";
+import Link from "next/link";
 
 import { Doctors } from "@/constants";
 import { formatDateTime } from "@/lib/utils";
@@ -22,7 +23,14 @@ export const columns: ColumnDef<Appointment>[] = [
     header: "Pacient",
     cell: ({ row }) => {
       const appointment = row.original;
-      return <p className="text-14-medium ">{appointment.patient.name}</p>;
+      return (
+        <Link
+          href={`/admin/patients/${appointment.patient.$id}`}
+          className="text-14-medium text-green-500 hover:text-green-600 hover:underline"
+        >
+          {appointment.patient.name}
+        </Link>
+      );
     },
   },
   {

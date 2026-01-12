@@ -73,12 +73,17 @@ export const SlotSelector = ({
     );
   }
 
+  // Determină intervalul slot-urilor bazat pe numărul de slot-uri
+  // Dacă sunt multe slot-uri (40 pentru 15 min), probabil sunt sloturi de 15 minute
+  const is15MinuteSlots = slots.length > 30;
+  const intervalText = is15MinuteSlots ? "15 minute" : "30 minute";
+
   return (
     <div className="space-y-4">
       <p className="text-14-medium text-dark-700">
-        Selectează un slot de 30 de minute:
+        Selectează un slot de {intervalText}:
       </p>
-      <div className="grid grid-cols-4 gap-2 md:grid-cols-5 lg:grid-cols-6">
+      <div className={`grid gap-2 ${is15MinuteSlots ? 'grid-cols-5 md:grid-cols-6 lg:grid-cols-8' : 'grid-cols-4 md:grid-cols-5 lg:grid-cols-6'}`}>
         {slots.map((slot, index) => {
           const slotTime = slot.time instanceof Date ? slot.time : new Date(slot.time);
           const isSelected = selectedSlot && slotTime.getTime() === selectedSlot.getTime();
