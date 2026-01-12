@@ -6,9 +6,10 @@ export const UserFormValidation = z.object({
     .min(2, "Numele trebuie să aibă cel puțin 2 caractere")
     .max(50, "Numele trebuie să aibă cel mult 50 de caractere"),
   email: z.string().email("Adresă email invalidă"),
-  phone: z
+  password: z
     .string()
-    .refine((phone) => /^\+\d{10,15}$/.test(phone), "Număr de telefon invalid"),
+    .min(6, "Parola trebuie să aibă cel puțin 6 caractere")
+    .max(100, "Parola trebuie să aibă cel mult 100 de caractere"),
 });
 
 export const PatientFormValidation = z.object({

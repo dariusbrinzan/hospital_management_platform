@@ -16,28 +16,32 @@ export const parseDate = (dateString: string): Date => {
 
 // Users helpers
 export const userHelpers = {
-  create: (user: { name: string; email: string; phone: string }) => {
+  create: async (user: { name: string; email: string; password: string }) => {
+    const bcrypt = await import("bcryptjs");
     const id = generateId();
     const now = new Date().toISOString();
     
+    // Hash-uiește parola
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+    
     db.prepare(`
-      INSERT INTO users (id, name, email, phone, createdAt, updatedAt)
+      INSERT INTO users (id, name, email, password, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(id, user.name, user.email, user.phone, now, now);
+    `).run(id, user.name, user.email, hashedPassword, now, now);
 
-    return { $id: id, ...user, createdAt: now, updatedAt: now };
+    return { $id: id, name: user.name, email: user.email, createdAt: now, updatedAt: now };
   },
 
   getById: (id: string) => {
     const user = db.prepare("SELECT * FROM users WHERE id = ?").get(id) as any;
     if (!user) return null;
-    return { $id: user.id, name: user.name, email: user.email, phone: user.phone, createdAt: user.createdAt, updatedAt: user.updatedAt };
+    return { $id: user.id, name: user.name, email: user.email, password: user.password, createdAt: user.createdAt, updatedAt: user.updatedAt };
   },
 
   getByEmail: (email: string) => {
     const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email) as any;
     if (!user) return null;
-    return { $id: user.id, name: user.name, email: user.email, phone: user.phone, createdAt: user.createdAt, updatedAt: user.updatedAt };
+    return { $id: user.id, name: user.name, email: user.email, password: user.password, createdAt: user.createdAt, updatedAt: user.updatedAt };
   },
 };
 
@@ -218,21 +222,21 @@ export const appointmentHelpers = {
     return appointments.map(apt => ({
       $id: apt.id,
       userId: apt.userId,
-      schedule: apt.schedule,
+      schedule: parseDate(apt.schedule),
       status: apt.status,
       primaryPhysician: apt.primaryPhysician,
       reason: apt.reason,
       note: apt.note,
       cancellationReason: apt.cancellationReason,
-      createdAt: apt.createdAt,
-      updatedAt: apt.updatedAt,
+      createdAt: parseDate(apt.createdAt),
+      updatedAt: parseDate(apt.updatedAt),
       patient: {
         $id: apt.patient_id,
         userId: apt.userId,
         name: apt.patient_name,
         email: apt.patient_email,
         phone: apt.patient_phone,
-        birthDate: apt.patient_birthDate,
+        birthDate: parseDate(apt.patient_birthDate),
         gender: apt.patient_gender,
         address: apt.patient_address,
         occupation: apt.patient_occupation,
@@ -250,8 +254,83 @@ export const appointmentHelpers = {
         identificationDocumentId: apt.patient_identificationDocumentId,
         identificationDocumentUrl: apt.patient_identificationDocumentUrl,
         privacyConsent: apt.patient_privacyConsent === 1,
-        createdAt: apt.patient_createdAt,
-        updatedAt: apt.patient_updatedAt,
+        createdAt: parseDate(apt.patient_createdAt),
+        updatedAt: parseDate(apt.patient_updatedAt),
+      },
+    }));
+  },
+
+  getByUserId: (userId: string) => {
+    const appointments = db.prepare(`
+      SELECT 
+        a.*,
+        p.id as patient_id,
+        p.name as patient_name,
+        p.email as patient_email,
+        p.phone as patient_phone,
+        p.birthDate as patient_birthDate,
+        p.gender as patient_gender,
+        p.address as patient_address,
+        p.occupation as patient_occupation,
+        p.emergencyContactName as patient_emergencyContactName,
+        p.emergencyContactNumber as patient_emergencyContactNumber,
+        p.primaryPhysician as patient_primaryPhysician,
+        p.insuranceProvider as patient_insuranceProvider,
+        p.insurancePolicyNumber as patient_insurancePolicyNumber,
+        p.allergies as patient_allergies,
+        p.currentMedication as patient_currentMedication,
+        p.familyMedicalHistory as patient_familyMedicalHistory,
+        p.pastMedicalHistory as patient_pastMedicalHistory,
+        p.identificationType as patient_identificationType,
+        p.identificationNumber as patient_identificationNumber,
+        p.identificationDocumentId as patient_identificationDocumentId,
+        p.identificationDocumentUrl as patient_identificationDocumentUrl,
+        p.privacyConsent as patient_privacyConsent,
+        p.createdAt as patient_createdAt,
+        p.updatedAt as patient_updatedAt
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      WHERE a.userId = ?
+      ORDER BY a.schedule DESC
+    `).all(userId) as any[];
+
+    return appointments.map(apt => ({
+      $id: apt.id,
+      userId: apt.userId,
+      schedule: parseDate(apt.schedule),
+      status: apt.status,
+      primaryPhysician: apt.primaryPhysician,
+      reason: apt.reason,
+      note: apt.note,
+      cancellationReason: apt.cancellationReason,
+      createdAt: parseDate(apt.createdAt),
+      updatedAt: parseDate(apt.updatedAt),
+      patient: {
+        $id: apt.patient_id,
+        userId: apt.userId,
+        name: apt.patient_name,
+        email: apt.patient_email,
+        phone: apt.patient_phone,
+        birthDate: parseDate(apt.patient_birthDate),
+        gender: apt.patient_gender,
+        address: apt.patient_address,
+        occupation: apt.patient_occupation,
+        emergencyContactName: apt.patient_emergencyContactName,
+        emergencyContactNumber: apt.patient_emergencyContactNumber,
+        primaryPhysician: apt.patient_primaryPhysician,
+        insuranceProvider: apt.patient_insuranceProvider,
+        insurancePolicyNumber: apt.patient_insurancePolicyNumber,
+        allergies: apt.patient_allergies,
+        currentMedication: apt.patient_currentMedication,
+        familyMedicalHistory: apt.patient_familyMedicalHistory,
+        pastMedicalHistory: apt.patient_pastMedicalHistory,
+        identificationType: apt.patient_identificationType,
+        identificationNumber: apt.patient_identificationNumber,
+        identificationDocumentId: apt.patient_identificationDocumentId,
+        identificationDocumentUrl: apt.patient_identificationDocumentUrl,
+        privacyConsent: apt.patient_privacyConsent === 1,
+        createdAt: parseDate(apt.patient_createdAt),
+        updatedAt: parseDate(apt.patient_updatedAt),
       },
     }));
   },
@@ -294,21 +373,21 @@ export const appointmentHelpers = {
     return {
       $id: apt.id,
       userId: apt.userId,
-      schedule: apt.schedule,
+      schedule: parseDate(apt.schedule),
       status: apt.status,
       primaryPhysician: apt.primaryPhysician,
       reason: apt.reason,
       note: apt.note,
       cancellationReason: apt.cancellationReason,
-      createdAt: apt.createdAt,
-      updatedAt: apt.updatedAt,
+      createdAt: parseDate(apt.createdAt),
+      updatedAt: parseDate(apt.updatedAt),
       patient: {
         $id: apt.patient_id,
         userId: apt.userId,
         name: apt.patient_name,
         email: apt.patient_email,
         phone: apt.patient_phone,
-        birthDate: apt.patient_birthDate,
+        birthDate: parseDate(apt.patient_birthDate),
         gender: apt.patient_gender,
         address: apt.patient_address,
         occupation: apt.patient_occupation,
@@ -326,8 +405,8 @@ export const appointmentHelpers = {
         identificationDocumentId: apt.patient_identificationDocumentId,
         identificationDocumentUrl: apt.patient_identificationDocumentUrl,
         privacyConsent: apt.patient_privacyConsent === 1,
-        createdAt: apt.patient_createdAt,
-        updatedAt: apt.patient_updatedAt,
+        createdAt: parseDate(apt.patient_createdAt),
+        updatedAt: parseDate(apt.patient_updatedAt),
       },
     };
   },

@@ -1,33 +1,34 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
-import { LoginForm } from "@/components/forms/LoginForm";
-import { PasskeyModal } from "@/components/PasskeyModal";
+import { PatientForm } from "@/components/forms/PatientForm";
+import { getCurrentSession } from "@/lib/actions/auth.actions";
 import { LogoLink } from "@/components/LogoLink";
-import { Button } from "@/components/ui/button";
 
-const Home = async ({ searchParams }: SearchParamProps) => {
-  const isAdmin = searchParams?.admin === "true";
+const RegisterPage = async () => {
+  // Dacă utilizatorul este deja autentificat, redirecționează la dashboard
+  const session = await getCurrentSession();
+  
+  if (session) {
+    redirect(`/patients/${session.$id}/dashboard`);
+  }
 
   return (
     <div className="flex h-screen max-h-screen">
-      {isAdmin && <PasskeyModal />}
-
       <section className="remove-scrollbar container my-auto">
         <div className="sub-container max-w-[496px]">
           <LogoLink />
 
-          <LoginForm />
+          <PatientForm />
 
           <div className="mt-6 text-center">
-            <p className="text-14-regular text-dark-600 mb-4">
-              Nu ai cont?
+            <p className="text-14-regular text-dark-600 mb-2">
+              Ai deja un cont?
             </p>
-            <Button asChild className="w-full shad-primary-btn">
-              <Link href="/register">
-                Înregistrează-te ca pacient nou
-              </Link>
-            </Button>
+            <Link href="/" className="text-14-medium text-green-500 hover:text-green-600">
+              Conectează-te aici
+            </Link>
           </div>
 
           <div className="text-14-regular mt-20 flex justify-between">
@@ -52,4 +53,4 @@ const Home = async ({ searchParams }: SearchParamProps) => {
   );
 };
 
-export default Home;
+export default RegisterPage;

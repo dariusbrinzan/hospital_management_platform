@@ -118,6 +118,33 @@ export const updateAppointment = async ({
   }
 };
 
+// GET PATIENT APPOINTMENTS
+export const getPatientAppointments = async (userId: string) => {
+  try {
+    const appointments = appointmentHelpers.getByUserId(userId);
+    const now = new Date();
+
+    const upcoming = appointments.filter(
+      (apt: any) => new Date(apt.schedule) >= now
+    );
+    const past = appointments.filter(
+      (apt: any) => new Date(apt.schedule) < now
+    );
+
+    return parseStringify({
+      upcoming,
+      past,
+      all: appointments,
+    });
+  } catch (error) {
+    console.error(
+      "An error occurred while retrieving patient appointments:",
+      error
+    );
+    return { upcoming: [], past: [], all: [] };
+  }
+};
+
 // GET APPOINTMENT
 export const getAppointment = async (appointmentId: string) => {
   try {

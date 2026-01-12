@@ -14,7 +14,7 @@ export const createUser = async (user: CreateUserParams) => {
     }
 
     // Creează utilizator nou
-    const newUser = userHelpers.create(user);
+    const newUser = await userHelpers.create(user);
     const parsed = parseStringify(newUser);
     
     if (!parsed || !parsed.$id) {

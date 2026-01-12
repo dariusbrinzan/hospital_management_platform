@@ -67,11 +67,18 @@ const RequestSuccess = async ({
           </div>
         </section>
 
-        <Button variant="outline" className="shad-primary-btn" asChild>
-          <Link href={`/patients/${userId}/new-appointment`}>
-            Programare nouă
-          </Link>
-        </Button>
+        <div className="flex gap-4">
+          <Button variant="outline" className="shad-primary-btn" asChild>
+            <Link href={`/patients/${userId}/dashboard`}>
+              Programările mele
+            </Link>
+          </Button>
+          <Button variant="outline" className="shad-primary-btn" asChild>
+            <Link href={`/patients/${userId}/new-appointment`}>
+              Programare nouă
+            </Link>
+          </Button>
+        </div>
 
         <p className="copyright">© 2026 eHealth.ro</p>
       </div>
