@@ -21,6 +21,8 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@sentry/nextjs": "^8.9.2",
     "@tanstack/react-table": "^8.17.0",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.3",
     "better-sqlite3": "^11.10.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
