@@ -1,6 +1,22 @@
 import { withSentryConfig } from "@sentry/nextjs";
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  webpack: (config, { isServer }) => {
+    // Exclude better-sqlite3 from bundling - it's a native module
+    config.externals = config.externals || [];
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
+    return config;
+  },
+  // Ensure better-sqlite3 is only used on server
+  serverExternalPackages: ['better-sqlite3'],
+};
 
 export default withSentryConfig(nextConfig, {
   // For all available options, see:

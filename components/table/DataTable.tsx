@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { config } from "@/lib/config";
 import { decryptKey } from "@/lib/utils";
 
 interface DataTableProps<TData, TValue> {
@@ -38,8 +39,9 @@ export function DataTable<TData, TValue>({
 
   useEffect(() => {
     const accessKey = encryptedKey && decryptKey(encryptedKey);
+    const adminPasskey = process.env.NEXT_PUBLIC_ADMIN_PASSKEY || config.admin.passkey;
 
-    if (accessKey !== process.env.NEXT_PUBLIC_ADMIN_PASSKEY!.toString()) {
+    if (accessKey !== adminPasskey.toString()) {
       redirect("/");
     }
   }, [encryptedKey]);

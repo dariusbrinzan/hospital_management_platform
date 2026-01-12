@@ -1,56 +1,37 @@
 "use server";
 
-import { ID, InputFile, Query } from "node-appwrite";
-
-import {
-  BUCKET_ID,
-  DATABASE_ID,
-  ENDPOINT,
-  PATIENT_COLLECTION_ID,
-  PROJECT_ID,
-  databases,
-  storage,
-  users,
-} from "../appwrite.config";
+import { patientHelpers, userHelpers } from "../db-helpers";
 import { parseStringify } from "../utils";
 
-// CREATE APPWRITE USER
+// CREATE USER
 export const createUser = async (user: CreateUserParams) => {
   try {
-    // Create new user -> https://appwrite.io/docs/references/1.5.x/server-nodejs/users#create
-    const newuser = await users.create(
-      ID.unique(),
-      user.email,
-      user.phone,
-      undefined,
-      user.name
-    );
-
-    return parseStringify(newuser);
-  } catch (error: any) {
-    // Check existing user
-    if (error && error?.code === 409) {
-      const existingUser = await users.list([
-        Query.equal("email", [user.email]),
-      ]);
-
-      return existingUser.users[0];
+    // Verifică dacă utilizatorul există deja
+    const existingUser = userHelpers.getByEmail(user.email);
+    if (existingUser) {
+      return parseStringify(existingUser);
     }
+
+    // Creează utilizator nou
+    const newUser = userHelpers.create(user);
+    return parseStringify(newUser);
+  } catch (error: any) {
     console.error("An error occurred while creating a new user:", error);
+    throw error;
   }
 };
 
 // GET USER
 export const getUser = async (userId: string) => {
   try {
-    const user = await users.get(userId);
-
-    return parseStringify(user);
+    const user = userHelpers.getById(userId);
+    return user ? parseStringify(user) : null;
   } catch (error) {
     console.error(
       "An error occurred while retrieving the user details:",
       error
     );
+    return null;
   }
 };
 
@@ -60,53 +41,57 @@ export const registerPatient = async ({
   ...patient
 }: RegisterUserParams) => {
   try {
-    // Upload file ->  // https://appwrite.io/docs/references/cloud/client-web/storage#createFile
-    let file;
-    if (identificationDocument) {
-      const inputFile =
-        identificationDocument &&
-        InputFile.fromBlob(
-          identificationDocument?.get("blobFile") as Blob,
-          identificationDocument?.get("fileName") as string
-        );
+    // Gestionează upload-ul de fișier
+    let fileId = null;
+    let fileUrl = null;
 
-      file = await storage.createFile(BUCKET_ID!, ID.unique(), inputFile);
+    if (identificationDocument) {
+      const blobFile = identificationDocument.get("blobFile") as Blob;
+      const fileName = identificationDocument.get("fileName") as string;
+
+      if (blobFile && fileName) {
+        const { writeFile, mkdir } = await import("fs/promises");
+        const { join } = await import("path");
+        const { randomUUID } = await import("crypto");
+
+        const bytes = await blobFile.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        fileId = randomUUID();
+        const uploadsDir = join(process.cwd(), "public", "uploads");
+        await mkdir(uploadsDir, { recursive: true });
+
+        const filePath = join(uploadsDir, `${fileId}-${fileName}`);
+        await writeFile(filePath, buffer);
+
+        fileUrl = `/uploads/${fileId}-${fileName}`;
+      }
     }
 
-    // Create new patient document -> https://appwrite.io/docs/references/cloud/server-nodejs/databases#createDocument
-    const newPatient = await databases.createDocument(
-      DATABASE_ID!,
-      PATIENT_COLLECTION_ID!,
-      ID.unique(),
-      {
-        identificationDocumentId: file?.$id ? file.$id : null,
-        identificationDocumentUrl: file?.$id
-          ? `${ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view??project=${PROJECT_ID}`
-          : null,
-        ...patient,
-      }
-    );
+    const patientData = {
+      ...patient,
+      identificationDocumentId: fileId,
+      identificationDocumentUrl: fileUrl,
+    };
 
+    const newPatient = patientHelpers.create(patientData);
     return parseStringify(newPatient);
   } catch (error) {
     console.error("An error occurred while creating a new patient:", error);
+    throw error;
   }
 };
 
 // GET PATIENT
 export const getPatient = async (userId: string) => {
   try {
-    const patients = await databases.listDocuments(
-      DATABASE_ID!,
-      PATIENT_COLLECTION_ID!,
-      [Query.equal("userId", [userId])]
-    );
-
-    return parseStringify(patients.documents[0]);
+    const patient = patientHelpers.getByUserId(userId);
+    return patient ? parseStringify(patient) : null;
   } catch (error) {
     console.error(
       "An error occurred while retrieving the patient details:",
       error
     );
+    return null;
   }
 };

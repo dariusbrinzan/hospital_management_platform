@@ -1,65 +1,30 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { ID, Query } from "node-appwrite";
 
 import { Appointment } from "@/types/appwrite.types";
 
-import {
-  APPOINTMENT_COLLECTION_ID,
-  DATABASE_ID,
-  databases,
-  messaging,
-} from "../appwrite.config";
+import { appointmentHelpers } from "../db-helpers";
 import { formatDateTime, parseStringify } from "../utils";
 
-//  CREATE APPOINTMENT
+// CREATE APPOINTMENT
 export const createAppointment = async (
   appointment: CreateAppointmentParams
 ) => {
   try {
-    const newAppointment = await databases.createDocument(
-      DATABASE_ID!,
-      APPOINTMENT_COLLECTION_ID!,
-      ID.unique(),
-      appointment
-    );
-
+    const newAppointment = appointmentHelpers.create(appointment);
     revalidatePath("/admin");
     return parseStringify(newAppointment);
   } catch (error) {
     console.error("An error occurred while creating a new appointment:", error);
+    throw error;
   }
 };
 
-//  GET RECENT APPOINTMENTS
+// GET RECENT APPOINTMENTS
 export const getRecentAppointmentList = async () => {
   try {
-    const appointments = await databases.listDocuments(
-      DATABASE_ID!,
-      APPOINTMENT_COLLECTION_ID!,
-      [Query.orderDesc("$createdAt")]
-    );
-
-    // const scheduledAppointments = (
-    //   appointments.documents as Appointment[]
-    // ).filter((appointment) => appointment.status === "scheduled");
-
-    // const pendingAppointments = (
-    //   appointments.documents as Appointment[]
-    // ).filter((appointment) => appointment.status === "pending");
-
-    // const cancelledAppointments = (
-    //   appointments.documents as Appointment[]
-    // ).filter((appointment) => appointment.status === "cancelled");
-
-    // const data = {
-    //   totalCount: appointments.total,
-    //   scheduledCount: scheduledAppointments.length,
-    //   pendingCount: pendingAppointments.length,
-    //   cancelledCount: cancelledAppointments.length,
-    //   documents: appointments.documents,
-    // };
+    const appointments = appointmentHelpers.getAll();
 
     const initialCounts = {
       scheduledCount: 0,
@@ -67,28 +32,25 @@ export const getRecentAppointmentList = async () => {
       cancelledCount: 0,
     };
 
-    const counts = (appointments.documents as Appointment[]).reduce(
-      (acc, appointment) => {
-        switch (appointment.status) {
-          case "scheduled":
-            acc.scheduledCount++;
-            break;
-          case "pending":
-            acc.pendingCount++;
-            break;
-          case "cancelled":
-            acc.cancelledCount++;
-            break;
-        }
-        return acc;
-      },
-      initialCounts
-    );
+    const counts = appointments.reduce((acc, appointment) => {
+      switch (appointment.status) {
+        case "scheduled":
+          acc.scheduledCount++;
+          break;
+        case "pending":
+          acc.pendingCount++;
+          break;
+        case "cancelled":
+          acc.cancelledCount++;
+          break;
+      }
+      return acc;
+    }, initialCounts);
 
     const data = {
-      totalCount: appointments.total,
+      totalCount: appointments.length,
       ...counts,
-      documents: appointments.documents,
+      documents: appointments,
     };
 
     return parseStringify(data);
@@ -97,26 +59,29 @@ export const getRecentAppointmentList = async () => {
       "An error occurred while retrieving the recent appointments:",
       error
     );
+    return {
+      totalCount: 0,
+      scheduledCount: 0,
+      pendingCount: 0,
+      cancelledCount: 0,
+      documents: [],
+    };
   }
 };
 
-//  SEND SMS NOTIFICATION
+// SEND SMS NOTIFICATION (mock - poți integra cu Twilio sau alt serviciu)
 export const sendSMSNotification = async (userId: string, content: string) => {
   try {
-    // https://appwrite.io/docs/references/1.5.x/server-nodejs/messaging#createSms
-    const message = await messaging.createSms(
-      ID.unique(),
-      content,
-      [],
-      [userId]
-    );
-    return parseStringify(message);
+    // Mock SMS - în producție poți integra cu Twilio sau alt serviciu
+    console.log(`SMS to user ${userId}: ${content}`);
+    return { success: true, message: "SMS sent (mock)" };
   } catch (error) {
     console.error("An error occurred while sending sms:", error);
+    return { success: false, error };
   }
 };
 
-//  UPDATE APPOINTMENT
+// UPDATE APPOINTMENT
 export const updateAppointment = async ({
   appointmentId,
   userId,
@@ -125,40 +90,44 @@ export const updateAppointment = async ({
   type,
 }: UpdateAppointmentParams) => {
   try {
-    // Update appointment to scheduled -> https://appwrite.io/docs/references/cloud/server-nodejs/databases#updateDocument
-    const updatedAppointment = await databases.updateDocument(
-      DATABASE_ID!,
-      APPOINTMENT_COLLECTION_ID!,
-      appointmentId,
-      appointment
-    );
+    const updatedAppointment = appointmentHelpers.update(appointmentId, {
+      status: appointment.status,
+      schedule: appointment.schedule,
+      primaryPhysician: appointment.primaryPhysician,
+      cancellationReason: appointment.cancellationReason,
+    });
 
-    if (!updatedAppointment) throw Error;
+    if (!updatedAppointment) {
+      throw new Error("Appointment not found");
+    }
 
-    const smsMessage = `Greetings from CarePulse. ${type === "schedule" ? `Your appointment is confirmed for ${formatDateTime(appointment.schedule!, timeZone).dateTime} with Dr. ${appointment.primaryPhysician}` : `We regret to inform that your appointment for ${formatDateTime(appointment.schedule!, timeZone).dateTime} is cancelled. Reason:  ${appointment.cancellationReason}`}.`;
+    // Trimite SMS (mock)
+    const smsMessage = `Greetings from CarePulse. ${
+      type === "schedule"
+        ? `Your appointment is confirmed for ${formatDateTime(appointment.schedule!, timeZone).dateTime} with Dr. ${appointment.primaryPhysician}`
+        : `We regret to inform that your appointment for ${formatDateTime(appointment.schedule!, timeZone).dateTime} is cancelled. Reason: ${appointment.cancellationReason}`
+    }.`;
+
     await sendSMSNotification(userId, smsMessage);
 
     revalidatePath("/admin");
     return parseStringify(updatedAppointment);
   } catch (error) {
     console.error("An error occurred while scheduling an appointment:", error);
+    throw error;
   }
 };
 
 // GET APPOINTMENT
 export const getAppointment = async (appointmentId: string) => {
   try {
-    const appointment = await databases.getDocument(
-      DATABASE_ID!,
-      APPOINTMENT_COLLECTION_ID!,
-      appointmentId
-    );
-
-    return parseStringify(appointment);
+    const appointment = appointmentHelpers.getById(appointmentId);
+    return appointment ? parseStringify(appointment) : null;
   } catch (error) {
     console.error(
-      "An error occurred while retrieving the existing patient:",
+      "An error occurred while retrieving the appointment:",
       error
     );
+    return null;
   }
 };
