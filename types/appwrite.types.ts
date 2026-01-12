@@ -36,6 +36,7 @@ export interface Appointment {
   note: string | null;
   userId: string;
   cancellationReason: string | null;
+  analysisResults?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

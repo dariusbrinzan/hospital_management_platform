@@ -10,6 +10,8 @@ import { Appointment } from "@/types/appwrite.types";
 
 import { AppointmentModal } from "../AppointmentModal";
 import { StatusBadge } from "../StatusBadge";
+import { AnalysisResultsModal } from "../AnalysisResultsModal";
+import { Button } from "../ui/button";
 
 export const columns: ColumnDef<Appointment>[] = [
   {
@@ -86,9 +88,26 @@ export const columns: ColumnDef<Appointment>[] = [
     header: () => <div className="pl-4">Acțiuni</div>,
     cell: ({ row }) => {
       const appointment = row.original;
+      const doctor = Doctors.find(
+        (doctor) => doctor.name === appointment.primaryPhysician
+      );
+      const isAnalysisDoctor = doctor?.specialty === "Analize medicale";
+      const hasResults = appointment.analysisResults && appointment.analysisResults.trim().length > 0;
 
       return (
         <div className="flex gap-1">
+          {isAnalysisDoctor && appointment.status === "scheduled" && !hasResults && (
+            <AnalysisResultsModal appointment={appointment} />
+          )}
+          {isAnalysisDoctor && appointment.status === "scheduled" && hasResults && (
+            <Button
+              variant="outline"
+              className="shad-gray-btn text-14-medium cursor-default"
+              disabled
+            >
+              Rezultate completate
+            </Button>
+          )}
           {appointment.status !== "cancelled" && (
             <AppointmentModal
               patientId={appointment.patient.$id}

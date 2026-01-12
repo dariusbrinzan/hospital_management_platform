@@ -58,6 +58,13 @@ export const LoginForm = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <section className="mb-12 space-y-4">
+          <h1 className="header">Bine ai revenit 👋</h1>
+          <p className="text-dark-600">
+            Prima platformă de management spital din România. Conectează-te pentru a accesa contul tău și programările tale.
+          </p>
+        </section>
+
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-4">
             <p className="text-14-regular text-red-600">{error}</p>

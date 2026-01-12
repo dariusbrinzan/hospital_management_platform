@@ -299,9 +299,58 @@ const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) =
                           )}
                           
                           {appointment.cancellationReason && (
-                            <p className="text-14-regular text-red-600">
+                            <p className="text-14-regular text-red-600 mb-1">
                               <span className="font-medium">Motiv anulare:</span> {appointment.cancellationReason}
                             </p>
+                          )}
+                          
+                          {appointment.analysisResults && (
+                            <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3">
+                              <p className="text-14-semibold text-green-700 mb-3">
+                                Rezultate Analize:
+                              </p>
+                              {(() => {
+                                try {
+                                  const results = JSON.parse(appointment.analysisResults);
+                                  if (Array.isArray(results) && results.length > 0) {
+                                    return (
+                                      <div className="space-y-3">
+                                        {results.map((result: any, index: number) => (
+                                          <div key={index} className="border-b border-green-200 pb-3 last:border-0 last:pb-0">
+                                            <p className="text-14-semibold text-dark-700 mb-1">
+                                              {result.testName}
+                                            </p>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-14-regular text-dark-600">
+                                              <p>
+                                                <span className="font-medium">Valoare:</span> {result.value}
+                                                {result.unit && ` ${result.unit}`}
+                                              </p>
+                                              {result.referenceRange && (
+                                                <p>
+                                                  <span className="font-medium">Referință:</span> {result.referenceRange}
+                                                </p>
+                                              )}
+                                            </div>
+                                            {result.notes && (
+                                              <p className="text-14-regular text-dark-600 mt-1">
+                                                <span className="font-medium">Observații:</span> {result.notes}
+                                              </p>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    );
+                                  }
+                                } catch {
+                                  // Dacă nu este JSON, afișează ca text simplu
+                                  return (
+                                    <p className="text-14-regular text-dark-700 whitespace-pre-wrap">
+                                      {appointment.analysisResults}
+                                    </p>
+                                  );
+                                }
+                              })()}
+                            </div>
                           )}
                         </div>
                         

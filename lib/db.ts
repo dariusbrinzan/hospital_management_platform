@@ -44,6 +44,26 @@ try {
   db.pragma("foreign_keys = ON");
 }
 
+// Migrare pentru câmpuri noi în tabelul appointments
+try {
+  const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='appointments';").get();
+  if (tableExists) {
+    const tableInfo = db.prepare("PRAGMA table_info(appointments)").all() as any[];
+    const hasAnalysisResults = tableInfo.some((col) => col.name === "analysisResults");
+    
+    if (!hasAnalysisResults) {
+      db.pragma("foreign_keys = OFF");
+      db.exec(`
+        ALTER TABLE appointments ADD COLUMN analysisResults TEXT;
+      `);
+      db.pragma("foreign_keys = ON");
+    }
+  }
+} catch (error) {
+  console.error("Migration error:", error);
+  db.pragma("foreign_keys = ON");
+}
+
 // Creează tabelele dacă nu există
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -104,6 +124,7 @@ db.exec(`
     reason TEXT NOT NULL,
     note TEXT,
     cancellationReason TEXT,
+    analysisResults TEXT,
     createdAt TEXT NOT NULL DEFAULT (datetime('now')),
     updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (userId) REFERENCES users(id),

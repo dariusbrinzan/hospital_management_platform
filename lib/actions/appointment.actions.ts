@@ -165,3 +165,25 @@ export const getAppointment = async (appointmentId: string) => {
     return null;
   }
 };
+
+// UPDATE ANALYSIS RESULTS
+export const updateAnalysisResults = async (
+  appointmentId: string,
+  analysisResults: string
+) => {
+  try {
+    const updatedAppointment = appointmentHelpers.update(appointmentId, {
+      analysisResults: analysisResults,
+    });
+
+    if (!updatedAppointment) {
+      throw new Error("Programarea nu a fost găsită");
+    }
+
+    revalidatePath("/admin");
+    return parseStringify(updatedAppointment);
+  } catch (error) {
+    console.error("A apărut o eroare la actualizarea rezultatelor analizelor:", error);
+    throw error;
+  }
+};

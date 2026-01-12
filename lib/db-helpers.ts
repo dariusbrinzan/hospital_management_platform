@@ -270,6 +270,7 @@ export const appointmentHelpers = {
       reason: apt.reason,
       note: apt.note,
       cancellationReason: apt.cancellationReason,
+      analysisResults: apt.analysisResults,
       createdAt: parseDate(apt.createdAt),
       updatedAt: parseDate(apt.updatedAt),
       patient: {
@@ -365,6 +366,7 @@ export const appointmentHelpers = {
       reason: apt.reason,
       note: apt.note,
       cancellationReason: apt.cancellationReason,
+      analysisResults: apt.analysisResults,
       createdAt: parseDate(apt.createdAt),
       updatedAt: parseDate(apt.updatedAt),
       patient: {
@@ -532,6 +534,10 @@ export const appointmentHelpers = {
     if (updates.cancellationReason !== undefined) {
       fields.push("cancellationReason = ?");
       values.push(updates.cancellationReason);
+    }
+    if (updates.analysisResults !== undefined) {
+      fields.push("analysisResults = ?");
+      values.push(updates.analysisResults);
     }
 
     fields.push("updatedAt = ?");
