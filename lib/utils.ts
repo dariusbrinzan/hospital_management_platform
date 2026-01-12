@@ -64,11 +64,35 @@ export const formatDateTime = (dateString: Date | string, timeZone: string = Int
     timeOptions
   );
 
+  // Calculate relative time
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  let relativeTime: string | null = null;
+  
+  if (diffInSeconds < 60) {
+    relativeTime = "acum";
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60);
+    relativeTime = `acum ${minutes} ${minutes === 1 ? "minut" : "minute"}`;
+  } else if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600);
+    relativeTime = `acum ${hours} ${hours === 1 ? "oră" : "ore"}`;
+  } else if (diffInSeconds < 604800) {
+    const days = Math.floor(diffInSeconds / 86400);
+    relativeTime = `acum ${days} ${days === 1 ? "zi" : "zile"}`;
+  } else if (diffInSeconds < 2592000) {
+    const weeks = Math.floor(diffInSeconds / 604800);
+    relativeTime = `acum ${weeks} ${weeks === 1 ? "săptămână" : "săptămâni"}`;
+  }
+
   return {
     dateTime: formattedDateTime,
     dateDay: formattedDateDay,
     dateOnly: formattedDate,
     timeOnly: formattedTime,
+    relativeTime,
   };
 };
 

@@ -6,6 +6,7 @@ import { Appointment } from "@/types/appwrite.types";
 
 import { appointmentHelpers } from "../db-helpers";
 import { formatDateTime, parseStringify } from "../utils";
+import { createNotification } from "./notification.actions";
 
 // CREATE APPOINTMENT
 export const createAppointment = async (
@@ -117,6 +118,25 @@ export const updateAppointment = async ({
 
     await sendSMSNotification(userId, smsMessage);
 
+    // Creează notificare pentru pacient
+    if (type === "schedule") {
+      await createNotification({
+        userId,
+        type: "appointment_confirmed",
+        title: "Programare confirmată",
+        message: `Programarea dvs. pentru ${formatDateTime(appointment.schedule!, timeZone).dateTime} cu Dr. ${appointment.primaryPhysician} a fost confirmată.`,
+        appointmentId: appointmentId,
+      });
+    } else if (type === "cancel") {
+      await createNotification({
+        userId,
+        type: "appointment_cancelled",
+        title: "Programare anulată",
+        message: `Programarea dvs. pentru ${formatDateTime(appointment.schedule!, timeZone).dateTime} cu Dr. ${appointment.primaryPhysician} a fost anulată.${appointment.cancellationReason ? ` Motiv: ${appointment.cancellationReason}` : ""}`,
+        appointmentId: appointmentId,
+      });
+    }
+
     revalidatePath("/admin");
     return parseStringify(updatedAppointment);
   } catch (error) {
@@ -180,7 +200,17 @@ export const updateAnalysisResults = async (
       throw new Error("Programarea nu a fost găsită");
     }
 
+    // Creează notificare pentru pacient că rezultatele analizelor sunt gata
+    await createNotification({
+      userId: updatedAppointment.userId,
+      type: "analysis_results_ready",
+      title: "Rezultate analize disponibile",
+      message: `Rezultatele analizelor pentru programarea din ${formatDateTime(updatedAppointment.schedule).dateTime} cu Dr. ${updatedAppointment.primaryPhysician} sunt disponibile.`,
+      appointmentId: appointmentId,
+    });
+
     revalidatePath("/admin");
+    revalidatePath(`/patients/${updatedAppointment.userId}/dashboard`);
     return parseStringify(updatedAppointment);
   } catch (error) {
     console.error("A apărut o eroare la actualizarea rezultatelor analizelor:", error);

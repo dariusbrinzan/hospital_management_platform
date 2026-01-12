@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Doctors } from "@/constants";
 import { LogoutButton } from "@/components/LogoutButton";
 import { LogoLink } from "@/components/LogoLink";
+import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 
 const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
   // Verifică autentificarea
@@ -41,6 +42,7 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
             >
               Programare nouă
             </Link>
+            <NotificationsDropdown userId={userId} />
             <div className="flex items-center gap-2">
               <Image
                 src="/assets/icons/user.svg"

@@ -551,3 +551,95 @@ export const appointmentHelpers = {
     return appointmentHelpers.getById(id);
   },
 };
+
+// Notifications helpers
+export const notificationHelpers = {
+  create: (notification: {
+    userId: string;
+    type: string;
+    title: string;
+    message: string;
+    appointmentId?: string | null;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    
+    db.prepare(`
+      INSERT INTO notifications (id, userId, type, title, message, appointmentId, isRead, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+    `).run(
+      id,
+      notification.userId,
+      notification.type,
+      notification.title,
+      notification.message,
+      notification.appointmentId || null,
+      now
+    );
+
+    return {
+      $id: id,
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      appointmentId: notification.appointmentId || null,
+      isRead: false,
+      createdAt: parseDate(now),
+    };
+  },
+
+  getByUserId: (userId: string, limit?: number) => {
+    const query = limit
+      ? `SELECT * FROM notifications WHERE userId = ? ORDER BY createdAt DESC LIMIT ?`
+      : `SELECT * FROM notifications WHERE userId = ? ORDER BY createdAt DESC`;
+    
+    const notifications = (limit
+      ? db.prepare(query).all(userId, limit)
+      : db.prepare(query).all(userId)) as any[];
+
+    return notifications.map((notif) => ({
+      $id: notif.id,
+      userId: notif.userId,
+      type: notif.type,
+      title: notif.title,
+      message: notif.message,
+      appointmentId: notif.appointmentId,
+      isRead: notif.isRead === 1,
+      createdAt: parseDate(notif.createdAt),
+    }));
+  },
+
+  getUnreadCount: (userId: string) => {
+    const result = db.prepare(`
+      SELECT COUNT(*) as count FROM notifications WHERE userId = ? AND isRead = 0
+    `).get(userId) as { count: number };
+    
+    return result.count;
+  },
+
+  markAsRead: (notificationId: string) => {
+    db.prepare(`UPDATE notifications SET isRead = 1 WHERE id = ?`).run(notificationId);
+    return notificationHelpers.getById(notificationId);
+  },
+
+  markAllAsRead: (userId: string) => {
+    db.prepare(`UPDATE notifications SET isRead = 1 WHERE userId = ? AND isRead = 0`).run(userId);
+  },
+
+  getById: (id: string) => {
+    const notif = db.prepare("SELECT * FROM notifications WHERE id = ?").get(id) as any;
+    if (!notif) return null;
+    
+    return {
+      $id: notif.id,
+      userId: notif.userId,
+      type: notif.type,
+      title: notif.title,
+      message: notif.message,
+      appointmentId: notif.appointmentId,
+      isRead: notif.isRead === 1,
+      createdAt: parseDate(notif.createdAt),
+    };
+  },
+};
