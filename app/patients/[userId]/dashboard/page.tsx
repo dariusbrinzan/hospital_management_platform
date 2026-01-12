@@ -223,6 +223,11 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                                 <p className="text-16-semibold text-dark-700">
                                   {appointment.primaryPhysician}
                                 </p>
+                                {doctor?.specialty && (
+                                  <p className="text-14-medium text-green-500">
+                                    {doctor.specialty}
+                                  </p>
+                                )}
                                 <p className="text-14-regular text-dark-500">
                                   {formatDateTime(appointment.schedule).dateTime}
                                 </p>
@@ -287,6 +292,11 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                                 <p className="text-16-semibold text-dark-700">
                                   {appointment.primaryPhysician}
                                 </p>
+                                {doctor?.specialty && (
+                                  <p className="text-14-medium text-green-500">
+                                    {doctor.specialty}
+                                  </p>
+                                )}
                                 <p className="text-14-regular text-dark-500">
                                   {formatDateTime(appointment.schedule).dateTime}
                                 </p>

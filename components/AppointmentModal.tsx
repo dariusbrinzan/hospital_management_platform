@@ -22,6 +22,8 @@ export const AppointmentModal = ({
   userId,
   appointment,
   type,
+  title,
+  description,
 }: {
   patientId: string;
   userId: string;

@@ -22,9 +22,16 @@ export const createAppointment = async (
 };
 
 // GET RECENT APPOINTMENTS
-export const getRecentAppointmentList = async () => {
+export const getRecentAppointmentList = async (doctorName?: string) => {
   try {
-    const appointments = appointmentHelpers.getAll();
+    let appointments = appointmentHelpers.getAll();
+
+    // Filtrează după doctor dacă este specificat
+    if (doctorName && doctorName !== "all") {
+      appointments = appointments.filter(
+        (apt: any) => apt.primaryPhysician === doctorName
+      );
+    }
 
     const initialCounts = {
       scheduledCount: 0,

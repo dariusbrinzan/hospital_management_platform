@@ -1,24 +1,28 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { logoutPatient } from "@/lib/actions/auth.actions";
 import { Button } from "./ui/button";
 
 export const LogoutButton = () => {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogout = async () => {
     setIsLoading(true);
     try {
-      await logoutPatient();
-      router.push("/");
-      router.refresh();
+      const result = await logoutPatient();
+      if (result.success) {
+        // Folosim window.location pentru a forța reîncărcarea completă
+        window.location.href = "/";
+      } else {
+        console.error("Logout failed:", result.error);
+        alert("A apărut o eroare la deconectare. Vă rugăm să încercați din nou.");
+        setIsLoading(false);
+      }
     } catch (error) {
       console.error("Logout error:", error);
-    } finally {
+      alert("A apărut o eroare la deconectare. Vă rugăm să încercați din nou.");
       setIsLoading(false);
     }
   };
