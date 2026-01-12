@@ -55,3 +55,22 @@ declare type UpdateAppointmentParams = {
   appointment: Appointment;
   type: string;
 };
+
+declare interface DoctorEducation {
+  degree: string;
+  institution: string;
+  country: "România" | "Străinătate";
+  year: number;
+}
+
+declare interface Doctor {
+  image: string;
+  name: string;
+  specialty: string;
+  age?: number;
+  education?: DoctorEducation[];
+  experience?: number; // în ani
+  additionalSpecializations?: string[];
+  languages?: string[];
+  certifications?: string[];
+}

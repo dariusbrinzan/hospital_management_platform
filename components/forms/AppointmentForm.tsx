@@ -25,6 +25,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Checkbox } from "../ui/checkbox";
 import { SlotSelector } from "../SlotSelector";
 import { isValidAppointmentDate } from "@/lib/utils";
+import { DoctorInfoCard } from "../DoctorInfoCard";
 
 export const AppointmentForm = ({
   userId,
@@ -421,28 +422,38 @@ export const AppointmentForm = ({
 
                 {/* Afișează selectorul de doctori pentru toate specializările, inclusiv Analize medicale */}
                 {selectedSpecialty && filteredDoctors.length > 0 && (
-                  <CustomFormField
-                    fieldType={FormFieldType.SELECT}
-                    control={form.control}
-                    name="primaryPhysician"
-                    label="Doctor"
-                    placeholder="Selectează un doctor"
-                  >
-                    {filteredDoctors.map((doctor, i) => (
-                      <SelectItem key={doctor.name + i} value={doctor.name}>
-                        <div className="flex cursor-pointer items-center gap-2">
-                          <Image
-                            src={doctor.image}
-                            width={32}
-                            height={32}
-                            alt="doctor"
-                            className="rounded-full border border-dark-300"
-                          />
-                          <p>{doctor.name}</p>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </CustomFormField>
+                  <>
+                    <CustomFormField
+                      fieldType={FormFieldType.SELECT}
+                      control={form.control}
+                      name="primaryPhysician"
+                      label="Doctor"
+                      placeholder="Selectează un doctor"
+                    >
+                      {filteredDoctors.map((doctor, i) => (
+                        <SelectItem key={doctor.name + i} value={doctor.name}>
+                          <div className="flex cursor-pointer items-center gap-2">
+                            <Image
+                              src={doctor.image}
+                              width={32}
+                              height={32}
+                              alt="doctor"
+                              className="rounded-full border border-dark-300"
+                            />
+                            <p>{doctor.name}</p>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </CustomFormField>
+                    
+                    {/* Afișează metadatele doctorului selectat */}
+                    {watchedDoctor && (() => {
+                      const selectedDoctor = filteredDoctors.find((d) => d.name === watchedDoctor);
+                      return selectedDoctor ? (
+                        <DoctorInfoCard doctor={selectedDoctor} />
+                      ) : null;
+                    })()}
+                  </>
                 )}
                 {selectedSpecialty && filteredDoctors.length === 0 && (
                   <p className="text-14-regular text-dark-500">

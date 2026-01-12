@@ -7,9 +7,12 @@ import { DataTable } from "@/components/table/DataTable";
 import { getRecentAppointmentList } from "@/lib/actions/appointment.actions";
 import { Doctors } from "@/constants";
 import { DoctorFilter } from "@/components/DoctorFilter";
+import { DoctorDetails } from "@/components/DoctorDetails";
 
 const AdminPage = async ({ searchParams }: SearchParamProps) => {
   const selectedDoctor = (searchParams?.doctor as string) || "all";
+  const selectedSpecialty = (searchParams?.specialty as string) || "";
+  
   const appointments = await getRecentAppointmentList(
     selectedDoctor === "all" ? undefined : selectedDoctor
   );
@@ -17,6 +20,11 @@ const AdminPage = async ({ searchParams }: SearchParamProps) => {
   const doctorData = selectedDoctor !== "all" 
     ? Doctors.find((d) => d.name === selectedDoctor)
     : null;
+
+  // Filtrează doctorii după specializarea selectată
+  const doctorsInSpecialty = selectedSpecialty && selectedSpecialty !== "all"
+    ? Doctors.filter((d) => d.specialty === selectedSpecialty)
+    : [];
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col space-y-14">
@@ -34,37 +42,44 @@ const AdminPage = async ({ searchParams }: SearchParamProps) => {
         <div className="flex items-center gap-4">
           <DoctorFilter doctors={Doctors} selectedDoctor={selectedDoctor} />
           <p className="text-16-semibold">
-            {selectedDoctor === "all" ? "Panou Administrator" : "Dashboard Doctor"}
+            {selectedDoctor === "all" 
+              ? selectedSpecialty && selectedSpecialty !== "all"
+                ? `Specializare: ${selectedSpecialty}`
+                : "Panou Administrator"
+              : "Dashboard Doctor"}
           </p>
         </div>
       </header>
 
       <main className="admin-main">
         {selectedDoctor === "all" ? (
-          <section className="w-full space-y-4">
-            <h1 className="header">Bun venit 👋</h1>
-            <p className="text-dark-600">
-              Începeți ziua gestionând programările noi
-            </p>
-          </section>
-        ) : doctorData ? (
-          <section className="w-full space-y-4">
-            <div className="flex items-center gap-4">
-              <Image
-                src={doctorData.image}
-                alt={doctorData.name}
-                width={80}
-                height={80}
-                className="size-20 rounded-full border-2 border-green-500"
-              />
-              <div>
-                <h1 className="header">{doctorData.name}</h1>
-                <p className="text-16-medium text-green-500">{doctorData.specialty}</p>
-                <p className="text-dark-600 mt-2">
-                  Dashboard personal - Toate programările tale
+          <>
+            {selectedSpecialty && selectedSpecialty !== "all" ? (
+              <section className="w-full space-y-6">
+                <div>
+                  <h1 className="header">Doctori - {selectedSpecialty}</h1>
+                  <p className="text-dark-600">
+                    {doctorsInSpecialty.length} doctor{doctorsInSpecialty.length !== 1 ? "i" : ""} disponibil{doctorsInSpecialty.length !== 1 ? "i" : ""}
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {doctorsInSpecialty.map((doctor) => (
+                    <DoctorDetails key={doctor.name} doctor={doctor} />
+                  ))}
+                </div>
+              </section>
+            ) : (
+              <section className="w-full space-y-4">
+                <h1 className="header">Bun venit 👋</h1>
+                <p className="text-dark-600">
+                  Începeți ziua gestionând programările noi. Selectați o specializare pentru a vedea doctorii disponibili.
                 </p>
-              </div>
-            </div>
+              </section>
+            )}
+          </>
+        ) : doctorData ? (
+          <section className="w-full space-y-6">
+            <DoctorDetails doctor={doctorData} />
           </section>
         ) : null}
 
