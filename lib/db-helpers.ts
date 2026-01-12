@@ -643,3 +643,449 @@ export const notificationHelpers = {
     };
   },
 };
+
+// Emergency helpers
+export const emergencyHelpers = {
+  create: (emergencyCase: {
+    patientId: string;
+    triageLevel: "critic" | "urgent" | "normal";
+    chiefComplaint: string;
+    priority: number;
+    vitalSigns?: any;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    
+    db.prepare(`
+      INSERT INTO emergency_cases (
+        id, patientId, triageLevel, currentState, priority, chiefComplaint,
+        vitalSigns, arrivalTime, createdAt, updatedAt
+      ) VALUES (?, ?, ?, 'arrival', ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      emergencyCase.patientId,
+      emergencyCase.triageLevel,
+      emergencyCase.priority,
+      emergencyCase.chiefComplaint,
+      emergencyCase.vitalSigns ? JSON.stringify(emergencyCase.vitalSigns) : null,
+      now,
+      now,
+      now
+    );
+
+    // Creează tranziția inițială
+    emergencyHelpers.addStateTransition(id, "arrival", "arrival", "Caz creat", "System");
+
+    return emergencyHelpers.getById(id);
+  },
+
+  getAll: () => {
+    const cases = db.prepare(`
+      SELECT 
+        e.*,
+        p.id as patient_id,
+        p.name as patient_name,
+        p.email as patient_email,
+        p.phone as patient_phone,
+        p.birthDate as patient_birthDate,
+        p.gender as patient_gender
+      FROM emergency_cases e
+      JOIN patients p ON e.patientId = p.id
+      ORDER BY e.priority ASC, e.arrivalTime DESC
+    `).all() as any[];
+
+    return cases.map(c => ({
+      $id: c.id,
+      patientId: c.patientId,
+      triageLevel: c.triageLevel,
+      currentState: c.currentState,
+      assignedDoctorId: c.assignedDoctorId,
+      arrivalTime: parseDate(c.arrivalTime),
+      triageTime: c.triageTime ? parseDate(c.triageTime) : null,
+      admissionTime: c.admissionTime ? parseDate(c.admissionTime) : null,
+      dischargeTime: c.dischargeTime ? parseDate(c.dischargeTime) : null,
+      priority: c.priority,
+      chiefComplaint: c.chiefComplaint,
+      vitalSigns: c.vitalSigns ? JSON.parse(c.vitalSigns) : null,
+      consentGiven: c.consentGiven === 1,
+      carePlan: c.carePlan,
+      dischargeLetter: c.dischargeLetter,
+      skipReason: c.skipReason,
+      createdAt: parseDate(c.createdAt),
+      updatedAt: parseDate(c.updatedAt),
+      patient: {
+        $id: c.patient_id,
+        name: c.patient_name,
+        email: c.patient_email,
+        phone: c.patient_phone,
+        birthDate: parseDate(c.patient_birthDate),
+        gender: c.patient_gender,
+      },
+    }));
+  },
+
+  getById: (id: string) => {
+    const c = db.prepare(`
+      SELECT 
+        e.*,
+        p.id as patient_id,
+        p.name as patient_name,
+        p.email as patient_email,
+        p.phone as patient_phone,
+        p.birthDate as patient_birthDate,
+        p.gender as patient_gender
+      FROM emergency_cases e
+      JOIN patients p ON e.patientId = p.id
+      WHERE e.id = ?
+    `).get(id) as any;
+
+    if (!c) return null;
+
+    return {
+      $id: c.id,
+      patientId: c.patientId,
+      triageLevel: c.triageLevel,
+      currentState: c.currentState,
+      assignedDoctorId: c.assignedDoctorId,
+      arrivalTime: parseDate(c.arrivalTime),
+      triageTime: c.triageTime ? parseDate(c.triageTime) : null,
+      admissionTime: c.admissionTime ? parseDate(c.admissionTime) : null,
+      dischargeTime: c.dischargeTime ? parseDate(c.dischargeTime) : null,
+      priority: c.priority,
+      chiefComplaint: c.chiefComplaint,
+      vitalSigns: c.vitalSigns ? JSON.parse(c.vitalSigns) : null,
+      consentGiven: c.consentGiven === 1,
+      carePlan: c.carePlan,
+      dischargeLetter: c.dischargeLetter,
+      skipReason: c.skipReason,
+      createdAt: parseDate(c.createdAt),
+      updatedAt: parseDate(c.updatedAt),
+      patient: {
+        $id: c.patient_id,
+        name: c.patient_name,
+        email: c.patient_email,
+        phone: c.patient_phone,
+        birthDate: parseDate(c.patient_birthDate),
+        gender: c.patient_gender,
+      },
+    };
+  },
+
+  updateState: (id: string, newState: "arrival" | "triage" | "consent" | "admission" | "treatment" | "discharge", performedBy: string, skipReason?: string) => {
+    const now = new Date().toISOString();
+    const caseData = emergencyHelpers.getById(id);
+    if (!caseData) return null;
+
+    // Validare tranziții
+    const validTransitions: Record<string, string[]> = {
+      arrival: ["triage"],
+      triage: ["consent", "admission"],
+      consent: ["admission", "treatment"],
+      admission: ["treatment"],
+      treatment: ["discharge"],
+      discharge: [],
+    };
+
+    const allowedStates = validTransitions[caseData.currentState];
+    if (!allowedStates.includes(newState) && !skipReason) {
+      throw new Error(`Tranziție invalidă de la ${caseData.currentState} la ${newState}. Este necesar un motiv pentru skip.`);
+    }
+
+    // Actualizează starea
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    updates.push("currentState = ?");
+    values.push(newState);
+
+    if (newState === "triage") {
+      updates.push("triageTime = ?");
+      values.push(now);
+    } else if (newState === "admission") {
+      updates.push("admissionTime = ?");
+      values.push(now);
+    } else if (newState === "discharge") {
+      updates.push("dischargeTime = ?");
+      values.push(now);
+    }
+
+    if (skipReason) {
+      updates.push("skipReason = ?");
+      values.push(skipReason);
+    }
+
+    updates.push("updatedAt = ?");
+    values.push(now);
+    values.push(id);
+
+    db.prepare(`UPDATE emergency_cases SET ${updates.join(", ")} WHERE id = ?`).run(...values);
+
+    // Adaugă tranziția în istoric
+    emergencyHelpers.addStateTransition(id, caseData.currentState as "arrival" | "triage" | "consent" | "admission" | "treatment" | "discharge", newState, skipReason || "Tranziție normală", performedBy);
+
+    return emergencyHelpers.getById(id);
+  },
+
+  assignDoctor: (id: string, doctorId: string) => {
+    const now = new Date().toISOString();
+    db.prepare(`UPDATE emergency_cases SET assignedDoctorId = ?, updatedAt = ? WHERE id = ?`).run(doctorId, now, id);
+    return emergencyHelpers.getById(id);
+  },
+
+  addStateTransition: (emergencyCaseId: string, fromState: "arrival" | "triage" | "consent" | "admission" | "treatment" | "discharge", toState: "arrival" | "triage" | "consent" | "admission" | "treatment" | "discharge", reason: string, performedBy: string, metadata?: any) => {
+    const id = generateId();
+    db.prepare(`
+      INSERT INTO emergency_state_transitions (
+        id, emergencyCaseId, fromState, toState, transitionReason, performedBy, timestamp, metadata
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      emergencyCaseId,
+      fromState,
+      toState,
+      reason,
+      performedBy,
+      new Date().toISOString(),
+      metadata ? JSON.stringify(metadata) : null
+    );
+    return { $id: id, emergencyCaseId, fromState, toState, transitionReason: reason, performedBy, timestamp: new Date() };
+  },
+
+  updateConsent: (id: string, consentGiven: boolean) => {
+    const now = new Date().toISOString();
+    db.prepare(`UPDATE emergency_cases SET consentGiven = ?, updatedAt = ? WHERE id = ?`).run(consentGiven ? 1 : 0, now, id);
+    return emergencyHelpers.getById(id);
+  },
+
+  updateCarePlan: (id: string, carePlan: string) => {
+    const now = new Date().toISOString();
+    db.prepare(`UPDATE emergency_cases SET carePlan = ?, updatedAt = ? WHERE id = ?`).run(carePlan, now, id);
+    return emergencyHelpers.getById(id);
+  },
+
+  updateDischargeLetter: (id: string, dischargeLetter: string) => {
+    const now = new Date().toISOString();
+    db.prepare(`UPDATE emergency_cases SET dischargeLetter = ?, updatedAt = ? WHERE id = ?`).run(dischargeLetter, now, id);
+    return emergencyHelpers.getById(id);
+  },
+};
+
+// Doctors on duty helpers
+export const doctorsOnDutyHelpers = {
+  create: (duty: {
+    doctorName: string;
+    weekStartDate: Date | string;
+    weekEndDate: Date | string;
+    specialty?: string;
+    isAvailable?: boolean;
+    maxConcurrentEmergencies?: number;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    
+    db.prepare(`
+      INSERT INTO doctors_on_duty (
+        id, doctorName, weekStartDate, weekEndDate, specialty,
+        isAvailable, maxConcurrentEmergencies, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      duty.doctorName,
+      formatDate(duty.weekStartDate),
+      formatDate(duty.weekEndDate),
+      duty.specialty || null,
+      duty.isAvailable !== false ? 1 : 0,
+      duty.maxConcurrentEmergencies || 3,
+      now,
+      now
+    );
+
+    return doctorsOnDutyHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const d = db.prepare("SELECT * FROM doctors_on_duty WHERE id = ?").get(id) as any;
+    if (!d) return null;
+    return {
+      $id: d.id,
+      doctorName: d.doctorName,
+      weekStartDate: parseDate(d.weekStartDate),
+      weekEndDate: parseDate(d.weekEndDate),
+      specialty: d.specialty,
+      isAvailable: d.isAvailable === 1,
+      maxConcurrentEmergencies: d.maxConcurrentEmergencies,
+      createdAt: parseDate(d.createdAt),
+      updatedAt: parseDate(d.updatedAt),
+    };
+  },
+
+  getAvailableDoctors: () => {
+    const now = new Date().toISOString();
+    const doctors = db.prepare(`
+      SELECT d.*, 
+        COUNT(e.id) as currentEmergencies
+      FROM doctors_on_duty d
+      LEFT JOIN emergency_cases e ON d.doctorName = e.assignedDoctorId 
+        AND e.currentState NOT IN ('discharge')
+      WHERE d.isAvailable = 1
+        AND d.weekStartDate <= ?
+        AND d.weekEndDate >= ?
+      GROUP BY d.id
+      HAVING currentEmergencies < d.maxConcurrentEmergencies
+      ORDER BY currentEmergencies ASC
+    `).all(now, now) as any[];
+
+    return doctors.map(d => ({
+      $id: d.id,
+      doctorName: d.doctorName,
+      weekStartDate: parseDate(d.weekStartDate),
+      weekEndDate: parseDate(d.weekEndDate),
+      specialty: d.specialty,
+      isAvailable: d.isAvailable === 1,
+      maxConcurrentEmergencies: d.maxConcurrentEmergencies,
+      currentEmergencies: d.currentEmergencies || 0,
+      createdAt: parseDate(d.createdAt),
+      updatedAt: parseDate(d.updatedAt),
+    }));
+  },
+
+  // Calculează workload-ul pentru fiecare medic
+  calculateWorkload: (doctorName: string) => {
+    const now = new Date().toISOString();
+    
+    // Număr urgente active
+    const activeEmergencies = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM emergency_cases
+      WHERE assignedDoctorId = ? AND currentState NOT IN ('discharge')
+    `).get(doctorName) as { count: number };
+
+    // Număr programări viitoare (scheduled)
+    const upcomingAppointments = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM appointments
+      WHERE primaryPhysician = ? 
+        AND status = 'scheduled'
+        AND schedule >= ?
+    `).get(doctorName, now) as { count: number };
+
+    // Număr programări în așteptare (pending)
+    const pendingAppointments = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM appointments
+      WHERE primaryPhysician = ? 
+        AND status = 'pending'
+    `).get(doctorName) as { count: number };
+
+    // Urgente critice/urgente (prioritate mare)
+    const highPriorityEmergencies = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM emergency_cases
+      WHERE assignedDoctorId = ? 
+        AND currentState NOT IN ('discharge')
+        AND priority >= 8
+    `).get(doctorName) as { count: number };
+
+    const emergencyCount = activeEmergencies?.count || 0;
+    const scheduledCount = upcomingAppointments?.count || 0;
+    const pendingCount = pendingAppointments?.count || 0;
+    const highPriorityCount = highPriorityEmergencies?.count || 0;
+
+    // Calculăm workload score (urgente au prioritate mai mare)
+    // Urgente active: 3 puncte fiecare
+    // Urgente critice: +2 puncte bonus
+    // Programări scheduled: 1 punct fiecare
+    // Programări pending: 0.5 puncte fiecare
+    const workloadScore = 
+      (emergencyCount * 3) + 
+      (highPriorityCount * 2) + 
+      (scheduledCount * 1) + 
+      (pendingCount * 0.5);
+
+    return {
+      doctorName,
+      emergencyCount,
+      scheduledCount,
+      pendingCount,
+      highPriorityCount,
+      workloadScore,
+      totalLoad: emergencyCount + scheduledCount + pendingCount,
+    };
+  },
+
+  // Obține workload-ul pentru toți medicii
+  getAllWorkloads: () => {
+    const { Doctors } = require("@/constants");
+    return Doctors.map((doctor: { name: string }) => 
+      doctorsOnDutyHelpers.calculateWorkload(doctor.name)
+    ).sort((a: { workloadScore: number }, b: { workloadScore: number }) => a.workloadScore - b.workloadScore);
+  },
+
+  // Generează rotație automată pentru săptămâna următoare
+  generateAutomaticRotation: (options?: {
+    doctorsPerWeek?: number;
+    minDoctorsPerWeek?: number;
+    maxDoctorsPerWeek?: number;
+  }) => {
+    const { Doctors } = require("@/constants");
+    const { doctorsPerWeek = 3, minDoctorsPerWeek = 2, maxDoctorsPerWeek = 5 } = options || {};
+
+    // Calculează workload-ul pentru toți medicii
+    const workloads = doctorsOnDutyHelpers.getAllWorkloads();
+    
+    // Sortează după workload (cel mai puțin ocupat primul)
+    const sortedDoctors = workloads.sort((a: { workloadScore: number }, b: { workloadScore: number }) => a.workloadScore - b.workloadScore);
+
+    // Calculează data de început a săptămânii următoare (luni)
+    const today = new Date();
+    const daysUntilMonday = (8 - today.getDay()) % 7 || 7;
+    const nextMonday = new Date(today);
+    nextMonday.setDate(today.getDate() + daysUntilMonday);
+    nextMonday.setHours(0, 0, 0, 0);
+
+    // Calculează data de sfârșit a săptămânii (duminică)
+    const nextSunday = new Date(nextMonday);
+    nextSunday.setDate(nextMonday.getDate() + 6);
+    nextSunday.setHours(23, 59, 59, 999);
+
+    // Verifică dacă există deja o rotație pentru această săptămână
+    const existingRotation = db.prepare(`
+      SELECT * FROM doctors_on_duty
+      WHERE weekStartDate = ? AND weekEndDate = ?
+    `).all(
+      nextMonday.toISOString(),
+      nextSunday.toISOString()
+    ) as any[];
+
+    if (existingRotation.length > 0) {
+      // Șterge rotația existentă
+      db.prepare(`
+        DELETE FROM doctors_on_duty
+        WHERE weekStartDate = ? AND weekEndDate = ?
+      `).run(nextMonday.toISOString(), nextSunday.toISOString());
+    }
+
+    // Selectează medicii cu cel mai mic workload
+    const selectedDoctors = sortedDoctors.slice(0, Math.min(doctorsPerWeek, sortedDoctors.length));
+
+    // Creează înregistrări pentru fiecare medic selectat
+    const rotation = selectedDoctors.map((workload: { doctorName: string }) => {
+      const doctor = Doctors.find((d: { name: string; specialty?: string }) => d.name === workload.doctorName);
+      return doctorsOnDutyHelpers.create({
+        doctorName: workload.doctorName,
+        weekStartDate: nextMonday,
+        weekEndDate: nextSunday,
+        specialty: doctor?.specialty,
+        isAvailable: true,
+        maxConcurrentEmergencies: 3,
+      });
+    });
+
+    return {
+      weekStart: nextMonday,
+      weekEnd: nextSunday,
+      doctors: rotation,
+      totalDoctors: rotation.length,
+    };
+  },
+};

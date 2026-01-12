@@ -74,3 +74,67 @@ declare interface Doctor {
   languages?: string[];
   certifications?: string[];
 }
+
+declare type EmergencyState = "arrival" | "triage" | "consent" | "admission" | "treatment" | "discharge";
+declare type TriageLevel = "critic" | "urgent" | "normal";
+
+declare interface EmergencyCase {
+  $id: string;
+  patientId: string;
+  triageLevel: TriageLevel;
+  currentState: EmergencyState;
+  assignedDoctorId?: string | null;
+  arrivalTime: Date | string;
+  triageTime?: Date | string | null;
+  admissionTime?: Date | string | null;
+  dischargeTime?: Date | string | null;
+  priority: number; // 1-5, unde 1 = cel mai critic
+  chiefComplaint: string;
+  vitalSigns?: {
+    bloodPressure?: string;
+    pulse?: number;
+    temperature?: number;
+    oxygenSaturation?: number;
+    respiratoryRate?: number;
+  } | null;
+  consentGiven: boolean;
+  carePlan?: string | null;
+  dischargeLetter?: string | null;
+  skipReason?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  patient?: Patient;
+}
+
+declare interface DoctorOnDuty {
+  $id: string;
+  doctorName: string;
+  weekStartDate: Date | string;
+  weekEndDate: Date | string;
+  specialty?: string | null;
+  isAvailable: boolean;
+  maxConcurrentEmergencies: number;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+declare interface EmergencyStateTransition {
+  $id: string;
+  emergencyCaseId: string;
+  fromState: EmergencyState;
+  toState: EmergencyState;
+  transitionReason?: string | null;
+  performedBy: string;
+  timestamp: Date | string;
+  metadata?: any;
+}
+
+declare interface EmergencyDocument {
+  $id: string;
+  emergencyCaseId: string;
+  documentType: "consent" | "care_plan" | "discharge_letter" | "evaluation";
+  content: string;
+  signedBy?: string | null;
+  signedAt?: Date | string | null;
+  createdAt: Date | string;
+}

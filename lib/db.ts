@@ -152,6 +152,71 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_notifications_userId ON notifications(userId);
   CREATE INDEX IF NOT EXISTS idx_notifications_isRead ON notifications(isRead);
   CREATE INDEX IF NOT EXISTS idx_notifications_createdAt ON notifications(createdAt);
+
+  -- Tabele pentru sistemul de Primiri Urgente
+  CREATE TABLE IF NOT EXISTS emergency_cases (
+    id TEXT PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    triageLevel TEXT NOT NULL DEFAULT 'normal',
+    currentState TEXT NOT NULL DEFAULT 'arrival',
+    assignedDoctorId TEXT,
+    arrivalTime TEXT NOT NULL DEFAULT (datetime('now')),
+    triageTime TEXT,
+    admissionTime TEXT,
+    dischargeTime TEXT,
+    priority INTEGER NOT NULL DEFAULT 3,
+    chiefComplaint TEXT NOT NULL,
+    vitalSigns TEXT,
+    consentGiven INTEGER NOT NULL DEFAULT 0,
+    carePlan TEXT,
+    dischargeLetter TEXT,
+    skipReason TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS doctors_on_duty (
+    id TEXT PRIMARY KEY,
+    doctorName TEXT NOT NULL,
+    weekStartDate TEXT NOT NULL,
+    weekEndDate TEXT NOT NULL,
+    specialty TEXT,
+    isAvailable INTEGER NOT NULL DEFAULT 1,
+    maxConcurrentEmergencies INTEGER NOT NULL DEFAULT 3,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS emergency_state_transitions (
+    id TEXT PRIMARY KEY,
+    emergencyCaseId TEXT NOT NULL,
+    fromState TEXT NOT NULL,
+    toState TEXT NOT NULL,
+    transitionReason TEXT,
+    performedBy TEXT NOT NULL,
+    timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+    metadata TEXT,
+    FOREIGN KEY (emergencyCaseId) REFERENCES emergency_cases(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS emergency_documents (
+    id TEXT PRIMARY KEY,
+    emergencyCaseId TEXT NOT NULL,
+    documentType TEXT NOT NULL,
+    content TEXT NOT NULL,
+    signedBy TEXT,
+    signedAt TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (emergencyCaseId) REFERENCES emergency_cases(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_emergency_cases_patientId ON emergency_cases(patientId);
+  CREATE INDEX IF NOT EXISTS idx_emergency_cases_currentState ON emergency_cases(currentState);
+  CREATE INDEX IF NOT EXISTS idx_emergency_cases_assignedDoctorId ON emergency_cases(assignedDoctorId);
+  CREATE INDEX IF NOT EXISTS idx_emergency_cases_priority ON emergency_cases(priority);
+  CREATE INDEX IF NOT EXISTS idx_emergency_state_transitions_caseId ON emergency_state_transitions(emergencyCaseId);
+  CREATE INDEX IF NOT EXISTS idx_emergency_documents_caseId ON emergency_documents(emergencyCaseId);
 `);
 
 export default db;

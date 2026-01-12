@@ -41,6 +41,12 @@ const AdminPage = async ({ searchParams }: SearchParamProps) => {
 
         <div className="flex items-center gap-4">
           <DoctorFilter doctors={Doctors} selectedDoctor={selectedDoctor} />
+          <Link
+            href="/admin/emergency"
+            className="shad-primary-btn px-4 py-2 rounded-md text-14-medium hover:bg-green-600 transition-colors"
+          >
+            🚨 Primiri Urgente
+          </Link>
           <p className="text-16-semibold">
             {selectedDoctor === "all" 
               ? selectedSpecialty && selectedSpecialty !== "all"
