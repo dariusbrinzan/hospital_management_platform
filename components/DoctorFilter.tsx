@@ -104,13 +104,17 @@ export const DoctorFilter = ({
           <SelectValue placeholder="Selectează un doctor">
             <div className="flex items-center gap-2">
               {selectedDoctor !== "all" && selectedDoctorData && (
-                <Image
-                  src={selectedDoctorData.image}
-                  alt={selectedDoctorData.name}
-                  width={24}
-                  height={24}
-                  className="size-6 rounded-full"
-                />
+                <div className="relative flex-shrink-0">
+                  <div className="size-6 overflow-hidden rounded-full">
+                    <Image
+                      src={selectedDoctorData.image}
+                      alt={selectedDoctorData.name}
+                      width={24}
+                      height={24}
+                      className="h-full w-full object-cover object-center"
+                    />
+                  </div>
+                </div>
               )}
               <span>
                 {selectedDoctor === "all"
@@ -125,13 +129,17 @@ export const DoctorFilter = ({
           {filteredDoctors.map((doctor) => (
             <SelectItem key={doctor.name} value={doctor.name}>
               <div className="flex items-center gap-2">
-                <Image
-                  src={doctor.image}
-                  alt={doctor.name}
-                  width={24}
-                  height={24}
-                  className="size-6 rounded-full"
-                />
+                <div className="relative flex-shrink-0">
+                  <div className="size-6 overflow-hidden rounded-full">
+                    <Image
+                      src={doctor.image}
+                      alt={doctor.name}
+                      width={24}
+                      height={24}
+                      className="h-full w-full object-cover object-center"
+                    />
+                  </div>
+                </div>
                 <span>{doctor.name}</span>
               </div>
             </SelectItem>

@@ -249,13 +249,17 @@ const RegisterForm = ({ user }: { user: User | null }) => {
             {Doctors.map((doctor, i) => (
               <SelectItem key={doctor.name + i} value={doctor.name}>
                 <div className="flex cursor-pointer items-center gap-2">
-                  <Image
-                    src={doctor.image}
-                    width={32}
-                    height={32}
-                    alt="doctor"
-                    className="rounded-full border border-dark-300"
-                  />
+                  <div className="relative flex-shrink-0">
+                    <div className="size-8 overflow-hidden rounded-full border border-dark-300">
+                      <Image
+                        src={doctor.image}
+                        width={32}
+                        height={32}
+                        alt="doctor"
+                        className="h-full w-full object-cover object-center"
+                      />
+                    </div>
+                  </div>
                   <p>{doctor.name}</p>
                 </div>
               </SelectItem>

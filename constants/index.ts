@@ -331,7 +331,7 @@ export const AnalysisPackages: AnalysisPackage[] = [
 
 export const Doctors: Doctor[] = [
   {
-    image: "/assets/images/dr-green.png",
+    image: "/assets/images/b_48.png",
     name: "Dr. Ion Popescu",
     specialty: "Cardiologie",
     age: 48,
@@ -346,7 +346,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Cardiologie", "Certificat în Cardiologie Intervențională"],
   },
   {
-    image: "/assets/images/dr-cameron.png",
+    image: "/assets/images/f_43.png",
     name: "Dr. Maria Ionescu",
     specialty: "Dermatologie",
     age: 42,
@@ -361,7 +361,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Dermatologie", "Certificat în Dermatologie Estetică"],
   },
   {
-    image: "/assets/images/dr-livingston.png",
+    image: "/assets/images/b_42.png",
     name: "Dr. Alexandru Georgescu",
     specialty: "Endocrinologie",
     age: 45,
@@ -376,7 +376,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Endocrinologie", "Certificat în Diabetologie"],
   },
   {
-    image: "/assets/images/dr-peter.png",
+    image: "/assets/images/f_40.png",
     name: "Dr. Elena Radu",
     specialty: "Gastroenterologie",
     age: 40,
@@ -391,7 +391,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Gastroenterologie", "Certificat în Endoscopie Digestivă"],
   },
   {
-    image: "/assets/images/dr-powell.png",
+    image: "/assets/images/b_50.png",
     name: "Dr. Andrei Stanciu",
     specialty: "Neurologie",
     age: 50,
@@ -406,7 +406,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Neurologie", "Certificat în Neurologie Vasculară"],
   },
   {
-    image: "/assets/images/dr-remirez.png",
+    image: "/assets/images/f_38.png",
     name: "Dr. Cristina Moldovan",
     specialty: "Oftalmologie",
     age: 38,
@@ -421,7 +421,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Oftalmologie", "Certificat în Chirurgie Refractivă"],
   },
   {
-    image: "/assets/images/dr-lee.png",
+    image: "/assets/images/b_56.png",
     name: "Dr. Florin Dumitrescu",
     specialty: "Ortopedie",
     age: 46,
@@ -436,7 +436,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Ortopedie", "Certificat în Chirurgie Artroscopică"],
   },
   {
-    image: "/assets/images/dr-cruz.png",
+    image: "/assets/images/f_39.png",
     name: "Dr. Ana-Maria Constantinescu",
     specialty: "Pediatrie",
     age: 39,
@@ -451,7 +451,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Pediatrie", "Certificat în Neonatologie"],
   },
   {
-    image: "/assets/images/dr-sharma.png",
+    image: "/assets/images/b_44.png",
     name: "Dr. Bogdan Nistor",
     specialty: "Psihiatrie",
     age: 44,
@@ -466,7 +466,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Psihiatrie", "Certificat în Psihiatrie a Copilului"],
   },
   {
-    image: "/assets/images/dr-green.png",
+    image: "/assets/images/f_41.png",
     name: "Dr. Ioana Petrescu",
     specialty: "Urologie",
     age: 41,
@@ -481,7 +481,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Urologie", "Certificat în Urologie Oncologică"],
   },
   {
-    image: "/assets/images/dr-cameron.png",
+    image: "/assets/images/b_52.png",
     name: "Dr. Radu Vasilescu",
     specialty: "Cardiologie",
     age: 52,
@@ -496,7 +496,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Cardiologie", "Certificat în Electrofiziologie"],
   },
   {
-    image: "/assets/images/dr-lee.png",
+    image: "/assets/images/b_43.png",
     name: "Dr. Mihai Tănase",
     specialty: "Cardiologie",
     age: 43,
@@ -511,7 +511,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Cardiologie", "Certificat în Insuficiență Cardiacă"],
   },
   {
-    image: "/assets/images/dr-livingston.png",
+    image: "/assets/images/f_37.png",
     name: "Dr. Simona Marin",
     specialty: "Dermatologie",
     age: 37,
@@ -526,7 +526,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Dermatologie", "Certificat în Dermatologie Pediatrică"],
   },
   {
-    image: "/assets/images/dr-peter.png",
+    image: "/assets/images/b_39.png",
     name: "Dr. Cătălin Olteanu",
     specialty: "Endocrinologie",
     age: 47,
@@ -541,7 +541,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Endocrinologie", "Certificat în Boli Metabolice"],
   },
   {
-    image: "/assets/images/dr-powell.png",
+    image: "/assets/images/f_36.png",
     name: "Dr. Diana Gheorghe",
     specialty: "Gastroenterologie",
     age: 36,
@@ -556,7 +556,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Gastroenterologie", "Certificat în Hepatologie"],
   },
   {
-    image: "/assets/images/dr-remirez.png",
+    image: "/assets/images/b_37.png",
     name: "Dr. Adrian Stoica",
     specialty: "Neurologie",
     age: 49,
@@ -571,7 +571,7 @@ export const Doctors: Doctor[] = [
     certifications: ["Certificat European de Neurologie", "Certificat în Scleroză Multiplă"],
   },
   {
-    image: "/assets/images/dr-sharma.png",
+    image: "/assets/images/f_35.png",
     name: "Dr. Laura Popa",
     specialty: "Analize medicale",
     age: 35,

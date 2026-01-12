@@ -10,13 +10,17 @@ export const DoctorInfoCard = ({ doctor }: DoctorInfoCardProps) => {
   return (
     <div className="rounded-lg border border-dark-200 bg-white p-6">
       <div className="flex items-start gap-4">
-        <Image
-          src={doctor.image}
-          alt={doctor.name}
-          width={80}
-          height={80}
-          className="size-20 rounded-full border-2 border-green-500"
-        />
+        <div className="relative flex-shrink-0">
+          <div className="size-20 overflow-hidden rounded-full border-2 border-green-500">
+            <Image
+              src={doctor.image}
+              alt={doctor.name}
+              width={80}
+              height={80}
+              className="h-full w-full object-cover object-center"
+            />
+          </div>
+        </div>
         <div className="flex-1 space-y-3">
           <div>
             <h3 className="text-lg font-semibold text-dark-700">{doctor.name}</h3>

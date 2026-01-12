@@ -68,6 +68,23 @@
     @apply hidden h-full object-cover md:block;
   }
 
+  .side-img-fixed {
+    @apply hidden md:block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 390px;
+    height: 100vh;
+    object-fit: cover;
+    object-position: center;
+    z-index: 0;
+    image-rendering: high-quality;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+
   .copyright {
     @apply text-14-regular justify-items-end text-center text-dark-500 xl:text-left;
   }

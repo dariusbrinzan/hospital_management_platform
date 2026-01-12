@@ -423,28 +423,63 @@ export const AppointmentForm = ({
                 {/* Afișează selectorul de doctori pentru toate specializările, inclusiv Analize medicale */}
                 {selectedSpecialty && filteredDoctors.length > 0 && (
                   <>
-                    <CustomFormField
-                      fieldType={FormFieldType.SELECT}
+                    <FormField
                       control={form.control}
                       name="primaryPhysician"
-                      label="Doctor"
-                      placeholder="Selectează un doctor"
-                    >
-                      {filteredDoctors.map((doctor, i) => (
-                        <SelectItem key={doctor.name + i} value={doctor.name}>
-                          <div className="flex cursor-pointer items-center gap-2">
-                            <Image
-                              src={doctor.image}
-                              width={32}
-                              height={32}
-                              alt="doctor"
-                              className="rounded-full border border-dark-300"
-                            />
-                            <p>{doctor.name}</p>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </CustomFormField>
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="shad-input-label">Doctor</FormLabel>
+                          <FormControl>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <SelectTrigger className="shad-select-trigger">
+                                <SelectValue placeholder="Selectează un doctor">
+                                  {field.value && (() => {
+                                    const selectedDoctor = filteredDoctors.find((d) => d.name === field.value);
+                                    return selectedDoctor ? (
+                                      <div className="flex items-center gap-2">
+                                        <div className="relative flex-shrink-0">
+                                          <div className="size-8 overflow-hidden rounded-full border border-dark-300">
+                                            <Image
+                                              src={selectedDoctor.image}
+                                              width={32}
+                                              height={32}
+                                              alt="doctor"
+                                              className="h-full w-full object-cover object-center"
+                                            />
+                                          </div>
+                                        </div>
+                                        <span>{selectedDoctor.name}</span>
+                                      </div>
+                                    ) : null;
+                                  })()}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent className="shad-select-content">
+                                {filteredDoctors.map((doctor, i) => (
+                                  <SelectItem key={doctor.name + i} value={doctor.name}>
+                                    <div className="flex cursor-pointer items-center gap-2">
+                                      <div className="relative flex-shrink-0">
+                                        <div className="size-8 overflow-hidden rounded-full border border-dark-300">
+                                          <Image
+                                            src={doctor.image}
+                                            width={32}
+                                            height={32}
+                                            alt="doctor"
+                                            className="h-full w-full object-cover object-center"
+                                          />
+                                        </div>
+                                      </div>
+                                      <p>{doctor.name}</p>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage className="shad-error" />
+                        </FormItem>
+                      )}
+                    />
                     
                     {/* Afișează metadatele doctorului selectat */}
                     {watchedDoctor && (() => {
@@ -462,28 +497,63 @@ export const AppointmentForm = ({
                 )}
               </>
             ) : (
-              <CustomFormField
-                fieldType={FormFieldType.SELECT}
+              <FormField
                 control={form.control}
                 name="primaryPhysician"
-                label="Doctor"
-                placeholder="Selectează un doctor"
-              >
-                {Doctors.map((doctor, i) => (
-                  <SelectItem key={doctor.name + i} value={doctor.name}>
-                    <div className="flex cursor-pointer items-center gap-2">
-                      <Image
-                        src={doctor.image}
-                        width={32}
-                        height={32}
-                        alt="doctor"
-                        className="rounded-full border border-dark-300"
-                      />
-                      <p>{doctor.name}</p>
-                    </div>
-                  </SelectItem>
-                ))}
-              </CustomFormField>
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="shad-input-label">Doctor</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className="shad-select-trigger">
+                          <SelectValue placeholder="Selectează un doctor">
+                            {field.value && (() => {
+                              const selectedDoctor = Doctors.find((d) => d.name === field.value);
+                              return selectedDoctor ? (
+                                <div className="flex items-center gap-2">
+                                  <div className="relative flex-shrink-0">
+                                    <div className="size-8 overflow-hidden rounded-full border border-dark-300">
+                                      <Image
+                                        src={selectedDoctor.image}
+                                        width={32}
+                                        height={32}
+                                        alt="doctor"
+                                        className="h-full w-full object-cover object-center"
+                                      />
+                                    </div>
+                                  </div>
+                                  <span>{selectedDoctor.name}</span>
+                                </div>
+                              ) : null;
+                            })()}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent className="shad-select-content">
+                          {Doctors.map((doctor, i) => (
+                            <SelectItem key={doctor.name + i} value={doctor.name}>
+                              <div className="flex cursor-pointer items-center gap-2">
+                                <div className="relative flex-shrink-0">
+                                  <div className="size-8 overflow-hidden rounded-full border border-dark-300">
+                                    <Image
+                                      src={doctor.image}
+                                      width={32}
+                                      height={32}
+                                      alt="doctor"
+                                      className="h-full w-full object-cover object-center"
+                                    />
+                                  </div>
+                                </div>
+                                <p>{doctor.name}</p>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage className="shad-error" />
+                  </FormItem>
+                )}
+              />
             )}
 
             {type === "create" ? (
