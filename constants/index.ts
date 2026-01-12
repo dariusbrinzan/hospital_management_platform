@@ -1,4 +1,4 @@
-export const GenderOptions = ["Male", "Female", "Other"];
+export const GenderOptions = ["Bărbat", "Femeie"];
 
 export const PatientFormDefaultValues = {
   firstName: "",
@@ -6,7 +6,7 @@ export const PatientFormDefaultValues = {
   email: "",
   phone: "",
   birthDate: new Date(Date.now()),
-  gender: "Male" as Gender,
+  gender: "Bărbat" as Gender,
   address: "",
   occupation: "",
   emergencyContactName: "",
@@ -18,7 +18,7 @@ export const PatientFormDefaultValues = {
   currentMedication: "",
   familyMedicalHistory: "",
   pastMedicalHistory: "",
-  identificationType: "Birth Certificate",
+  identificationType: "Card de identitate (CI)",
   identificationNumber: "",
   identificationDocument: [],
   treatmentConsent: false,
@@ -27,55 +27,75 @@ export const PatientFormDefaultValues = {
 };
 
 export const IdentificationTypes = [
-  "Birth Certificate",
-  "Driver's License",
-  "Medical Insurance Card/Policy",
-  "Military ID Card",
-  "National Identity Card",
-  "Passport",
-  "Resident Alien Card (Green Card)",
-  "Social Security Card",
-  "State ID Card",
-  "Student ID Card",
-  "Voter ID Card",
+  "Card de identitate (CI)",
+  "Pașaport",
+  "Card de sănătate",
+  "CNP (Cod Numeric Personal)",
+  "Permis de conducere",
+  "Certificat de naștere",
+  "Carte de identitate provizorie",
 ];
 
 export const Doctors = [
   {
     image: "/assets/images/dr-green.png",
-    name: "John Green",
+    name: "Dr. Ion Popescu",
   },
   {
     image: "/assets/images/dr-cameron.png",
-    name: "Leila Cameron",
+    name: "Dr. Maria Ionescu",
   },
   {
     image: "/assets/images/dr-livingston.png",
-    name: "David Livingston",
+    name: "Dr. Alexandru Georgescu",
   },
   {
     image: "/assets/images/dr-peter.png",
-    name: "Evan Peter",
+    name: "Dr. Elena Radu",
   },
   {
     image: "/assets/images/dr-powell.png",
-    name: "Jane Powell",
+    name: "Dr. Andrei Stanciu",
   },
   {
     image: "/assets/images/dr-remirez.png",
-    name: "Alex Ramirez",
+    name: "Dr. Cristina Moldovan",
   },
   {
     image: "/assets/images/dr-lee.png",
-    name: "Jasmine Lee",
+    name: "Dr. Florin Dumitrescu",
   },
   {
     image: "/assets/images/dr-cruz.png",
-    name: "Alyana Cruz",
+    name: "Dr. Ana-Maria Constantinescu",
   },
   {
     image: "/assets/images/dr-sharma.png",
-    name: "Hardik Sharma",
+    name: "Dr. Bogdan Nistor",
+  },
+  {
+    image: "/assets/images/dr-green.png",
+    name: "Dr. Ioana Petrescu",
+  },
+  {
+    image: "/assets/images/dr-cameron.png",
+    name: "Dr. Radu Vasilescu",
+  },
+  {
+    image: "/assets/images/dr-livingston.png",
+    name: "Dr. Simona Marin",
+  },
+  {
+    image: "/assets/images/dr-peter.png",
+    name: "Dr. Cătălin Olteanu",
+  },
+  {
+    image: "/assets/images/dr-powell.png",
+    name: "Dr. Diana Gheorghe",
+  },
+  {
+    image: "/assets/images/dr-remirez.png",
+    name: "Dr. Adrian Stoica",
   },
 ];
 

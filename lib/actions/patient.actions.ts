@@ -9,12 +9,19 @@ export const createUser = async (user: CreateUserParams) => {
     // Verifică dacă utilizatorul există deja
     const existingUser = userHelpers.getByEmail(user.email);
     if (existingUser) {
-      return parseStringify(existingUser);
+      const parsed = parseStringify(existingUser);
+      return parsed;
     }
 
     // Creează utilizator nou
     const newUser = userHelpers.create(user);
-    return parseStringify(newUser);
+    const parsed = parseStringify(newUser);
+    
+    if (!parsed || !parsed.$id) {
+      throw new Error("Failed to create user - missing ID");
+    }
+    
+    return parsed;
   } catch (error: any) {
     console.error("An error occurred while creating a new user:", error);
     throw error;

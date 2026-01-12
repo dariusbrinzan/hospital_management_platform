@@ -102,10 +102,10 @@ export const updateAppointment = async ({
     }
 
     // Trimite SMS (mock)
-    const smsMessage = `Greetings from CarePulse. ${
+    const smsMessage = `Salutări de la eHealth.ro. ${
       type === "schedule"
-        ? `Your appointment is confirmed for ${formatDateTime(appointment.schedule!, timeZone).dateTime} with Dr. ${appointment.primaryPhysician}`
-        : `We regret to inform that your appointment for ${formatDateTime(appointment.schedule!, timeZone).dateTime} is cancelled. Reason: ${appointment.cancellationReason}`
+        ? `Programarea dvs. este confirmată pentru ${formatDateTime(appointment.schedule!, timeZone).dateTime} cu Dr. ${appointment.primaryPhysician}`
+        : `Ne pare rău să vă informăm că programarea dvs. pentru ${formatDateTime(appointment.schedule!, timeZone).dateTime} este anulată. Motiv: ${appointment.cancellationReason}`
     }.`;
 
     await sendSMSNotification(userId, smsMessage);

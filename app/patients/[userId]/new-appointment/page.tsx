@@ -14,7 +14,7 @@ const Appointment = async ({ params: { userId } }: SearchParamProps) => {
             src="/assets/icons/logo-full.svg"
             height={1000}
             width={1000}
-            alt="logo"
+            alt="eHealth.ro logo"
             className="mb-12 h-10 w-fit"
           />
 
@@ -24,7 +24,7 @@ const Appointment = async ({ params: { userId } }: SearchParamProps) => {
             type="create"
           />
 
-          <p className="copyright mt-10 py-12">© 2024 CarePluse</p>
+          <p className="copyright mt-10 py-12">© 2026 eHealth.ro</p>
         </div>
       </section>
 

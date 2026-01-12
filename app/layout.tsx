@@ -12,11 +12,15 @@ const fontSans = FontSans({
 });
 
 export const metadata: Metadata = {
-  title: "CarePulse",
+  title: "eHealth.ro",
   description:
-    "A healthcare patient management System designed to streamline patient registration, appointment scheduling, and medical records management for healthcare providers.",
+    "Prima platformă de management spital din România. Gestionare programări, înregistrări pacienți, stock-uri medicamente și multe altele pentru furnizorii de servicii medicale.",
   icons: {
-    icon: "/assets/icons/logo-icon.svg",
+    icon: [
+      { url: "/assets/icons/logo-icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" }
+    ],
+    apple: "/assets/icons/logo-icon.svg",
   },
 };
 
@@ -29,11 +33,11 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={cn(
-          "min-h-screen bg-dark-300 font-sans antialiased",
+          "min-h-screen bg-white font-sans antialiased",
           fontSans.variable
         )}
       >
-        <ThemeProvider attribute="class" defaultTheme="dark">
+        <ThemeProvider attribute="class" defaultTheme="light">
           {children}
         </ThemeProvider>
       </body>

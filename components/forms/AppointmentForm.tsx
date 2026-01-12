@@ -119,13 +119,13 @@ export const AppointmentForm = ({
   let buttonLabel;
   switch (type) {
     case "cancel":
-      buttonLabel = "Cancel Appointment";
+      buttonLabel = "Anulează programarea";
       break;
     case "schedule":
-      buttonLabel = "Schedule Appointment";
+      buttonLabel = "Confirmă programarea";
       break;
     default:
-      buttonLabel = "Submit Apppointment";
+      buttonLabel = "Trimite cererea";
   }
 
   return (
@@ -133,9 +133,9 @@ export const AppointmentForm = ({
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 space-y-6">
         {type === "create" && (
           <section className="mb-12 space-y-4">
-            <h1 className="header">New Appointment</h1>
-            <p className="text-dark-700">
-              Request a new appointment in 10 seconds.
+            <h1 className="header">Programare nouă</h1>
+            <p className="text-dark-600">
+              Solicită o programare nouă în 10 secunde.
             </p>
           </section>
         )}
@@ -147,7 +147,7 @@ export const AppointmentForm = ({
               control={form.control}
               name="primaryPhysician"
               label="Doctor"
-              placeholder="Select a doctor"
+              placeholder="Selectează un doctor"
             >
               {Doctors.map((doctor, i) => (
                 <SelectItem key={doctor.name + i} value={doctor.name}>
@@ -157,7 +157,7 @@ export const AppointmentForm = ({
                       width={32}
                       height={32}
                       alt="doctor"
-                      className="rounded-full border border-dark-500"
+                      className="rounded-full border border-dark-300"
                     />
                     <p>{doctor.name}</p>
                   </div>
@@ -169,9 +169,9 @@ export const AppointmentForm = ({
               fieldType={FormFieldType.DATE_PICKER}
               control={form.control}
               name="schedule"
-              label="Expected appointment date"
+              label="Data programării"
               showTimeSelect
-              dateFormat="MM/dd/yyyy  -  h:mm aa"
+              dateFormat="dd/MM/yyyy  -  HH:mm"
             />
 
             <div
@@ -181,8 +181,8 @@ export const AppointmentForm = ({
                 fieldType={FormFieldType.TEXTAREA}
                 control={form.control}
                 name="reason"
-                label="Appointment reason"
-                placeholder="Annual montly check-up"
+                label="Motivul programării"
+                placeholder="Consult medical de rutină"
                 disabled={type === "schedule"}
               />
 
@@ -190,8 +190,8 @@ export const AppointmentForm = ({
                 fieldType={FormFieldType.TEXTAREA}
                 control={form.control}
                 name="note"
-                label="Comments/notes"
-                placeholder="Prefer afternoon appointments, if possible"
+                label="Comentarii/note"
+                placeholder="Prefer programări după-amiază, dacă este posibil"
                 disabled={type === "schedule"}
               />
             </div>
@@ -203,8 +203,8 @@ export const AppointmentForm = ({
             fieldType={FormFieldType.TEXTAREA}
             control={form.control}
             name="cancellationReason"
-            label="Reason for cancellation"
-            placeholder="Urgent meeting came up"
+            label="Motivul anulării"
+            placeholder="A apărut o întâlnire urgentă"
           />
         )}
 

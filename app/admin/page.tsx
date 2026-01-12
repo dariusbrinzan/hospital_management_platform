@@ -16,20 +16,20 @@ const AdminPage = async () => {
           <Image
             src="/assets/icons/logo-full.svg"
             height={32}
-            width={162}
-            alt="logo"
+            width={200}
+            alt="eHealth.ro logo"
             className="h-8 w-fit"
           />
         </Link>
 
-        <p className="text-16-semibold">Admin Dashboard</p>
+        <p className="text-16-semibold">Panou Administrator</p>
       </header>
 
       <main className="admin-main">
         <section className="w-full space-y-4">
-          <h1 className="header">Welcome 👋</h1>
-          <p className="text-dark-700">
-            Start the day with managing new appointments
+          <h1 className="header">Bun venit 👋</h1>
+          <p className="text-dark-600">
+            Începeți ziua gestionând programările noi
           </p>
         </section>
 
@@ -37,19 +37,19 @@ const AdminPage = async () => {
           <StatCard
             type="appointments"
             count={appointments.scheduledCount}
-            label="Scheduled appointments"
+            label="Programări confirmate"
             icon={"/assets/icons/appointments.svg"}
           />
           <StatCard
             type="pending"
             count={appointments.pendingCount}
-            label="Pending appointments"
+            label="Programări în așteptare"
             icon={"/assets/icons/pending.svg"}
           />
           <StatCard
             type="cancelled"
             count={appointments.cancelledCount}
-            label="Cancelled appointments"
+            label="Programări anulate"
             icon={"/assets/icons/cancelled.svg"}
           />
         </section>

@@ -30,12 +30,14 @@ export const userHelpers = {
 
   getById: (id: string) => {
     const user = db.prepare("SELECT * FROM users WHERE id = ?").get(id) as any;
-    return user || null;
+    if (!user) return null;
+    return { $id: user.id, name: user.name, email: user.email, phone: user.phone, createdAt: user.createdAt, updatedAt: user.updatedAt };
   },
 
   getByEmail: (email: string) => {
     const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email) as any;
-    return user || null;
+    if (!user) return null;
+    return { $id: user.id, name: user.name, email: user.email, phone: user.phone, createdAt: user.createdAt, updatedAt: user.updatedAt };
   },
 };
 
@@ -89,12 +91,66 @@ export const patientHelpers = {
 
   getByUserId: (userId: string) => {
     const patient = db.prepare("SELECT * FROM patients WHERE userId = ?").get(userId) as any;
-    return patient || null;
+    if (!patient) return null;
+    return {
+      $id: patient.id,
+      userId: patient.userId,
+      name: patient.name,
+      email: patient.email,
+      phone: patient.phone,
+      birthDate: patient.birthDate,
+      gender: patient.gender,
+      address: patient.address,
+      occupation: patient.occupation,
+      emergencyContactName: patient.emergencyContactName,
+      emergencyContactNumber: patient.emergencyContactNumber,
+      primaryPhysician: patient.primaryPhysician,
+      insuranceProvider: patient.insuranceProvider,
+      insurancePolicyNumber: patient.insurancePolicyNumber,
+      allergies: patient.allergies,
+      currentMedication: patient.currentMedication,
+      familyMedicalHistory: patient.familyMedicalHistory,
+      pastMedicalHistory: patient.pastMedicalHistory,
+      identificationType: patient.identificationType,
+      identificationNumber: patient.identificationNumber,
+      identificationDocumentId: patient.identificationDocumentId,
+      identificationDocumentUrl: patient.identificationDocumentUrl,
+      privacyConsent: patient.privacyConsent === 1,
+      createdAt: patient.createdAt,
+      updatedAt: patient.updatedAt,
+    };
   },
 
   getById: (id: string) => {
     const patient = db.prepare("SELECT * FROM patients WHERE id = ?").get(id) as any;
-    return patient || null;
+    if (!patient) return null;
+    return {
+      $id: patient.id,
+      userId: patient.userId,
+      name: patient.name,
+      email: patient.email,
+      phone: patient.phone,
+      birthDate: patient.birthDate,
+      gender: patient.gender,
+      address: patient.address,
+      occupation: patient.occupation,
+      emergencyContactName: patient.emergencyContactName,
+      emergencyContactNumber: patient.emergencyContactNumber,
+      primaryPhysician: patient.primaryPhysician,
+      insuranceProvider: patient.insuranceProvider,
+      insurancePolicyNumber: patient.insurancePolicyNumber,
+      allergies: patient.allergies,
+      currentMedication: patient.currentMedication,
+      familyMedicalHistory: patient.familyMedicalHistory,
+      pastMedicalHistory: patient.pastMedicalHistory,
+      identificationType: patient.identificationType,
+      identificationNumber: patient.identificationNumber,
+      identificationDocumentId: patient.identificationDocumentId,
+      identificationDocumentUrl: patient.identificationDocumentUrl,
+      privacyConsent: patient.privacyConsent === 1,
+      createdAt: patient.createdAt,
+      updatedAt: patient.updatedAt,
+    };
   },
 };
 

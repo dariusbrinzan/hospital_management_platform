@@ -3,52 +3,52 @@ import { z } from "zod";
 export const UserFormValidation = z.object({
   name: z
     .string()
-    .min(2, "Name must be at least 2 characters")
-    .max(50, "Name must be at most 50 characters"),
-  email: z.string().email("Invalid email address"),
+    .min(2, "Numele trebuie să aibă cel puțin 2 caractere")
+    .max(50, "Numele trebuie să aibă cel mult 50 de caractere"),
+  email: z.string().email("Adresă email invalidă"),
   phone: z
     .string()
-    .refine((phone) => /^\+\d{10,15}$/.test(phone), "Invalid phone number"),
+    .refine((phone) => /^\+\d{10,15}$/.test(phone), "Număr de telefon invalid"),
 });
 
 export const PatientFormValidation = z.object({
   name: z
     .string()
-    .min(2, "Name must be at least 2 characters")
-    .max(50, "Name must be at most 50 characters"),
-  email: z.string().email("Invalid email address"),
+    .min(2, "Numele trebuie să aibă cel puțin 2 caractere")
+    .max(50, "Numele trebuie să aibă cel mult 50 de caractere"),
+  email: z.string().email("Adresă email invalidă"),
   phone: z
     .string()
-    .refine((phone) => /^\+\d{10,15}$/.test(phone), "Invalid phone number"),
+    .refine((phone) => /^\+\d{10,15}$/.test(phone), "Număr de telefon invalid"),
   birthDate: z.coerce.date(),
-  gender: z.enum(["Male", "Female", "Other"]),
+  gender: z.enum(["Bărbat", "Femeie"]),
   address: z
     .string()
-    .min(5, "Address must be at least 5 characters")
-    .max(500, "Address must be at most 500 characters"),
+    .min(5, "Adresa trebuie să aibă cel puțin 5 caractere")
+    .max(500, "Adresa trebuie să aibă cel mult 500 de caractere"),
   occupation: z
     .string()
-    .min(2, "Occupation must be at least 2 characters")
-    .max(500, "Occupation must be at most 500 characters"),
+    .min(2, "Ocupația trebuie să aibă cel puțin 2 caractere")
+    .max(500, "Ocupația trebuie să aibă cel mult 500 de caractere"),
   emergencyContactName: z
     .string()
-    .min(2, "Contact name must be at least 2 characters")
-    .max(50, "Contact name must be at most 50 characters"),
+    .min(2, "Numele contactului trebuie să aibă cel puțin 2 caractere")
+    .max(50, "Numele contactului trebuie să aibă cel mult 50 de caractere"),
   emergencyContactNumber: z
     .string()
     .refine(
       (emergencyContactNumber) => /^\+\d{10,15}$/.test(emergencyContactNumber),
-      "Invalid phone number"
+      "Număr de telefon invalid"
     ),
-  primaryPhysician: z.string().min(2, "Select at least one doctor"),
+  primaryPhysician: z.string().min(2, "Selectați cel puțin un doctor"),
   insuranceProvider: z
     .string()
-    .min(2, "Insurance name must be at least 2 characters")
-    .max(50, "Insurance name must be at most 50 characters"),
+    .min(2, "Numele asigurătorului trebuie să aibă cel puțin 2 caractere")
+    .max(50, "Numele asigurătorului trebuie să aibă cel mult 50 de caractere"),
   insurancePolicyNumber: z
     .string()
-    .min(2, "Policy number must be at least 2 characters")
-    .max(50, "Policy number must be at most 50 characters"),
+    .min(2, "Numărul poliței trebuie să aibă cel puțin 2 caractere")
+    .max(50, "Numărul poliței trebuie să aibă cel mult 50 de caractere"),
   allergies: z.string().optional(),
   currentMedication: z.string().optional(),
   familyMedicalHistory: z.string().optional(),
@@ -60,35 +60,35 @@ export const PatientFormValidation = z.object({
     .boolean()
     .default(false)
     .refine((value) => value === true, {
-      message: "You must consent to treatment in order to proceed",
+      message: "Trebuie să consimțiți la tratament pentru a continua",
     }),
   disclosureConsent: z
     .boolean()
     .default(false)
     .refine((value) => value === true, {
-      message: "You must consent to disclosure in order to proceed",
+      message: "Trebuie să consimțiți la divulgare pentru a continua",
     }),
   privacyConsent: z
     .boolean()
     .default(false)
     .refine((value) => value === true, {
-      message: "You must consent to privacy in order to proceed",
+      message: "Trebuie să consimțiți la confidențialitate pentru a continua",
     }),
 });
 
 export const CreateAppointmentSchema = z.object({
-  primaryPhysician: z.string().min(2, "Select at least one doctor"),
+  primaryPhysician: z.string().min(2, "Selectați cel puțin un doctor"),
   schedule: z.coerce.date(),
   reason: z
     .string()
-    .min(2, "Reason must be at least 2 characters")
-    .max(500, "Reason must be at most 500 characters"),
+    .min(2, "Motivul trebuie să aibă cel puțin 2 caractere")
+    .max(500, "Motivul trebuie să aibă cel mult 500 de caractere"),
   note: z.string().optional(),
   cancellationReason: z.string().optional(),
 });
 
 export const ScheduleAppointmentSchema = z.object({
-  primaryPhysician: z.string().min(2, "Select at least one doctor"),
+  primaryPhysician: z.string().min(2, "Selectați cel puțin un doctor"),
   schedule: z.coerce.date(),
   reason: z.string().optional(),
   note: z.string().optional(),
@@ -96,14 +96,14 @@ export const ScheduleAppointmentSchema = z.object({
 });
 
 export const CancelAppointmentSchema = z.object({
-  primaryPhysician: z.string().min(2, "Select at least one doctor"),
+  primaryPhysician: z.string().min(2, "Selectați cel puțin un doctor"),
   schedule: z.coerce.date(),
   reason: z.string().optional(),
   note: z.string().optional(),
   cancellationReason: z
     .string()
-    .min(2, "Reason must be at least 2 characters")
-    .max(500, "Reason must be at most 500 characters"),
+    .min(2, "Motivul trebuie să aibă cel puțin 2 caractere")
+    .max(500, "Motivul trebuie să aibă cel mult 500 de caractere"),
 });
 
 export function getAppointmentSchema(type: string) {

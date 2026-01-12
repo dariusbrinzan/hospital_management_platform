@@ -17,18 +17,18 @@ const Home = ({ searchParams }: SearchParamProps) => {
             src="/assets/icons/logo-full.svg"
             height={1000}
             width={1000}
-            alt="patient"
+            alt="eHealth.ro logo"
             className="mb-12 h-10 w-fit"
           />
 
           <PatientForm />
 
           <div className="text-14-regular mt-20 flex justify-between">
-            <p className="justify-items-end text-dark-600 xl:text-left">
-              © 2024 CarePluse
+            <p className="justify-items-end text-dark-500 xl:text-left">
+              © 2026 eHealth.ro
             </p>
-            <Link href="/?admin=true" className="text-green-500">
-              Admin
+            <Link href="/?admin=true" className="text-green-500 hover:text-green-600">
+              Administrator
             </Link>
           </div>
         </div>

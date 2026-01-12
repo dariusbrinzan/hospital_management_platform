@@ -22,28 +22,39 @@ const config = {
     extend: {
       colors: {
         green: {
-          500: "#24AE7C",
-          600: "#0D2A1F",
+          400: "#2DD4BF", // Turcoaz deschis
+          500: "#14B8A6", // Turcoaz principal
+          600: "#0D9488", // Turcoaz închis
+          700: "#0F766E", // Turcoaz foarte închis
+        },
+        teal: {
+          400: "#2DD4BF",
+          500: "#14B8A6",
+          600: "#0D9488",
         },
         blue: {
-          500: "#79B5EC",
-          600: "#152432",
+          500: "#06B6D4", // Cyan/Turcoaz albastru
+          600: "#0891B2",
         },
         red: {
-          500: "#F37877",
-          600: "#3E1716",
-          700: "#F24E43",
+          500: "#EF4444",
+          600: "#DC2626",
+          700: "#B91C1C",
         },
         light: {
-          200: "#E8E9E9",
+          50: "#FAFAFA",
+          100: "#F5F5F5",
+          200: "#E5E5E5",
         },
         dark: {
-          200: "#0D0F10",
-          300: "#131619",
-          400: "#1A1D21",
-          500: "#363A3D",
-          600: "#76828D",
-          700: "#ABB8C4",
+          50: "#F9FAFB", // Alb foarte deschis
+          100: "#F3F4F6", // Alb gri deschis
+          200: "#E5E7EB", // Gri foarte deschis
+          300: "#D1D5DB", // Gri deschis
+          400: "#9CA3AF", // Gri mediu
+          500: "#6B7280", // Gri
+          600: "#4B5563", // Gri închis
+          700: "#374151", // Gri foarte închis
         },
       },
       fontFamily: {

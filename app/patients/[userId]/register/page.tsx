@@ -8,6 +8,7 @@ const Register = async ({ params: { userId } }: SearchParamProps) => {
   const user = await getUser(userId);
   const patient = await getPatient(userId);
 
+  if (!user) redirect("/");
   if (patient) redirect(`/patients/${userId}/new-appointment`);
 
   return (
@@ -18,13 +19,13 @@ const Register = async ({ params: { userId } }: SearchParamProps) => {
             src="/assets/icons/logo-full.svg"
             height={1000}
             width={1000}
-            alt="patient"
+            alt="eHealth.ro logo"
             className="mb-12 h-10 w-fit"
           />
 
           <RegisterForm user={user} />
 
-          <p className="copyright py-12">© 2024 CarePluse</p>
+          <p className="copyright py-12">© 2026 eHealth.ro</p>
         </div>
       </section>
 
