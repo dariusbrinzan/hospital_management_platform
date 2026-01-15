@@ -5,7 +5,7 @@ import { getPatient, getUser } from "@/lib/actions/patient.actions";
 import { requireAuth } from "@/lib/actions/auth.actions";
 import { medicalRecordHelpers } from "@/lib/db-helpers";
 import { allergyHelpers, vaccinationHelpers, familyHistoryHelpers } from "@/lib/db-helpers";
-import { vitalSignsHelpers } from "@/lib/db-helpers";
+import { vitalSignsHelpers, labResultHelpers, appointmentHelpers } from "@/lib/db-helpers";
 import { calculateAge } from "@/lib/analysis-reference-ranges";
 import { LogoutButton } from "@/components/LogoutButton";
 import { LogoLink } from "@/components/LogoLink";
@@ -34,6 +34,101 @@ const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
   const vaccinations = vaccinationHelpers.getByPatientId(patientId);
   const familyHistory = familyHistoryHelpers.getByPatientId(patientId);
   const vitalSignsHistory = vitalSignsHelpers.getByPatientId(patientId);
+  
+  // Obține analizele din lab_results
+  const labResults = labResultHelpers.getByPatientId(patientId);
+  
+  // Obține analizele din appointments.analysisResults
+  const appointments = appointmentHelpers.getByUserId(userId);
+  
+  // Grupează analizele după appointmentId
+  // Pentru analizele din appointments.analysisResults, le grupăm după appointmentId
+  const analysisGroupsByAppointment: Map<string, any[]> = new Map();
+  
+  // Procesează analizele din appointments.analysisResults
+  appointments.forEach((apt: any) => {
+    if (apt.analysisResults) {
+      try {
+        const results = JSON.parse(apt.analysisResults);
+        if (Array.isArray(results) && results.length > 0) {
+          const appointmentAnalyses: any[] = [];
+          results.forEach((result: any) => {
+            appointmentAnalyses.push({
+              $id: `${apt.$id}-${result.testName || Math.random()}`,
+              appointmentId: apt.$id,
+              testName: result.testName || "Analiză necunoscută",
+              testCategory: result.category || null,
+              resultValue: result.value || null,
+              unit: result.unit || null,
+              referenceRange: result.referenceRange || null,
+              status: result.status || "normal",
+              notes: result.notes || null,
+              performedDate: apt.schedule,
+              createdAt: apt.createdAt,
+              fromAppointment: true,
+            });
+          });
+          if (appointmentAnalyses.length > 0) {
+            analysisGroupsByAppointment.set(apt.$id, appointmentAnalyses);
+          }
+        }
+      } catch (e) {
+        // Ignoră erorile de parsing
+      }
+    }
+  });
+  
+  // Grupează analizele din lab_results după appointmentId sau performedDate
+  const analysisGroupsByDate: Map<string, any[]> = new Map();
+  const appointmentIdsWithAnalyses = new Set(analysisGroupsByAppointment.keys());
+  
+  labResults.forEach((labResult: any) => {
+    // Dacă analiza are appointmentId și acesta este deja în appointments, o ignorăm
+    // pentru că este deja inclusă în analysisGroupsByAppointment
+    if (labResult.appointmentId && appointmentIdsWithAnalyses.has(labResult.appointmentId)) {
+      return; // Skip această analiză, este deja inclusă
+    }
+    
+    const groupKey = labResult.appointmentId 
+      ? `appointment-${labResult.appointmentId}`
+      : `date-${new Date(labResult.performedDate || labResult.createdAt).toISOString().split('T')[0]}`;
+    
+    if (!analysisGroupsByDate.has(groupKey)) {
+      analysisGroupsByDate.set(groupKey, []);
+    }
+    analysisGroupsByDate.get(groupKey)!.push(labResult);
+  });
+  
+  // Creează array-ul de grupuri de analize pentru timeline
+  const allAnalysisGroups: any[] = [];
+  
+  // Adaugă grupurile din appointments
+  analysisGroupsByAppointment.forEach((analyses, appointmentId) => {
+    if (analyses.length > 0) {
+      allAnalysisGroups.push({
+        $id: `appointment-group-${appointmentId}`,
+        type: "analysis-group",
+        appointmentId: appointmentId,
+        analyses: analyses,
+        date: analyses[0]?.performedDate || analyses[0]?.createdAt,
+        fromAppointment: true,
+      });
+    }
+  });
+  
+  // Adaugă grupurile din lab_results (care nu sunt deja în appointments)
+  analysisGroupsByDate.forEach((analyses, groupKey) => {
+    if (analyses.length > 0) {
+      allAnalysisGroups.push({
+        $id: `lab-group-${groupKey}`,
+        type: "analysis-group",
+        appointmentId: analyses[0]?.appointmentId || null,
+        analyses: analyses,
+        date: analyses[0]?.performedDate || analyses[0]?.createdAt,
+        fromAppointment: false,
+      });
+    }
+  });
 
   // Calculează informații despre pacient pentru intervale de referință
   const patientAge = calculateAge(patient.birthDate);
@@ -95,6 +190,7 @@ const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
           allergies={allergies}
           vaccinations={vaccinations}
           vitalSignsHistory={vitalSignsHistory}
+          analyses={allAnalysisGroups.flatMap((g) => g.analyses)}
         />
 
         {/* Timeline */}
@@ -104,6 +200,7 @@ const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
             allergies={allergies}
             vaccinations={vaccinations}
             familyHistory={familyHistory}
+            analysisGroups={allAnalysisGroups}
             patientInfo={patientInfo}
           />
         </div>

@@ -4,12 +4,14 @@ import { formatDateTime } from "@/lib/utils";
 import { Doctors } from "@/constants";
 import Image from "next/image";
 import { MedicalRecordCard } from "./MedicalRecordCard";
+import { AnalysisGroupCard } from "./AnalysisGroupCard";
 
 interface MedicalHistoryTimelineProps {
   medicalRecords: any[];
   allergies: any[];
   vaccinations: any[];
   familyHistory: any[];
+  analysisGroups?: any[];
   patientInfo?: {
     age: number;
     gender: "Bărbat" | "Femeie";
@@ -22,6 +24,7 @@ export const MedicalHistoryTimeline = ({
   allergies,
   vaccinations,
   familyHistory,
+  analysisGroups = [],
   patientInfo,
 }: MedicalHistoryTimelineProps) => {
   // Combină toate evenimentele și sortează după dată
@@ -29,6 +32,7 @@ export const MedicalHistoryTimeline = ({
     ...medicalRecords.map((r) => ({ ...r, type: "record", date: r.visitDate })),
     ...allergies.map((a) => ({ ...a, type: "allergy", date: a.firstOccurrenceDate || a.createdAt })),
     ...vaccinations.map((v) => ({ ...v, type: "vaccination", date: v.administrationDate })),
+    ...analysisGroups.map((g) => ({ ...g, type: "analysis-group", date: g.date })),
   ].sort((a, b) => {
     const dateA = new Date(a.date).getTime();
     const dateB = new Date(b.date).getTime();
@@ -43,6 +47,8 @@ export const MedicalHistoryTimeline = ({
         return "/assets/icons/pending.svg";
       case "vaccination":
         return "/assets/icons/appointments.svg";
+      case "analysis-group":
+        return "/assets/icons/appointments.svg";
       default:
         return "/assets/icons/appointments.svg";
     }
@@ -56,6 +62,8 @@ export const MedicalHistoryTimeline = ({
         return "bg-red-500";
       case "vaccination":
         return "bg-blue-500";
+      case "analysis-group":
+        return "bg-purple-500";
       default:
         return "bg-gray-500";
     }
@@ -152,6 +160,8 @@ export const MedicalHistoryTimeline = ({
                           </span>
                         </div>
                       </div>
+                    ) : event.type === "analysis-group" ? (
+                      <AnalysisGroupCard analysisGroup={event} patientInfo={patientInfo} />
                     ) : null}
                   </div>
                 </div>

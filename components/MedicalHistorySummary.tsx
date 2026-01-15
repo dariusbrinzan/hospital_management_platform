@@ -8,6 +8,7 @@ interface MedicalHistorySummaryProps {
   allergies: any[];
   vaccinations: any[];
   vitalSignsHistory: any[];
+  analyses?: any[];
 }
 
 export const MedicalHistorySummary = ({
@@ -16,12 +17,13 @@ export const MedicalHistorySummary = ({
   allergies,
   vaccinations,
   vitalSignsHistory,
+  analyses = [],
 }: MedicalHistorySummaryProps) => {
   const activeAllergies = allergies.filter((a) => a.status === "active");
   const latestVitals = vitalSignsHistory[0];
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
       {/* Total Consultații */}
       <div className="rounded-lg border border-dark-200 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-4">
@@ -105,6 +107,25 @@ export const MedicalHistorySummary = ({
                 <p className="text-14-regular text-dark-600">Fără măsurători</p>
               </>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Analize Medicale */}
+      <div className="rounded-lg border border-dark-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="rounded-full bg-purple-100 p-3">
+            <Image
+              src="/assets/icons/appointments.svg"
+              height={24}
+              width={24}
+              alt="analyses"
+              className="h-6 w-6"
+            />
+          </div>
+          <div>
+            <p className="text-32-bold text-dark-900">{analyses.length}</p>
+            <p className="text-14-regular text-dark-600">Analize medicale</p>
           </div>
         </div>
       </div>

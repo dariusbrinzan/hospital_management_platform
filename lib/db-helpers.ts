@@ -1657,6 +1657,31 @@ export const labResultHelpers = {
       createdAt: parseDate(l.createdAt),
     }));
   },
+
+  getByPatientId: (patientId: string) => {
+    // Obține analizele din lab_results asociate cu medical records ale pacientului
+    const results = db.prepare(`
+      SELECT lr.* FROM lab_results lr
+      JOIN medical_records mr ON lr.medicalRecordId = mr.id
+      WHERE mr.patientId = ?
+      ORDER BY lr.performedDate DESC
+    `).all(patientId) as any[];
+
+    return results.map((l) => ({
+      $id: l.id,
+      medicalRecordId: l.medicalRecordId,
+      appointmentId: l.appointmentId,
+      testName: l.testName,
+      testCategory: l.testCategory,
+      resultValue: l.resultValue,
+      unit: l.unit,
+      referenceRange: l.referenceRange,
+      status: l.status,
+      notes: l.notes,
+      performedDate: parseDate(l.performedDate),
+      createdAt: parseDate(l.createdAt),
+    }));
+  },
 };
 
 // Procedure Helpers
