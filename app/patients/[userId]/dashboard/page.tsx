@@ -37,6 +37,12 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
 
           <div className="flex items-center gap-6">
             <Link
+              href={`/patients/${userId}/medical-history`}
+              className="text-14-medium text-dark-600 hover:text-dark-700"
+            >
+              Istoric Medical
+            </Link>
+            <Link
               href={`/patients/${userId}/new-appointment`}
               className="text-14-medium text-green-500 hover:text-green-600"
             >

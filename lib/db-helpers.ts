@@ -1089,3 +1089,905 @@ export const doctorsOnDutyHelpers = {
     };
   },
 };
+
+// Medical Records Helpers
+export const medicalRecordHelpers = {
+  create: (record: {
+    patientId: string;
+    appointmentId?: string;
+    doctorName: string;
+    recordType: string;
+    visitDate: Date | string;
+    chiefComplaint?: string;
+    subjectiveNotes?: string;
+    objectiveFindings?: string;
+    assessment?: string;
+    plan?: string;
+    notes?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO medical_records (
+        id, patientId, appointmentId, doctorName, recordType, visitDate,
+        chiefComplaint, subjectiveNotes, objectiveFindings, assessment, plan, notes,
+        createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      record.patientId,
+      record.appointmentId || null,
+      record.doctorName,
+      record.recordType,
+      formatDate(record.visitDate),
+      record.chiefComplaint || null,
+      record.subjectiveNotes || null,
+      record.objectiveFindings || null,
+      record.assessment || null,
+      record.plan || null,
+      record.notes || null,
+      now,
+      now
+    );
+
+    return medicalRecordHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const record = db.prepare("SELECT * FROM medical_records WHERE id = ?").get(id) as any;
+    if (!record) return null;
+
+    const diagnoses = diagnosisHelpers.getByMedicalRecordId(id);
+    const prescriptions = prescriptionHelpers.getByMedicalRecordId(id);
+    const vitalSigns = vitalSignsHelpers.getByMedicalRecordId(id);
+    const labResults = labResultHelpers.getByMedicalRecordId(id);
+    const procedures = procedureHelpers.getByMedicalRecordId(id);
+
+    return {
+      $id: record.id,
+      patientId: record.patientId,
+      appointmentId: record.appointmentId,
+      doctorName: record.doctorName,
+      recordType: record.recordType,
+      visitDate: parseDate(record.visitDate),
+      chiefComplaint: record.chiefComplaint,
+      subjectiveNotes: record.subjectiveNotes,
+      objectiveFindings: record.objectiveFindings,
+      assessment: record.assessment,
+      plan: record.plan,
+      notes: record.notes,
+      createdAt: parseDate(record.createdAt),
+      updatedAt: parseDate(record.updatedAt),
+      diagnoses,
+      prescriptions,
+      vitalSigns: vitalSigns?.[0] || null,
+      labResults,
+      procedures,
+    };
+  },
+
+  getByAppointmentId: (appointmentId: string) => {
+    const record = db.prepare(`
+      SELECT * FROM medical_records 
+      WHERE appointmentId = ?
+    `).get(appointmentId) as any;
+
+    if (!record) return null;
+
+    const diagnoses = diagnosisHelpers.getByMedicalRecordId(record.id);
+    const prescriptions = prescriptionHelpers.getByMedicalRecordId(record.id);
+    const vitalSigns = vitalSignsHelpers.getByMedicalRecordId(record.id);
+    const labResults = labResultHelpers.getByMedicalRecordId(record.id);
+    const procedures = procedureHelpers.getByMedicalRecordId(record.id);
+
+    return {
+      $id: record.id,
+      patientId: record.patientId,
+      appointmentId: record.appointmentId,
+      doctorName: record.doctorName,
+      recordType: record.recordType,
+      visitDate: parseDate(record.visitDate),
+      chiefComplaint: record.chiefComplaint,
+      subjectiveNotes: record.subjectiveNotes,
+      objectiveFindings: record.objectiveFindings,
+      assessment: record.assessment,
+      plan: record.plan,
+      notes: record.notes,
+      createdAt: parseDate(record.createdAt),
+      updatedAt: parseDate(record.updatedAt),
+      diagnoses,
+      prescriptions,
+      vitalSigns: vitalSigns?.[0] || null,
+      labResults,
+      procedures,
+    };
+  },
+
+  getByPatientId: (patientId: string) => {
+    const records = db.prepare(`
+      SELECT * FROM medical_records 
+      WHERE patientId = ? 
+      ORDER BY visitDate DESC
+    `).all(patientId) as any[];
+
+    return records.map((record) => {
+      const diagnoses = diagnosisHelpers.getByMedicalRecordId(record.id);
+      const prescriptions = prescriptionHelpers.getByMedicalRecordId(record.id);
+      const vitalSigns = vitalSignsHelpers.getByMedicalRecordId(record.id);
+      const labResults = labResultHelpers.getByMedicalRecordId(record.id);
+      const procedures = procedureHelpers.getByMedicalRecordId(record.id);
+
+      return {
+        $id: record.id,
+        patientId: record.patientId,
+        appointmentId: record.appointmentId,
+        doctorName: record.doctorName,
+        recordType: record.recordType,
+        visitDate: parseDate(record.visitDate),
+        chiefComplaint: record.chiefComplaint,
+        subjectiveNotes: record.subjectiveNotes,
+        objectiveFindings: record.objectiveFindings,
+        assessment: record.assessment,
+        plan: record.plan,
+        notes: record.notes,
+        createdAt: parseDate(record.createdAt),
+        updatedAt: parseDate(record.updatedAt),
+        diagnoses,
+        prescriptions,
+        vitalSigns: vitalSigns?.[0] || null,
+        labResults,
+        procedures,
+      };
+    });
+  },
+
+  update: (id: string, updates: Partial<{
+    chiefComplaint: string;
+    subjectiveNotes: string;
+    objectiveFindings: string;
+    assessment: string;
+    plan: string;
+    notes: string;
+  }>) => {
+    const now = new Date().toISOString();
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    Object.entries(updates).forEach(([key, value]) => {
+      fields.push(`${key} = ?`);
+      values.push(value || null);
+    });
+
+    if (fields.length === 0) return medicalRecordHelpers.getById(id);
+
+    fields.push("updatedAt = ?");
+    values.push(now);
+    values.push(id);
+
+    db.prepare(`UPDATE medical_records SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+    return medicalRecordHelpers.getById(id);
+  },
+};
+
+// Diagnosis Helpers
+export const diagnosisHelpers = {
+  create: (diagnosis: {
+    medicalRecordId: string;
+    diagnosisCode?: string;
+    diagnosisName: string;
+    diagnosisType: string;
+    status: string;
+    onsetDate?: Date | string;
+    resolvedDate?: Date | string;
+    notes?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO diagnoses (
+        id, medicalRecordId, diagnosisCode, diagnosisName, diagnosisType, status,
+        onsetDate, resolvedDate, notes, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      diagnosis.medicalRecordId,
+      diagnosis.diagnosisCode || null,
+      diagnosis.diagnosisName,
+      diagnosis.diagnosisType,
+      diagnosis.status,
+      diagnosis.onsetDate ? formatDate(diagnosis.onsetDate) : null,
+      diagnosis.resolvedDate ? formatDate(diagnosis.resolvedDate) : null,
+      diagnosis.notes || null,
+      now
+    );
+
+    return diagnosisHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const d = db.prepare("SELECT * FROM diagnoses WHERE id = ?").get(id) as any;
+    if (!d) return null;
+    return {
+      $id: d.id,
+      medicalRecordId: d.medicalRecordId,
+      diagnosisCode: d.diagnosisCode,
+      diagnosisName: d.diagnosisName,
+      diagnosisType: d.diagnosisType,
+      status: d.status,
+      onsetDate: d.onsetDate ? parseDate(d.onsetDate) : null,
+      resolvedDate: d.resolvedDate ? parseDate(d.resolvedDate) : null,
+      notes: d.notes,
+      createdAt: parseDate(d.createdAt),
+    };
+  },
+
+  getByMedicalRecordId: (medicalRecordId: string) => {
+    const diagnoses = db.prepare(`
+      SELECT * FROM diagnoses WHERE medicalRecordId = ? ORDER BY createdAt DESC
+    `).all(medicalRecordId) as any[];
+
+    return diagnoses.map((d) => ({
+      $id: d.id,
+      medicalRecordId: d.medicalRecordId,
+      diagnosisCode: d.diagnosisCode,
+      diagnosisName: d.diagnosisName,
+      diagnosisType: d.diagnosisType,
+      status: d.status,
+      onsetDate: d.onsetDate ? parseDate(d.onsetDate) : null,
+      resolvedDate: d.resolvedDate ? parseDate(d.resolvedDate) : null,
+      notes: d.notes,
+      createdAt: parseDate(d.createdAt),
+    }));
+  },
+};
+
+// Prescription Helpers
+export const prescriptionHelpers = {
+  create: (prescription: {
+    medicalRecordId: string;
+    medicationName: string;
+    dosage: string;
+    frequency: string;
+    route?: string;
+    quantity?: string;
+    startDate: Date | string;
+    endDate?: Date | string;
+    instructions?: string;
+    refills?: number;
+    status?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO prescriptions (
+        id, medicalRecordId, medicationName, dosage, frequency, route, quantity,
+        startDate, endDate, instructions, refills, status, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      prescription.medicalRecordId,
+      prescription.medicationName,
+      prescription.dosage,
+      prescription.frequency,
+      prescription.route || null,
+      prescription.quantity || null,
+      formatDate(prescription.startDate),
+      prescription.endDate ? formatDate(prescription.endDate) : null,
+      prescription.instructions || null,
+      prescription.refills || 0,
+      prescription.status || "active",
+      now
+    );
+
+    return prescriptionHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const p = db.prepare("SELECT * FROM prescriptions WHERE id = ?").get(id) as any;
+    if (!p) return null;
+    return {
+      $id: p.id,
+      medicalRecordId: p.medicalRecordId,
+      medicationName: p.medicationName,
+      dosage: p.dosage,
+      frequency: p.frequency,
+      route: p.route,
+      quantity: p.quantity,
+      startDate: parseDate(p.startDate),
+      endDate: p.endDate ? parseDate(p.endDate) : null,
+      instructions: p.instructions,
+      refills: p.refills,
+      status: p.status,
+      discontinuedReason: p.discontinuedReason,
+      createdAt: parseDate(p.createdAt),
+    };
+  },
+
+  getByMedicalRecordId: (medicalRecordId: string) => {
+    const prescriptions = db.prepare(`
+      SELECT * FROM prescriptions WHERE medicalRecordId = ? ORDER BY startDate DESC
+    `).all(medicalRecordId) as any[];
+
+    return prescriptions.map((p) => ({
+      $id: p.id,
+      medicalRecordId: p.medicalRecordId,
+      medicationName: p.medicationName,
+      dosage: p.dosage,
+      frequency: p.frequency,
+      route: p.route,
+      quantity: p.quantity,
+      startDate: parseDate(p.startDate),
+      endDate: p.endDate ? parseDate(p.endDate) : null,
+      instructions: p.instructions,
+      refills: p.refills,
+      status: p.status,
+      discontinuedReason: p.discontinuedReason,
+      createdAt: parseDate(p.createdAt),
+    }));
+  },
+
+  getActiveByPatientId: (patientId: string) => {
+    const prescriptions = db.prepare(`
+      SELECT p.* FROM prescriptions p
+      JOIN medical_records mr ON p.medicalRecordId = mr.id
+      WHERE mr.patientId = ? AND p.status = 'active'
+      ORDER BY p.startDate DESC
+    `).all(patientId) as any[];
+
+    return prescriptions.map((p) => ({
+      $id: p.id,
+      medicalRecordId: p.medicalRecordId,
+      medicationName: p.medicationName,
+      dosage: p.dosage,
+      frequency: p.frequency,
+      route: p.route,
+      quantity: p.quantity,
+      startDate: parseDate(p.startDate),
+      endDate: p.endDate ? parseDate(p.endDate) : null,
+      instructions: p.instructions,
+      refills: p.refills,
+      status: p.status,
+      discontinuedReason: p.discontinuedReason,
+      createdAt: parseDate(p.createdAt),
+    }));
+  },
+};
+
+// Vital Signs Helpers
+export const vitalSignsHelpers = {
+  create: (vitals: {
+    medicalRecordId: string;
+    bloodPressureSystolic?: number;
+    bloodPressureDiastolic?: number;
+    pulse?: number;
+    temperature?: number;
+    oxygenSaturation?: number;
+    respiratoryRate?: number;
+    weight?: number;
+    height?: number;
+    bmi?: number;
+    glucoseLevel?: number;
+    notes?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    // Calculează BMI dacă există weight și height
+    let bmi = vitals.bmi;
+    if (!bmi && vitals.weight && vitals.height) {
+      const heightInMeters = vitals.height / 100;
+      bmi = vitals.weight / (heightInMeters * heightInMeters);
+    }
+
+    db.prepare(`
+      INSERT INTO vital_signs (
+        id, medicalRecordId, bloodPressureSystolic, bloodPressureDiastolic,
+        pulse, temperature, oxygenSaturation, respiratoryRate,
+        weight, height, bmi, glucoseLevel, notes, recordedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      vitals.medicalRecordId,
+      vitals.bloodPressureSystolic || null,
+      vitals.bloodPressureDiastolic || null,
+      vitals.pulse || null,
+      vitals.temperature || null,
+      vitals.oxygenSaturation || null,
+      vitals.respiratoryRate || null,
+      vitals.weight || null,
+      vitals.height || null,
+      bmi || null,
+      vitals.glucoseLevel || null,
+      vitals.notes || null,
+      now
+    );
+
+    return vitalSignsHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const v = db.prepare("SELECT * FROM vital_signs WHERE id = ?").get(id) as any;
+    if (!v) return null;
+    return {
+      $id: v.id,
+      medicalRecordId: v.medicalRecordId,
+      bloodPressureSystolic: v.bloodPressureSystolic,
+      bloodPressureDiastolic: v.bloodPressureDiastolic,
+      pulse: v.pulse,
+      temperature: v.temperature,
+      oxygenSaturation: v.oxygenSaturation,
+      respiratoryRate: v.respiratoryRate,
+      weight: v.weight,
+      height: v.height,
+      bmi: v.bmi,
+      glucoseLevel: v.glucoseLevel,
+      notes: v.notes,
+      recordedAt: parseDate(v.recordedAt),
+    };
+  },
+
+  getByMedicalRecordId: (medicalRecordId: string) => {
+    const vitals = db.prepare(`
+      SELECT * FROM vital_signs WHERE medicalRecordId = ? ORDER BY recordedAt DESC
+    `).all(medicalRecordId) as any[];
+
+    return vitals.map((v) => ({
+      $id: v.id,
+      medicalRecordId: v.medicalRecordId,
+      bloodPressureSystolic: v.bloodPressureSystolic,
+      bloodPressureDiastolic: v.bloodPressureDiastolic,
+      pulse: v.pulse,
+      temperature: v.temperature,
+      oxygenSaturation: v.oxygenSaturation,
+      respiratoryRate: v.respiratoryRate,
+      weight: v.weight,
+      height: v.height,
+      bmi: v.bmi,
+      glucoseLevel: v.glucoseLevel,
+      notes: v.notes,
+      recordedAt: parseDate(v.recordedAt),
+    }));
+  },
+
+  getByPatientId: (patientId: string) => {
+    const vitals = db.prepare(`
+      SELECT vs.* FROM vital_signs vs
+      JOIN medical_records mr ON vs.medicalRecordId = mr.id
+      WHERE mr.patientId = ?
+      ORDER BY vs.recordedAt DESC
+    `).all(patientId) as any[];
+
+    return vitals.map((v) => ({
+      $id: v.id,
+      medicalRecordId: v.medicalRecordId,
+      bloodPressureSystolic: v.bloodPressureSystolic,
+      bloodPressureDiastolic: v.bloodPressureDiastolic,
+      pulse: v.pulse,
+      temperature: v.temperature,
+      oxygenSaturation: v.oxygenSaturation,
+      respiratoryRate: v.respiratoryRate,
+      weight: v.weight,
+      height: v.height,
+      bmi: v.bmi,
+      glucoseLevel: v.glucoseLevel,
+      notes: v.notes,
+      recordedAt: parseDate(v.recordedAt),
+    }));
+  },
+};
+
+// Lab Results Helpers
+export const labResultHelpers = {
+  create: (labResult: {
+    medicalRecordId: string;
+    appointmentId?: string;
+    testName: string;
+    testCategory?: string;
+    resultValue?: string;
+    unit?: string;
+    referenceRange?: string;
+    status?: string;
+    notes?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO lab_results (
+        id, medicalRecordId, appointmentId, testName, testCategory,
+        resultValue, unit, referenceRange, status, notes, performedDate, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      labResult.medicalRecordId,
+      labResult.appointmentId || null,
+      labResult.testName,
+      labResult.testCategory || null,
+      labResult.resultValue || null,
+      labResult.unit || null,
+      labResult.referenceRange || null,
+      labResult.status || "normal",
+      labResult.notes || null,
+      now,
+      now
+    );
+
+    return labResultHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const l = db.prepare("SELECT * FROM lab_results WHERE id = ?").get(id) as any;
+    if (!l) return null;
+    return {
+      $id: l.id,
+      medicalRecordId: l.medicalRecordId,
+      appointmentId: l.appointmentId,
+      testName: l.testName,
+      testCategory: l.testCategory,
+      resultValue: l.resultValue,
+      unit: l.unit,
+      referenceRange: l.referenceRange,
+      status: l.status,
+      notes: l.notes,
+      performedDate: parseDate(l.performedDate),
+      createdAt: parseDate(l.createdAt),
+    };
+  },
+
+  getByMedicalRecordId: (medicalRecordId: string) => {
+    const results = db.prepare(`
+      SELECT * FROM lab_results WHERE medicalRecordId = ? ORDER BY performedDate DESC
+    `).all(medicalRecordId) as any[];
+
+    return results.map((l) => ({
+      $id: l.id,
+      medicalRecordId: l.medicalRecordId,
+      appointmentId: l.appointmentId,
+      testName: l.testName,
+      testCategory: l.testCategory,
+      resultValue: l.resultValue,
+      unit: l.unit,
+      referenceRange: l.referenceRange,
+      status: l.status,
+      notes: l.notes,
+      performedDate: parseDate(l.performedDate),
+      createdAt: parseDate(l.createdAt),
+    }));
+  },
+};
+
+// Procedure Helpers
+export const procedureHelpers = {
+  create: (procedure: {
+    medicalRecordId: string;
+    procedureName: string;
+    procedureCode?: string;
+    procedureDate: Date | string;
+    performedBy: string;
+    location?: string;
+    anesthesiaType?: string;
+    complications?: string;
+    outcome?: string;
+    followUpRequired?: boolean;
+    followUpDate?: Date | string;
+    notes?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO procedures (
+        id, medicalRecordId, procedureName, procedureCode, procedureDate,
+        performedBy, location, anesthesiaType, complications, outcome,
+        followUpRequired, followUpDate, notes, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      procedure.medicalRecordId,
+      procedure.procedureName,
+      procedure.procedureCode || null,
+      formatDate(procedure.procedureDate),
+      procedure.performedBy,
+      procedure.location || null,
+      procedure.anesthesiaType || null,
+      procedure.complications || null,
+      procedure.outcome || null,
+      procedure.followUpRequired ? 1 : 0,
+      procedure.followUpDate ? formatDate(procedure.followUpDate) : null,
+      procedure.notes || null,
+      now
+    );
+
+    return procedureHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const p = db.prepare("SELECT * FROM procedures WHERE id = ?").get(id) as any;
+    if (!p) return null;
+    return {
+      $id: p.id,
+      medicalRecordId: p.medicalRecordId,
+      procedureName: p.procedureName,
+      procedureCode: p.procedureCode,
+      procedureDate: parseDate(p.procedureDate),
+      performedBy: p.performedBy,
+      location: p.location,
+      anesthesiaType: p.anesthesiaType,
+      complications: p.complications,
+      outcome: p.outcome,
+      followUpRequired: p.followUpRequired === 1,
+      followUpDate: p.followUpDate ? parseDate(p.followUpDate) : null,
+      notes: p.notes,
+      createdAt: parseDate(p.createdAt),
+    };
+  },
+
+  getByMedicalRecordId: (medicalRecordId: string) => {
+    const procedures = db.prepare(`
+      SELECT * FROM procedures WHERE medicalRecordId = ? ORDER BY procedureDate DESC
+    `).all(medicalRecordId) as any[];
+
+    return procedures.map((p) => ({
+      $id: p.id,
+      medicalRecordId: p.medicalRecordId,
+      procedureName: p.procedureName,
+      procedureCode: p.procedureCode,
+      procedureDate: parseDate(p.procedureDate),
+      performedBy: p.performedBy,
+      location: p.location,
+      anesthesiaType: p.anesthesiaType,
+      complications: p.complications,
+      outcome: p.outcome,
+      followUpRequired: p.followUpRequired === 1,
+      followUpDate: p.followUpDate ? parseDate(p.followUpDate) : null,
+      notes: p.notes,
+      createdAt: parseDate(p.createdAt),
+    }));
+  },
+};
+
+// Allergy Helpers
+export const allergyHelpers = {
+  create: (allergy: {
+    patientId: string;
+    allergenType: string;
+    allergenName: string;
+    reactionType: string;
+    severity: string;
+    symptoms?: string;
+    firstOccurrenceDate?: Date | string;
+    lastOccurrenceDate?: Date | string;
+    status?: string;
+    notes?: string;
+    reportedBy?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO allergies_adverse_reactions (
+        id, patientId, allergenType, allergenName, reactionType, severity,
+        symptoms, firstOccurrenceDate, lastOccurrenceDate, status, notes, reportedBy,
+        createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      allergy.patientId,
+      allergy.allergenType,
+      allergy.allergenName,
+      allergy.reactionType,
+      allergy.severity,
+      allergy.symptoms || null,
+      allergy.firstOccurrenceDate ? formatDate(allergy.firstOccurrenceDate) : null,
+      allergy.lastOccurrenceDate ? formatDate(allergy.lastOccurrenceDate) : null,
+      allergy.status || "active",
+      allergy.notes || null,
+      allergy.reportedBy || null,
+      now,
+      now
+    );
+
+    return allergyHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const a = db.prepare("SELECT * FROM allergies_adverse_reactions WHERE id = ?").get(id) as any;
+    if (!a) return null;
+    return {
+      $id: a.id,
+      patientId: a.patientId,
+      allergenType: a.allergenType,
+      allergenName: a.allergenName,
+      reactionType: a.reactionType,
+      severity: a.severity,
+      symptoms: a.symptoms,
+      firstOccurrenceDate: a.firstOccurrenceDate ? parseDate(a.firstOccurrenceDate) : null,
+      lastOccurrenceDate: a.lastOccurrenceDate ? parseDate(a.lastOccurrenceDate) : null,
+      status: a.status,
+      notes: a.notes,
+      reportedBy: a.reportedBy,
+      createdAt: parseDate(a.createdAt),
+      updatedAt: parseDate(a.updatedAt),
+    };
+  },
+
+  getByPatientId: (patientId: string) => {
+    const allergies = db.prepare(`
+      SELECT * FROM allergies_adverse_reactions 
+      WHERE patientId = ? 
+      ORDER BY createdAt DESC
+    `).all(patientId) as any[];
+
+    return allergies.map((a) => ({
+      $id: a.id,
+      patientId: a.patientId,
+      allergenType: a.allergenType,
+      allergenName: a.allergenName,
+      reactionType: a.reactionType,
+      severity: a.severity,
+      symptoms: a.symptoms,
+      firstOccurrenceDate: a.firstOccurrenceDate ? parseDate(a.firstOccurrenceDate) : null,
+      lastOccurrenceDate: a.lastOccurrenceDate ? parseDate(a.lastOccurrenceDate) : null,
+      status: a.status,
+      notes: a.notes,
+      reportedBy: a.reportedBy,
+      createdAt: parseDate(a.createdAt),
+      updatedAt: parseDate(a.updatedAt),
+    }));
+  },
+};
+
+// Vaccination Helpers
+export const vaccinationHelpers = {
+  create: (vaccination: {
+    patientId: string;
+    vaccineName: string;
+    vaccineType?: string;
+    administrationDate: Date | string;
+    administeredBy?: string;
+    lotNumber?: string;
+    manufacturer?: string;
+    site?: string;
+    nextDoseDate?: Date | string;
+    notes?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO vaccinations (
+        id, patientId, vaccineName, vaccineType, administrationDate,
+        administeredBy, lotNumber, manufacturer, site, nextDoseDate, notes, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      vaccination.patientId,
+      vaccination.vaccineName,
+      vaccination.vaccineType || null,
+      formatDate(vaccination.administrationDate),
+      vaccination.administeredBy || null,
+      vaccination.lotNumber || null,
+      vaccination.manufacturer || null,
+      vaccination.site || null,
+      vaccination.nextDoseDate ? formatDate(vaccination.nextDoseDate) : null,
+      vaccination.notes || null,
+      now
+    );
+
+    return vaccinationHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const v = db.prepare("SELECT * FROM vaccinations WHERE id = ?").get(id) as any;
+    if (!v) return null;
+    return {
+      $id: v.id,
+      patientId: v.patientId,
+      vaccineName: v.vaccineName,
+      vaccineType: v.vaccineType,
+      administrationDate: parseDate(v.administrationDate),
+      administeredBy: v.administeredBy,
+      lotNumber: v.lotNumber,
+      manufacturer: v.manufacturer,
+      site: v.site,
+      nextDoseDate: v.nextDoseDate ? parseDate(v.nextDoseDate) : null,
+      notes: v.notes,
+      createdAt: parseDate(v.createdAt),
+    };
+  },
+
+  getByPatientId: (patientId: string) => {
+    const vaccinations = db.prepare(`
+      SELECT * FROM vaccinations 
+      WHERE patientId = ? 
+      ORDER BY administrationDate DESC
+    `).all(patientId) as any[];
+
+    return vaccinations.map((v) => ({
+      $id: v.id,
+      patientId: v.patientId,
+      vaccineName: v.vaccineName,
+      vaccineType: v.vaccineType,
+      administrationDate: parseDate(v.administrationDate),
+      administeredBy: v.administeredBy,
+      lotNumber: v.lotNumber,
+      manufacturer: v.manufacturer,
+      site: v.site,
+      nextDoseDate: v.nextDoseDate ? parseDate(v.nextDoseDate) : null,
+      notes: v.notes,
+      createdAt: parseDate(v.createdAt),
+    }));
+  },
+};
+
+// Family History Helpers
+export const familyHistoryHelpers = {
+  create: (familyHistory: {
+    patientId: string;
+    relation: string;
+    condition: string;
+    ageOfOnset?: number;
+    status?: string;
+    notes?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO family_history (
+        id, patientId, relation, condition, ageOfOnset, status, notes, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      familyHistory.patientId,
+      familyHistory.relation,
+      familyHistory.condition,
+      familyHistory.ageOfOnset || null,
+      familyHistory.status || null,
+      familyHistory.notes || null,
+      now,
+      now
+    );
+
+    return familyHistoryHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const fh = db.prepare("SELECT * FROM family_history WHERE id = ?").get(id) as any;
+    if (!fh) return null;
+    return {
+      $id: fh.id,
+      patientId: fh.patientId,
+      relation: fh.relation,
+      condition: fh.condition,
+      ageOfOnset: fh.ageOfOnset,
+      status: fh.status,
+      notes: fh.notes,
+      createdAt: parseDate(fh.createdAt),
+      updatedAt: parseDate(fh.updatedAt),
+    };
+  },
+
+  getByPatientId: (patientId: string) => {
+    const history = db.prepare(`
+      SELECT * FROM family_history 
+      WHERE patientId = ? 
+      ORDER BY createdAt DESC
+    `).all(patientId) as any[];
+
+    return history.map((fh) => ({
+      $id: fh.id,
+      patientId: fh.patientId,
+      relation: fh.relation,
+      condition: fh.condition,
+      ageOfOnset: fh.ageOfOnset,
+      status: fh.status,
+      notes: fh.notes,
+      createdAt: parseDate(fh.createdAt),
+      updatedAt: parseDate(fh.updatedAt),
+    }));
+  },
+};

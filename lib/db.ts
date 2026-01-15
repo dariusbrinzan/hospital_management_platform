@@ -217,6 +217,170 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_emergency_cases_priority ON emergency_cases(priority);
   CREATE INDEX IF NOT EXISTS idx_emergency_state_transitions_caseId ON emergency_state_transitions(emergencyCaseId);
   CREATE INDEX IF NOT EXISTS idx_emergency_documents_caseId ON emergency_documents(emergencyCaseId);
+
+  -- Tabele pentru Istoric Medical Complet
+  CREATE TABLE IF NOT EXISTS medical_records (
+    id TEXT PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    appointmentId TEXT,
+    doctorName TEXT NOT NULL,
+    recordType TEXT NOT NULL, -- 'consultation', 'diagnosis', 'procedure', 'lab_result', 'imaging', 'vaccination'
+    visitDate TEXT NOT NULL DEFAULT (datetime('now')),
+    chiefComplaint TEXT,
+    subjectiveNotes TEXT, -- Simptome raportate de pacient
+    objectiveFindings TEXT, -- Observații clinice
+    assessment TEXT, -- Evaluare medicală
+    plan TEXT, -- Plan de tratament
+    notes TEXT, -- Note generale
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id),
+    FOREIGN KEY (appointmentId) REFERENCES appointments(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS diagnoses (
+    id TEXT PRIMARY KEY,
+    medicalRecordId TEXT NOT NULL,
+    diagnosisCode TEXT, -- Cod ICD-10 sau alt cod standard
+    diagnosisName TEXT NOT NULL,
+    diagnosisType TEXT NOT NULL, -- 'primary', 'secondary', 'differential', 'rule_out'
+    status TEXT NOT NULL DEFAULT 'active', -- 'active', 'resolved', 'chronic', 'history'
+    onsetDate TEXT,
+    resolvedDate TEXT,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (medicalRecordId) REFERENCES medical_records(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS prescriptions (
+    id TEXT PRIMARY KEY,
+    medicalRecordId TEXT NOT NULL,
+    medicationName TEXT NOT NULL,
+    dosage TEXT NOT NULL, -- ex: "500mg"
+    frequency TEXT NOT NULL, -- ex: "2x pe zi", "la 8 ore"
+    route TEXT, -- 'oral', 'injection', 'topical', etc.
+    quantity TEXT, -- ex: "30 comprimate"
+    startDate TEXT NOT NULL,
+    endDate TEXT,
+    instructions TEXT, -- Instrucțiuni speciale
+    refills INTEGER DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active', -- 'active', 'completed', 'discontinued'
+    discontinuedReason TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (medicalRecordId) REFERENCES medical_records(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS vital_signs (
+    id TEXT PRIMARY KEY,
+    medicalRecordId TEXT NOT NULL,
+    bloodPressureSystolic INTEGER,
+    bloodPressureDiastolic INTEGER,
+    pulse INTEGER,
+    temperature REAL, -- în grade Celsius
+    oxygenSaturation INTEGER, -- SpO2 %
+    respiratoryRate INTEGER, -- respirații pe minut
+    weight REAL, -- în kg
+    height REAL, -- în cm
+    bmi REAL, -- Body Mass Index
+    glucoseLevel REAL, -- glicemie mg/dL
+    notes TEXT,
+    recordedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (medicalRecordId) REFERENCES medical_records(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS lab_results (
+    id TEXT PRIMARY KEY,
+    medicalRecordId TEXT NOT NULL,
+    appointmentId TEXT,
+    testName TEXT NOT NULL,
+    testCategory TEXT, -- 'blood', 'urine', 'imaging', etc.
+    resultValue TEXT,
+    unit TEXT,
+    referenceRange TEXT, -- ex: "70-100 mg/dL"
+    status TEXT NOT NULL DEFAULT 'normal', -- 'normal', 'abnormal', 'critical'
+    notes TEXT,
+    performedDate TEXT NOT NULL DEFAULT (datetime('now')),
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (medicalRecordId) REFERENCES medical_records(id),
+    FOREIGN KEY (appointmentId) REFERENCES appointments(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS procedures (
+    id TEXT PRIMARY KEY,
+    medicalRecordId TEXT NOT NULL,
+    procedureName TEXT NOT NULL,
+    procedureCode TEXT, -- Cod CPT sau alt cod standard
+    procedureDate TEXT NOT NULL,
+    performedBy TEXT NOT NULL,
+    location TEXT, -- 'clinic', 'hospital', 'surgery_room', etc.
+    anesthesiaType TEXT,
+    complications TEXT,
+    outcome TEXT,
+    followUpRequired INTEGER DEFAULT 0,
+    followUpDate TEXT,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (medicalRecordId) REFERENCES medical_records(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS allergies_adverse_reactions (
+    id TEXT PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    allergenType TEXT NOT NULL, -- 'medication', 'food', 'environmental', 'other'
+    allergenName TEXT NOT NULL,
+    reactionType TEXT NOT NULL, -- 'allergy', 'intolerance', 'adverse_reaction'
+    severity TEXT NOT NULL, -- 'mild', 'moderate', 'severe', 'life_threatening'
+    symptoms TEXT,
+    firstOccurrenceDate TEXT,
+    lastOccurrenceDate TEXT,
+    status TEXT NOT NULL DEFAULT 'active', -- 'active', 'resolved', 'history'
+    notes TEXT,
+    reportedBy TEXT, -- 'patient', 'doctor', 'family'
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS vaccinations (
+    id TEXT PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    vaccineName TEXT NOT NULL,
+    vaccineType TEXT, -- 'routine', 'travel', 'seasonal', 'special'
+    administrationDate TEXT NOT NULL,
+    administeredBy TEXT,
+    lotNumber TEXT,
+    manufacturer TEXT,
+    site TEXT, -- 'left_arm', 'right_arm', 'thigh', etc.
+    nextDoseDate TEXT,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS family_history (
+    id TEXT PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    relation TEXT NOT NULL, -- 'mother', 'father', 'sibling', 'grandparent', etc.
+    condition TEXT NOT NULL,
+    ageOfOnset INTEGER,
+    status TEXT, -- 'alive', 'deceased', 'unknown'
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_medical_records_patientId ON medical_records(patientId);
+  CREATE INDEX IF NOT EXISTS idx_medical_records_appointmentId ON medical_records(appointmentId);
+  CREATE INDEX IF NOT EXISTS idx_medical_records_visitDate ON medical_records(visitDate);
+  CREATE INDEX IF NOT EXISTS idx_diagnoses_medicalRecordId ON diagnoses(medicalRecordId);
+  CREATE INDEX IF NOT EXISTS idx_prescriptions_medicalRecordId ON prescriptions(medicalRecordId);
+  CREATE INDEX IF NOT EXISTS idx_vital_signs_medicalRecordId ON vital_signs(medicalRecordId);
+  CREATE INDEX IF NOT EXISTS idx_lab_results_medicalRecordId ON lab_results(medicalRecordId);
+  CREATE INDEX IF NOT EXISTS idx_procedures_medicalRecordId ON procedures(medicalRecordId);
+  CREATE INDEX IF NOT EXISTS idx_allergies_patientId ON allergies_adverse_reactions(patientId);
+  CREATE INDEX IF NOT EXISTS idx_vaccinations_patientId ON vaccinations(patientId);
+  CREATE INDEX IF NOT EXISTS idx_family_history_patientId ON family_history(patientId);
 `);
 
 export default db;

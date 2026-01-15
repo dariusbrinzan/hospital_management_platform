@@ -11,6 +11,7 @@ import { Appointment } from "@/types/appwrite.types";
 import { AppointmentModal } from "../AppointmentModal";
 import { StatusBadge } from "../StatusBadge";
 import { AnalysisResultsModal } from "../AnalysisResultsModal";
+import { AddMedicalRecordModal } from "../AddMedicalRecordModal";
 import { Button } from "../ui/button";
 
 export const columns: ColumnDef<Appointment>[] = [
@@ -107,6 +108,9 @@ export const columns: ColumnDef<Appointment>[] = [
             >
               Rezultate completate
             </Button>
+          )}
+          {!isAnalysisDoctor && appointment.status === "scheduled" && (
+            <AddMedicalRecordModal appointment={appointment} doctorName={appointment.primaryPhysician} />
           )}
           {appointment.status !== "cancelled" && (
             <AppointmentModal
