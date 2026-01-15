@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/actions/auth.actions";
 import { medicalRecordHelpers } from "@/lib/db-helpers";
 import { allergyHelpers, vaccinationHelpers, familyHistoryHelpers } from "@/lib/db-helpers";
 import { vitalSignsHelpers } from "@/lib/db-helpers";
+import { calculateAge } from "@/lib/analysis-reference-ranges";
 import { LogoutButton } from "@/components/LogoutButton";
 import { LogoLink } from "@/components/LogoLink";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
@@ -33,6 +34,14 @@ const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
   const vaccinations = vaccinationHelpers.getByPatientId(patientId);
   const familyHistory = familyHistoryHelpers.getByPatientId(patientId);
   const vitalSignsHistory = vitalSignsHelpers.getByPatientId(patientId);
+
+  // Calculează informații despre pacient pentru intervale de referință
+  const patientAge = calculateAge(patient.birthDate);
+  const patientInfo = {
+    age: patientAge,
+    gender: patient.gender as "Bărbat" | "Femeie",
+    weight: patient.weight || undefined,
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -95,6 +104,7 @@ const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
             allergies={allergies}
             vaccinations={vaccinations}
             familyHistory={familyHistory}
+            patientInfo={patientInfo}
           />
         </div>
       </main>

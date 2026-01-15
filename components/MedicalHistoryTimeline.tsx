@@ -10,6 +10,11 @@ interface MedicalHistoryTimelineProps {
   allergies: any[];
   vaccinations: any[];
   familyHistory: any[];
+  patientInfo?: {
+    age: number;
+    gender: "Bărbat" | "Femeie";
+    weight?: number;
+  };
 }
 
 export const MedicalHistoryTimeline = ({
@@ -17,6 +22,7 @@ export const MedicalHistoryTimeline = ({
   allergies,
   vaccinations,
   familyHistory,
+  patientInfo,
 }: MedicalHistoryTimelineProps) => {
   // Combină toate evenimentele și sortează după dată
   const allEvents: any[] = [
@@ -102,7 +108,7 @@ export const MedicalHistoryTimeline = ({
                   {/* Event Content */}
                   <div className="flex-1 pb-8">
                     {event.type === "record" ? (
-                      <MedicalRecordCard record={event} doctor={doctor} />
+                      <MedicalRecordCard record={event} doctor={doctor} patientInfo={patientInfo} />
                     ) : event.type === "allergy" ? (
                       <div className="rounded-lg border border-red-200 bg-red-50 p-6 shadow-sm">
                         <div className="flex items-start justify-between">

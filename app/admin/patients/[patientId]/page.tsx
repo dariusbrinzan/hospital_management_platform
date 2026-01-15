@@ -5,9 +5,11 @@ import { redirect } from "next/navigation";
 import { getPatientById } from "@/lib/actions/patient.actions";
 import { getPatientAppointments } from "@/lib/actions/appointment.actions";
 import { formatDateTime } from "@/lib/utils";
+import { calculateAge } from "@/lib/analysis-reference-ranges";
 import { Doctors } from "@/constants";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LogoLink } from "@/components/LogoLink";
+import { AnalysisResultDisplay } from "@/components/AnalysisResultDisplay";
 
 const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) => {
   const patient = await getPatientById(patientId);
@@ -313,30 +315,21 @@ const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) =
                                 try {
                                   const results = JSON.parse(appointment.analysisResults);
                                   if (Array.isArray(results) && results.length > 0) {
+                                    const patientAge = calculateAge(patient.birthDate);
+                                    const patientInfo = {
+                                      age: patientAge,
+                                      gender: patient.gender as "Bărbat" | "Femeie",
+                                      weight: patient.weight || undefined,
+                                    };
+
                                     return (
                                       <div className="space-y-3">
                                         {results.map((result: any, index: number) => (
-                                          <div key={index} className="border-b border-green-200 pb-3 last:border-0 last:pb-0">
-                                            <p className="text-14-semibold text-dark-700 mb-1">
-                                              {result.testName}
-                                            </p>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-14-regular text-dark-600">
-                                              <p>
-                                                <span className="font-medium">Valoare:</span> {result.value}
-                                                {result.unit && ` ${result.unit}`}
-                                              </p>
-                                              {result.referenceRange && (
-                                                <p>
-                                                  <span className="font-medium">Referință:</span> {result.referenceRange}
-                                                </p>
-                                              )}
-                                            </div>
-                                            {result.notes && (
-                                              <p className="text-14-regular text-dark-600 mt-1">
-                                                <span className="font-medium">Observații:</span> {result.notes}
-                                              </p>
-                                            )}
-                                          </div>
+                                          <AnalysisResultDisplay
+                                            key={index}
+                                            result={result}
+                                            patientInfo={patientInfo}
+                                          />
                                         ))}
                                       </div>
                                     );

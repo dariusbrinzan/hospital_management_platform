@@ -6,11 +6,13 @@ import { getPatient, getUser } from "@/lib/actions/patient.actions";
 import { getPatientAppointments } from "@/lib/actions/appointment.actions";
 import { requireAuth } from "@/lib/actions/auth.actions";
 import { formatDateTime } from "@/lib/utils";
+import { calculateAge } from "@/lib/analysis-reference-ranges";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Doctors } from "@/constants";
 import { LogoutButton } from "@/components/LogoutButton";
 import { LogoLink } from "@/components/LogoLink";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
+import { AnalysisResultDisplay } from "@/components/AnalysisResultDisplay";
 
 const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
   // Verifică autentificarea

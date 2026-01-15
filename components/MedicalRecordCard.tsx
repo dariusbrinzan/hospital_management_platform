@@ -3,13 +3,19 @@
 import { formatDateTime } from "@/lib/utils";
 import Image from "next/image";
 import { Doctor } from "@/types";
+import { AnalysisResultDisplay } from "./AnalysisResultDisplay";
 
 interface MedicalRecordCardProps {
   record: any;
   doctor: Doctor | undefined;
+  patientInfo?: {
+    age: number;
+    gender: "Bărbat" | "Femeie";
+    weight?: number;
+  };
 }
 
-export const MedicalRecordCard = ({ record, doctor }: MedicalRecordCardProps) => {
+export const MedicalRecordCard = ({ record, doctor, patientInfo }: MedicalRecordCardProps) => {
   const hasDiagnoses = record.diagnoses && record.diagnoses.length > 0;
   const hasPrescriptions = record.prescriptions && record.prescriptions.length > 0;
   const hasVitalSigns = record.vitalSigns;
@@ -156,39 +162,19 @@ export const MedicalRecordCard = ({ record, doctor }: MedicalRecordCardProps) =>
       {hasLabResults && (
         <div className="mb-4">
           <p className="text-14-semibold text-dark-700 mb-2">Rezultate analize:</p>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {record.labResults.map((lab: any) => (
-              <div
+              <AnalysisResultDisplay
                 key={lab.$id}
-                className={`rounded-md p-3 border ${
-                  lab.status === "normal"
-                    ? "bg-green-50 border-green-200"
-                    : lab.status === "abnormal"
-                    ? "bg-yellow-50 border-yellow-200"
-                    : "bg-red-50 border-red-200"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <p className="text-14-semibold text-dark-900">{lab.testName}</p>
-                  <span
-                    className={`text-12-semibold ${
-                      lab.status === "normal"
-                        ? "text-green-700"
-                        : lab.status === "abnormal"
-                        ? "text-yellow-700"
-                        : "text-red-700"
-                    }`}
-                  >
-                    {lab.status}
-                  </span>
-                </div>
-                {lab.resultValue && (
-                  <p className="text-12-regular text-dark-600 mt-1">
-                    {lab.resultValue} {lab.unit}
-                    {lab.referenceRange && ` (${lab.referenceRange})`}
-                  </p>
-                )}
-              </div>
+                result={{
+                  testName: lab.testName,
+                  value: lab.resultValue || "",
+                  unit: lab.unit || "",
+                  referenceRange: lab.referenceRange || "",
+                  notes: lab.notes || "",
+                }}
+                patientInfo={patientInfo}
+              />
             ))}
           </div>
         </div>

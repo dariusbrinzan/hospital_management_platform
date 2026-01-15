@@ -27,6 +27,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Appointment } from "@/types/appwrite.types";
 import { updateAnalysisResults } from "@/lib/actions/appointment.actions";
 import { AnalysisPackages } from "@/constants";
+import {
+  getReferenceRange,
+  formatReferenceRange,
+  calculateAge,
+  isValueInRange,
+} from "@/lib/analysis-reference-ranges";
 import SubmitButton from "./SubmitButton";
 
 // Schema pentru un singur rezultat de analiză
@@ -53,6 +59,17 @@ export const AnalysisResultsModal = ({
   
   // Verifică dacă rezultatele au fost deja completate
   const hasResults = appointment.analysisResults && appointment.analysisResults.trim().length > 0;
+
+  // Calculează informații despre pacient pentru intervale de referință
+  const patientInfo = useMemo(() => {
+    if (!appointment.patient) return null;
+    
+    const age = calculateAge(appointment.patient.birthDate);
+    const gender = appointment.patient.gender as "Bărbat" | "Femeie";
+    const weight = appointment.patient.weight || undefined;
+
+    return { age, gender, weight };
+  }, [appointment.patient]);
 
   // Extrage lista de analize din note
   const analysisTests = useMemo(() => {
@@ -107,16 +124,31 @@ export const AnalysisResultsModal = ({
       results: analysisTests.length > 0
         ? analysisTests.map((test, index) => {
             const existing = existingResults.find((r: any) => r.testName === test);
+            // Calculează intervalul de referință automat dacă nu există
+            const autoRange = patientInfo
+              ? getReferenceRange(test, patientInfo)
+              : null;
+            const autoRangeFormatted = autoRange ? formatReferenceRange(autoRange) : "";
+
             return {
               testName: test,
               value: existing?.value || "",
               unit: existing?.unit || "",
-              referenceRange: existing?.referenceRange || "",
+              referenceRange: existing?.referenceRange || autoRangeFormatted,
               notes: existing?.notes || "",
             };
           })
         : existingResults.length > 0
-        ? existingResults
+        ? existingResults.map((r: any) => {
+            // Adaugă intervalul de referință automat dacă lipsește
+            if (!r.referenceRange && patientInfo) {
+              const autoRange = getReferenceRange(r.testName, patientInfo);
+              if (autoRange) {
+                r.referenceRange = formatReferenceRange(autoRange);
+              }
+            }
+            return r;
+          })
         : [{
             testName: "Rezultate generale",
             value: "",
@@ -252,19 +284,57 @@ export const AnalysisResultsModal = ({
                       <FormField
                         control={form.control}
                         name={`results.${index}.referenceRange`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Interval de referință</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="ex: 3.5-5.5 g/dL"
-                                className="shad-input"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                        render={({ field }) => {
+                          const testName = form.watch(`results.${index}.testName`);
+                          const value = form.watch(`results.${index}.value`);
+                          const autoReferenceRange = patientInfo && testName
+                            ? getReferenceRange(testName, patientInfo)
+                            : null;
+                          const autoRangeFormatted = autoReferenceRange
+                            ? formatReferenceRange(autoReferenceRange)
+                            : "";
+                          const isInRange = value && autoReferenceRange
+                            ? isValueInRange(value, autoReferenceRange)
+                            : null;
+
+                          // Folosește intervalul calculat automat dacă câmpul este gol
+                          const displayValue = field.value || autoRangeFormatted;
+
+                          return (
+                            <FormItem>
+                              <FormLabel>Interval de referință</FormLabel>
+                              <FormControl>
+                                <div className="space-y-2">
+                                  <Input
+                                    placeholder={autoRangeFormatted || "ex: 3.5-5.5 g/dL"}
+                                    className="shad-input"
+                                    {...field}
+                                    value={displayValue}
+                                    onChange={(e) => {
+                                      field.onChange(e.target.value);
+                                    }}
+                                  />
+                                  {autoReferenceRange && !field.value && (
+                                    <div className="text-12-regular text-dark-500 bg-blue-50 p-2 rounded-md">
+                                      <span className="font-medium">Interval calculat automat:</span> {autoRangeFormatted}
+                                      {autoReferenceRange.note && (
+                                        <span className="block text-dark-400 mt-1">{autoReferenceRange.note}</span>
+                                      )}
+                                    </div>
+                                  )}
+                                  {value && isInRange !== null && (
+                                    <div className={`text-12-semibold p-2 rounded-md ${
+                                      isInRange ? "text-green-700 bg-green-50" : "text-red-700 bg-red-50"
+                                    }`}>
+                                      {isInRange ? "✓ Valoare în interval normal" : "⚠ Valoare în afara intervalului normal"}
+                                    </div>
+                                  )}
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
                       />
 
                       <FormField
@@ -343,19 +413,57 @@ export const AnalysisResultsModal = ({
                     <FormField
                       control={form.control}
                       name={`results.${index}.referenceRange`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Interval de referință</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="ex: 3.5-5.5 g/dL"
-                              className="shad-input"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      render={({ field }) => {
+                        const testName = form.watch(`results.${index}.testName`);
+                        const value = form.watch(`results.${index}.value`);
+                        const autoReferenceRange = patientInfo && testName
+                          ? getReferenceRange(testName, patientInfo)
+                          : null;
+                        const autoRangeFormatted = autoReferenceRange
+                          ? formatReferenceRange(autoReferenceRange)
+                          : "";
+                        const isInRange = value && autoReferenceRange
+                          ? isValueInRange(value, autoReferenceRange)
+                          : null;
+
+                        // Folosește intervalul calculat automat dacă câmpul este gol
+                        const displayValue = field.value || autoRangeFormatted;
+
+                        return (
+                          <FormItem>
+                            <FormLabel>Interval de referință</FormLabel>
+                            <FormControl>
+                              <div className="space-y-2">
+                                <Input
+                                  placeholder={autoRangeFormatted || "ex: 3.5-5.5 g/dL"}
+                                  className="shad-input"
+                                  {...field}
+                                  value={displayValue}
+                                  onChange={(e) => {
+                                    field.onChange(e.target.value);
+                                  }}
+                                />
+                                {autoReferenceRange && !field.value && (
+                                  <div className="text-12-regular text-dark-500 bg-blue-50 p-2 rounded-md">
+                                    <span className="font-medium">Interval calculat automat:</span> {autoRangeFormatted}
+                                    {autoReferenceRange.note && (
+                                      <span className="block text-dark-400 mt-1">{autoReferenceRange.note}</span>
+                                    )}
+                                  </div>
+                                )}
+                                {value && isInRange !== null && (
+                                  <div className={`text-12-semibold p-2 rounded-md ${
+                                    isInRange ? "text-green-700 bg-green-50" : "text-red-700 bg-red-50"
+                                  }`}>
+                                    {isInRange ? "✓ Valoare în interval normal" : "⚠ Valoare în afara intervalului normal"}
+                                  </div>
+                                )}
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
                     />
 
                     <FormField
