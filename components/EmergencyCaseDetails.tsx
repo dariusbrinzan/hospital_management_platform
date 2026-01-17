@@ -13,7 +13,7 @@ import { ConsentForm } from "./forms/ConsentForm";
 import { CarePlanForm } from "./forms/CarePlanForm";
 import { DischargeForm } from "./forms/DischargeForm";
 
-type EmergencyState = "arrival" | "triage" | "consent" | "admission" | "treatment" | "discharge";
+type EmergencyState = "arrival" | "triage" | "consent" | "admission" | "treatment" | "icu" | "discharge";
 
 interface EmergencyCaseDetailsProps {
   emergencyCase: EmergencyCase;
@@ -32,6 +32,7 @@ export const EmergencyCaseDetails = ({ emergencyCase }: EmergencyCaseDetailsProp
     consent: "Consimțământ",
     admission: "Internare",
     treatment: "Tratament",
+    icu: "ATI",
     discharge: "Externare",
   };
 
@@ -76,7 +77,9 @@ export const EmergencyCaseDetails = ({ emergencyCase }: EmergencyCaseDetailsProp
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-2">
-              <h2 className="text-2xl font-bold">{emergencyCase.patient?.name}</h2>
+              <h2 className="text-2xl font-bold">
+                {emergencyCase.patient?.name || (emergencyCase as any).patientName || "Pacient necunoscut"}
+              </h2>
               <span
                 className={`px-3 py-1 rounded-full text-sm font-semibold ${priorityColors[emergencyCase.priority as keyof typeof priorityColors] || priorityColors[5]}`}
               >
@@ -86,6 +89,13 @@ export const EmergencyCaseDetails = ({ emergencyCase }: EmergencyCaseDetailsProp
                 {stateLabels[emergencyCase.currentState]}
               </span>
             </div>
+            {!emergencyCase.patient && ((emergencyCase as any).patientPhone || (emergencyCase as any).patientAge || (emergencyCase as any).patientGender) && (
+              <div className="flex items-center gap-4 mb-2 text-sm text-dark-500">
+                {(emergencyCase as any).patientPhone && <span>Tel: {(emergencyCase as any).patientPhone}</span>}
+                {(emergencyCase as any).patientAge && <span>Vârstă: {(emergencyCase as any).patientAge} ani</span>}
+                {(emergencyCase as any).patientGender && <span>Gen: {(emergencyCase as any).patientGender}</span>}
+              </div>
+            )}
             <p className="text-dark-600 mb-4">{emergencyCase.chiefComplaint}</p>
           </div>
           {doctor && (
@@ -209,19 +219,91 @@ export const EmergencyCaseDetails = ({ emergencyCase }: EmergencyCaseDetailsProp
             </Button>
           )}
           {emergencyCase.currentState === "admission" && (
-            <Button
-              onClick={() => handleStateTransition("treatment")}
-              className="shad-primary-btn"
-            >
-              Începe Tratament
-            </Button>
+            <>
+              <Button
+                onClick={() => handleStateTransition("treatment")}
+                className="shad-primary-btn"
+              >
+                Începe Tratament
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!confirm("Sunteți sigur că doriți să transferați pacientul în ATI?")) {
+                    return;
+                  }
+                  try {
+                    const response = await fetch(`/api/emergency/${emergencyCase.$id}/icu`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        diagnosis: emergencyCase.chiefComplaint,
+                        assignedDoctorId: emergencyCase.assignedDoctorId,
+                      }),
+                    });
+                    if (response.ok) {
+                      alert("Pacientul a fost transferat în ATI cu succes");
+                      router.refresh();
+                    } else {
+                      const error = await response.json();
+                      alert(error.error || "Eroare la transferul în ATI");
+                    }
+                  } catch (error) {
+                    console.error(error);
+                    alert("Eroare la transferul în ATI");
+                  }
+                }}
+                className="shad-gray-btn bg-red-600 hover:bg-red-700 text-white"
+              >
+                Transfer în ATI
+              </Button>
+            </>
           )}
           {emergencyCase.currentState === "treatment" && (
+            <>
+              <Button
+                onClick={() => setActiveForm("discharge")}
+                className="shad-primary-btn"
+              >
+                Externare
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!confirm("Sunteți sigur că doriți să transferați pacientul în ATI?")) {
+                    return;
+                  }
+                  try {
+                    const response = await fetch(`/api/emergency/${emergencyCase.$id}/icu`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        diagnosis: emergencyCase.chiefComplaint,
+                        assignedDoctorId: emergencyCase.assignedDoctorId,
+                      }),
+                    });
+                    if (response.ok) {
+                      alert("Pacientul a fost transferat în ATI cu succes");
+                      router.refresh();
+                    } else {
+                      const error = await response.json();
+                      alert(error.error || "Eroare la transferul în ATI");
+                    }
+                  } catch (error) {
+                    console.error(error);
+                    alert("Eroare la transferul în ATI");
+                  }
+                }}
+                className="shad-gray-btn bg-red-600 hover:bg-red-700 text-white"
+              >
+                Transfer în ATI
+              </Button>
+            </>
+          )}
+          {emergencyCase.currentState === "icu" && (
             <Button
-              onClick={() => setActiveForm("discharge")}
+              onClick={() => window.location.href = "/admin/icu"}
               className="shad-primary-btn"
             >
-              Externare
+              Vezi în Dashboard ATI
             </Button>
           )}
         </div>

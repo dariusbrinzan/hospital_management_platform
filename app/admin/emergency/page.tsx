@@ -53,6 +53,12 @@ const EmergencyPage = async () => {
               >
                 Medici de Gardă
               </Link>
+              <Link
+                href="/admin/icu"
+                className="shad-primary-btn px-6 py-3 rounded-md text-14-medium hover:bg-blue-600 transition-colors"
+              >
+                🏥 Dashboard ATI
+              </Link>
             </div>
           </div>
         </section>

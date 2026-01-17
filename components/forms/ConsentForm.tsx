@@ -32,7 +32,7 @@ export const ConsentForm = ({ emergencyCase, onComplete, onCancel }: ConsentForm
     defaultValues: {
       consentGiven: false,
       consentType: "",
-      signedBy: emergencyCase.patient?.name || "",
+      signedBy: emergencyCase.patient?.name || (emergencyCase as any).patientName || "",
     },
   });
 

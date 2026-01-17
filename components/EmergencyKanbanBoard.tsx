@@ -13,6 +13,7 @@ const states: { key: EmergencyState; label: string; color: string }[] = [
   { key: "consent", label: "Consimțământ", color: "bg-purple-100 border-purple-300" },
   { key: "admission", label: "Internare", color: "bg-orange-100 border-orange-300" },
   { key: "treatment", label: "Tratament", color: "bg-red-100 border-red-300" },
+  { key: "icu", label: "ATI", color: "bg-pink-100 border-pink-300" },
   { key: "discharge", label: "Externare", color: "bg-green-100 border-green-300" },
 ];
 

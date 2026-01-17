@@ -36,11 +36,16 @@ export const EmergencyCaseCard = ({ emergencyCase }: EmergencyCaseCardProps) => 
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
           <p className="text-14-semibold text-dark-700 truncate">
-            {emergencyCase.patient?.name || "Pacient necunoscut"}
+            {emergencyCase.patient?.name || (emergencyCase as any).patientName || "Pacient necunoscut"}
           </p>
           <p className="text-12-regular text-dark-500 truncate">
             {emergencyCase.chiefComplaint}
           </p>
+          {!emergencyCase.patient && (emergencyCase as any).patientPhone && (
+            <p className="text-11-regular text-dark-400 truncate">
+              Tel: {(emergencyCase as any).patientPhone}
+            </p>
+          )}
         </div>
         <div
           className={`px-2 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${priorityColors[emergencyCase.priority as keyof typeof priorityColors] || priorityColors[5]}`}

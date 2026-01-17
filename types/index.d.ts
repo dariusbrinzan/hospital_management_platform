@@ -75,12 +75,16 @@ declare interface Doctor {
   certifications?: string[];
 }
 
-declare type EmergencyState = "arrival" | "triage" | "consent" | "admission" | "treatment" | "discharge";
+declare type EmergencyState = "arrival" | "triage" | "consent" | "admission" | "treatment" | "icu" | "discharge";
 declare type TriageLevel = "critic" | "urgent" | "normal";
 
 declare interface EmergencyCase {
   $id: string;
-  patientId: string;
+  patientId?: string | null;
+  patientName?: string | null;
+  patientPhone?: string | null;
+  patientAge?: string | null;
+  patientGender?: string | null;
   triageLevel: TriageLevel;
   currentState: EmergencyState;
   assignedDoctorId?: string | null;
@@ -103,7 +107,7 @@ declare interface EmergencyCase {
   skipReason?: string | null;
   createdAt: Date | string;
   updatedAt: Date | string;
-  patient?: Patient;
+  patient?: Patient | null;
 }
 
 declare interface DoctorOnDuty {

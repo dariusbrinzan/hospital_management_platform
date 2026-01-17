@@ -13,6 +13,15 @@ export async function POST(
     const now = new Date().toISOString();
     const db = (await import("@/lib/db")).default;
 
+    // Obține starea curentă a cazului
+    const currentCase = emergencyHelpers.getById(caseId);
+    if (!currentCase) {
+      return NextResponse.json(
+        { error: "Cazul de urgență nu a fost găsit" },
+        { status: 404 }
+      );
+    }
+
     // Actualizează cazul cu datele de triaj
     db.prepare(`
       UPDATE emergency_cases 
@@ -27,8 +36,19 @@ export async function POST(
       caseId
     );
 
-    // Tranziție la starea triage
-    emergencyHelpers.updateState(caseId, "triage", "System", undefined);
+    // Tranziție la starea triage doar dacă nu este deja în acea stare
+    if (currentCase.currentState !== "triage") {
+      emergencyHelpers.updateState(caseId, "triage", "System", undefined);
+    } else {
+      // Dacă este deja în triage, doar adaugă o înregistrare în istoric pentru actualizare
+      emergencyHelpers.addStateTransition(
+        caseId,
+        "triage",
+        "triage",
+        "Actualizare date triaj",
+        "System"
+      );
+    }
 
     const updatedCase = emergencyHelpers.getById(caseId);
     return NextResponse.json(updatedCase);

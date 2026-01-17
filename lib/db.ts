@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { join } from "path";
 import { mkdir } from "fs/promises";
+import { randomUUID } from "crypto";
 
 // Creează directorul pentru baza de date dacă nu există
 const dbDir = join(process.cwd(), "data");
@@ -41,6 +42,80 @@ try {
   }
 } catch (error) {
   console.error("Migration error:", error);
+  db.pragma("foreign_keys = ON");
+}
+
+// Migrare pentru câmpuri noi în tabelul emergency_cases
+try {
+  const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='emergency_cases';").get();
+  if (tableExists) {
+    const tableInfo = db.prepare("PRAGMA table_info(emergency_cases)").all() as any[];
+    const hasPatientName = tableInfo.some((col) => col.name === "patientName");
+    
+    if (!hasPatientName) {
+      db.pragma("foreign_keys = OFF");
+      
+      // Adaugă coloanele noi
+      db.exec(`
+        ALTER TABLE emergency_cases ADD COLUMN patientName TEXT;
+        ALTER TABLE emergency_cases ADD COLUMN patientPhone TEXT;
+        ALTER TABLE emergency_cases ADD COLUMN patientAge TEXT;
+        ALTER TABLE emergency_cases ADD COLUMN patientGender TEXT;
+      `);
+      
+      // Verifică dacă patientId este NOT NULL și recreează tabelul dacă e necesar
+      const patientIdCol = tableInfo.find((col) => col.name === "patientId");
+      if (patientIdCol && patientIdCol.notnull === 1) {
+        // Recreează tabelul cu patientId nullable
+        db.exec(`
+          CREATE TABLE emergency_cases_new (
+            id TEXT PRIMARY KEY,
+            patientId TEXT,
+            patientName TEXT,
+            patientPhone TEXT,
+            patientAge TEXT,
+            patientGender TEXT,
+            triageLevel TEXT NOT NULL DEFAULT 'normal',
+            currentState TEXT NOT NULL DEFAULT 'arrival',
+            assignedDoctorId TEXT,
+            arrivalTime TEXT NOT NULL DEFAULT (datetime('now')),
+            triageTime TEXT,
+            admissionTime TEXT,
+            dischargeTime TEXT,
+            priority INTEGER NOT NULL DEFAULT 3,
+            chiefComplaint TEXT NOT NULL,
+            vitalSigns TEXT,
+            consentGiven INTEGER NOT NULL DEFAULT 0,
+            carePlan TEXT,
+            dischargeLetter TEXT,
+            skipReason TEXT,
+            createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+            updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+          );
+          
+          INSERT INTO emergency_cases_new 
+          SELECT id, patientId, patientName, patientPhone, patientAge, patientGender,
+                 triageLevel, currentState, assignedDoctorId, arrivalTime, triageTime,
+                 admissionTime, dischargeTime, priority, chiefComplaint, vitalSigns,
+                 consentGiven, carePlan, dischargeLetter, skipReason, createdAt, updatedAt
+          FROM emergency_cases;
+          
+          DROP TABLE emergency_cases;
+          ALTER TABLE emergency_cases_new RENAME TO emergency_cases;
+        `);
+        
+        // Recreează foreign key constraint
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_emergency_cases_patientId ON emergency_cases(patientId);
+          CREATE INDEX IF NOT EXISTS idx_emergency_cases_currentState ON emergency_cases(currentState);
+        `);
+      }
+      
+      db.pragma("foreign_keys = ON");
+    }
+  }
+} catch (error) {
+  console.error("Migration error for emergency_cases:", error);
   db.pragma("foreign_keys = ON");
 }
 
@@ -156,7 +231,11 @@ db.exec(`
   -- Tabele pentru sistemul de Primiri Urgente
   CREATE TABLE IF NOT EXISTS emergency_cases (
     id TEXT PRIMARY KEY,
-    patientId TEXT NOT NULL,
+    patientId TEXT,
+    patientName TEXT,
+    patientPhone TEXT,
+    patientAge TEXT,
+    patientGender TEXT,
     triageLevel TEXT NOT NULL DEFAULT 'normal',
     currentState TEXT NOT NULL DEFAULT 'arrival',
     assignedDoctorId TEXT,
@@ -217,6 +296,97 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_emergency_cases_priority ON emergency_cases(priority);
   CREATE INDEX IF NOT EXISTS idx_emergency_state_transitions_caseId ON emergency_state_transitions(emergencyCaseId);
   CREATE INDEX IF NOT EXISTS idx_emergency_documents_caseId ON emergency_documents(emergencyCaseId);
+
+  -- Tabele pentru Terapie Intensivă (ATI)
+  CREATE TABLE IF NOT EXISTS icu_rooms (
+    id TEXT PRIMARY KEY,
+    roomNumber INTEGER NOT NULL UNIQUE,
+    maxCapacity INTEGER NOT NULL DEFAULT 6,
+    currentOccupancy INTEGER NOT NULL DEFAULT 0,
+    isAvailable INTEGER NOT NULL DEFAULT 1,
+    equipment TEXT, -- JSON cu echipamente disponibile
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS icu_patients (
+    id TEXT PRIMARY KEY,
+    emergencyCaseId TEXT,
+    patientId TEXT,
+    patientName TEXT,
+    patientPhone TEXT,
+    patientAge TEXT,
+    patientGender TEXT,
+    roomId TEXT NOT NULL,
+    bedNumber INTEGER NOT NULL,
+    admissionDate TEXT NOT NULL DEFAULT (datetime('now')),
+    dischargeDate TEXT,
+    status TEXT NOT NULL DEFAULT 'critical', -- 'critical', 'stable', 'improving', 'deteriorating'
+    assignedDoctorId TEXT,
+    diagnosis TEXT,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (emergencyCaseId) REFERENCES emergency_cases(id),
+    FOREIGN KEY (patientId) REFERENCES patients(id),
+    FOREIGN KEY (roomId) REFERENCES icu_rooms(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS icu_vital_signs (
+    id TEXT PRIMARY KEY,
+    icuPatientId TEXT NOT NULL,
+    recordedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    bloodPressureSystolic INTEGER,
+    bloodPressureDiastolic INTEGER,
+    pulse INTEGER,
+    temperature REAL,
+    oxygenSaturation INTEGER,
+    respiratoryRate INTEGER,
+    glucoseLevel REAL,
+    consciousnessLevel TEXT, -- 'conscious', 'drowsy', 'unconscious'
+    notes TEXT,
+    recordedBy TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (icuPatientId) REFERENCES icu_patients(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS icu_treatments (
+    id TEXT PRIMARY KEY,
+    icuPatientId TEXT NOT NULL,
+    medicationName TEXT NOT NULL,
+    dosage TEXT NOT NULL,
+    frequency TEXT NOT NULL,
+    route TEXT, -- 'iv', 'oral', 'injection', etc.
+    startTime TEXT NOT NULL DEFAULT (datetime('now')),
+    endTime TEXT,
+    administeredBy TEXT,
+    notes TEXT,
+    status TEXT NOT NULL DEFAULT 'active', -- 'active', 'completed', 'discontinued'
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (icuPatientId) REFERENCES icu_patients(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS icu_equipment (
+    id TEXT PRIMARY KEY,
+    icuPatientId TEXT NOT NULL,
+    equipmentType TEXT NOT NULL, -- 'ventilator', 'monitor', 'dialysis', etc.
+    equipmentName TEXT,
+    startTime TEXT NOT NULL DEFAULT (datetime('now')),
+    endTime TEXT,
+    settings TEXT, -- JSON cu setări echipament
+    notes TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (icuPatientId) REFERENCES icu_patients(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_icu_patients_roomId ON icu_patients(roomId);
+  CREATE INDEX IF NOT EXISTS idx_icu_patients_emergencyCaseId ON icu_patients(emergencyCaseId);
+  CREATE INDEX IF NOT EXISTS idx_icu_patients_status ON icu_patients(status);
+  CREATE INDEX IF NOT EXISTS idx_icu_vital_signs_patientId ON icu_vital_signs(icuPatientId);
+  CREATE INDEX IF NOT EXISTS idx_icu_treatments_patientId ON icu_treatments(icuPatientId);
+  CREATE INDEX IF NOT EXISTS idx_icu_equipment_patientId ON icu_equipment(icuPatientId);
 
   -- Tabele pentru Istoric Medical Complet
   CREATE TABLE IF NOT EXISTS medical_records (
@@ -382,5 +552,24 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_vaccinations_patientId ON vaccinations(patientId);
   CREATE INDEX IF NOT EXISTS idx_family_history_patientId ON family_history(patientId);
 `);
+
+// Inițializare săli ATI (1-3, fiecare cu 6 locuri)
+try {
+  const roomsExist = db.prepare("SELECT COUNT(*) as count FROM icu_rooms").get() as { count: number };
+  if (roomsExist.count === 0) {
+    const room1Id = randomUUID();
+    const room2Id = randomUUID();
+    const room3Id = randomUUID();
+    db.exec(`
+      INSERT INTO icu_rooms (id, roomNumber, maxCapacity, currentOccupancy, isAvailable) VALUES
+      ('${room1Id}', 1, 6, 0, 1),
+      ('${room2Id}', 2, 6, 0, 1),
+      ('${room3Id}', 3, 6, 0, 1);
+    `);
+  }
+} catch (error) {
+  // Tabelul nu există încă sau eroare la inițializare
+  console.log("ICU rooms initialization:", error);
+}
 
 export default db;

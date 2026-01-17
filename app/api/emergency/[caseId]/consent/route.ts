@@ -11,6 +11,15 @@ export async function POST(
     const body = await request.json();
     const { consentGiven, consentType, signedBy } = body;
 
+    // Obține starea curentă a cazului
+    const currentCase = emergencyHelpers.getById(caseId);
+    if (!currentCase) {
+      return NextResponse.json(
+        { error: "Cazul de urgență nu a fost găsit" },
+        { status: 404 }
+      );
+    }
+
     // Actualizează consimțământul
     emergencyHelpers.updateConsent(caseId, consentGiven);
 
@@ -32,8 +41,19 @@ export async function POST(
       now
     );
 
-    // Tranziție la starea consent
-    emergencyHelpers.updateState(caseId, "consent", signedBy, undefined);
+    // Tranziție la starea consent doar dacă nu este deja în acea stare
+    if (currentCase.currentState !== "consent") {
+      emergencyHelpers.updateState(caseId, "consent", signedBy, undefined);
+    } else {
+      // Dacă este deja în consent, doar adaugă o înregistrare în istoric pentru actualizare
+      emergencyHelpers.addStateTransition(
+        caseId,
+        "consent",
+        "consent",
+        "Actualizare consimțământ",
+        signedBy
+      );
+    }
 
     const updatedCase = emergencyHelpers.getById(caseId);
     return NextResponse.json(updatedCase);

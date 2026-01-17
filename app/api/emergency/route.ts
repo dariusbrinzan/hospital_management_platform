@@ -5,11 +5,15 @@ import { notificationHelpers } from "@/lib/db-helpers";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { patientId, triageLevel, priority, chiefComplaint, vitalSigns } = body;
+    const { patientId, patientName, patientPhone, patientAge, patientGender, triageLevel, priority, chiefComplaint, vitalSigns } = body;
 
     // Creează cazul de urgență
     const emergencyCase = emergencyHelpers.create({
-      patientId,
+      patientId: patientId || null,
+      patientName: patientName || undefined,
+      patientPhone: patientPhone || undefined,
+      patientAge: patientAge || undefined,
+      patientGender: patientGender || undefined,
       triageLevel,
       priority,
       chiefComplaint,

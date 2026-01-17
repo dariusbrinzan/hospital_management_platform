@@ -14,7 +14,11 @@ import SubmitButton from "@/components/SubmitButton";
 import { patientHelpers } from "@/lib/db-helpers";
 
 const emergencyCaseSchema = z.object({
-  patientId: z.string().min(1, "Selectați un pacient"),
+  patientId: z.string().optional(),
+  patientName: z.string().optional(),
+  patientPhone: z.string().optional(),
+  patientAge: z.string().optional(),
+  patientGender: z.string().optional(),
   triageLevel: z.enum(["critic", "urgent", "normal"]),
   priority: z.number().min(1).max(5),
   chiefComplaint: z.string().min(5, "Descrieți motivul prezentării"),
@@ -23,6 +27,12 @@ const emergencyCaseSchema = z.object({
   temperature: z.number().optional(),
   oxygenSaturation: z.number().optional(),
   respiratoryRate: z.number().optional(),
+}).refine((data) => {
+  // Fie patientId, fie patientName trebuie să fie completat
+  return data.patientId || data.patientName;
+}, {
+  message: "Selectați un pacient existent sau introduceți datele pacientului",
+  path: ["patientId"],
 });
 
 export const NewEmergencyCaseForm = () => {
@@ -30,6 +40,7 @@ export const NewEmergencyCaseForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [patients, setPatients] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [useExistingPatient, setUseExistingPatient] = useState(true);
 
   const form = useForm<z.infer<typeof emergencyCaseSchema>>({
     resolver: zodResolver(emergencyCaseSchema),
@@ -58,7 +69,11 @@ export const NewEmergencyCaseForm = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          patientId: values.patientId,
+          patientId: useExistingPatient ? values.patientId : null,
+          patientName: !useExistingPatient ? values.patientName : undefined,
+          patientPhone: !useExistingPatient ? values.patientPhone : undefined,
+          patientAge: !useExistingPatient ? values.patientAge : undefined,
+          patientGender: !useExistingPatient ? values.patientGender : undefined,
           triageLevel: values.triageLevel,
           priority: values.priority,
           chiefComplaint: values.chiefComplaint,
@@ -82,26 +97,140 @@ export const NewEmergencyCaseForm = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
-        <FormField
-          control={form.control}
-          name="patientId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="shad-input-label">Pacient</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="ID pacient sau nume"
-                  {...field}
-                  className="shad-input"
-                />
-              </FormControl>
-              <FormMessage className="shad-error" />
-              <p className="text-xs text-dark-500">
-                Introduceți ID-ul pacientului sau căutați după nume
-              </p>
-            </FormItem>
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                checked={useExistingPatient}
+                onChange={() => {
+                  setUseExistingPatient(true);
+                  form.setValue("patientId", "");
+                  form.setValue("patientName", "");
+                  form.setValue("patientPhone", "");
+                  form.setValue("patientAge", "");
+                  form.setValue("patientGender", "");
+                }}
+                className="w-4 h-4"
+              />
+              <span className="text-14-medium">Pacient existent în sistem</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                checked={!useExistingPatient}
+                onChange={() => {
+                  setUseExistingPatient(false);
+                  form.setValue("patientId", "");
+                  form.setValue("patientName", "");
+                  form.setValue("patientPhone", "");
+                  form.setValue("patientAge", "");
+                  form.setValue("patientGender", "");
+                }}
+                className="w-4 h-4"
+              />
+              <span className="text-14-medium">Pacient nou (nu există în sistem)</span>
+            </label>
+          </div>
+
+          {useExistingPatient ? (
+            <FormField
+              control={form.control}
+              name="patientId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="shad-input-label">Pacient (ID sau nume)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="ID pacient sau nume"
+                      {...field}
+                      className="shad-input"
+                    />
+                  </FormControl>
+                  <FormMessage className="shad-error" />
+                  <p className="text-xs text-dark-500">
+                    Introduceți ID-ul pacientului sau căutați după nume
+                  </p>
+                </FormItem>
+              )}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="patientName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="shad-input-label">Nume pacient *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nume complet"
+                        {...field}
+                        className="shad-input"
+                      />
+                    </FormControl>
+                    <FormMessage className="shad-error" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="patientPhone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="shad-input-label">Telefon</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Număr de telefon"
+                        {...field}
+                        className="shad-input"
+                      />
+                    </FormControl>
+                    <FormMessage className="shad-error" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="patientAge"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="shad-input-label">Vârstă</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Vârstă (ani)"
+                        {...field}
+                        className="shad-input"
+                      />
+                    </FormControl>
+                    <FormMessage className="shad-error" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="patientGender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="shad-input-label">Gen</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className="shad-select-trigger">
+                          <SelectValue placeholder="Selectează genul" />
+                        </SelectTrigger>
+                        <SelectContent className="shad-select-content">
+                          <SelectItem value="Bărbat">Bărbat</SelectItem>
+                          <SelectItem value="Femeie">Femeie</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage className="shad-error" />
+                  </FormItem>
+                )}
+              />
+            </div>
           )}
-        />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField

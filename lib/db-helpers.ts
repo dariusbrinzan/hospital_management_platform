@@ -647,7 +647,11 @@ export const notificationHelpers = {
 // Emergency helpers
 export const emergencyHelpers = {
   create: (emergencyCase: {
-    patientId: string;
+    patientId?: string | null;
+    patientName?: string;
+    patientPhone?: string;
+    patientAge?: string;
+    patientGender?: string;
     triageLevel: "critic" | "urgent" | "normal";
     chiefComplaint: string;
     priority: number;
@@ -658,12 +662,17 @@ export const emergencyHelpers = {
     
     db.prepare(`
       INSERT INTO emergency_cases (
-        id, patientId, triageLevel, currentState, priority, chiefComplaint,
+        id, patientId, patientName, patientPhone, patientAge, patientGender,
+        triageLevel, currentState, priority, chiefComplaint,
         vitalSigns, arrivalTime, createdAt, updatedAt
-      ) VALUES (?, ?, ?, 'arrival', ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'arrival', ?, ?, ?, ?, ?, ?)
     `).run(
       id,
-      emergencyCase.patientId,
+      emergencyCase.patientId || null,
+      emergencyCase.patientName || null,
+      emergencyCase.patientPhone || null,
+      emergencyCase.patientAge || null,
+      emergencyCase.patientGender || null,
       emergencyCase.triageLevel,
       emergencyCase.priority,
       emergencyCase.chiefComplaint,
@@ -690,13 +699,17 @@ export const emergencyHelpers = {
         p.birthDate as patient_birthDate,
         p.gender as patient_gender
       FROM emergency_cases e
-      JOIN patients p ON e.patientId = p.id
+      LEFT JOIN patients p ON e.patientId = p.id
       ORDER BY e.priority ASC, e.arrivalTime DESC
     `).all() as any[];
 
     return cases.map(c => ({
       $id: c.id,
       patientId: c.patientId,
+      patientName: c.patientName,
+      patientPhone: c.patientPhone,
+      patientAge: c.patientAge,
+      patientGender: c.patientGender,
       triageLevel: c.triageLevel,
       currentState: c.currentState,
       assignedDoctorId: c.assignedDoctorId,
@@ -713,14 +726,14 @@ export const emergencyHelpers = {
       skipReason: c.skipReason,
       createdAt: parseDate(c.createdAt),
       updatedAt: parseDate(c.updatedAt),
-      patient: {
+      patient: c.patient_id ? {
         $id: c.patient_id,
         name: c.patient_name,
         email: c.patient_email,
         phone: c.patient_phone,
         birthDate: parseDate(c.patient_birthDate),
         gender: c.patient_gender,
-      },
+      } : null,
     }));
   },
 
@@ -735,7 +748,7 @@ export const emergencyHelpers = {
         p.birthDate as patient_birthDate,
         p.gender as patient_gender
       FROM emergency_cases e
-      JOIN patients p ON e.patientId = p.id
+      LEFT JOIN patients p ON e.patientId = p.id
       WHERE e.id = ?
     `).get(id) as any;
 
@@ -744,6 +757,10 @@ export const emergencyHelpers = {
     return {
       $id: c.id,
       patientId: c.patientId,
+      patientName: c.patientName,
+      patientPhone: c.patientPhone,
+      patientAge: c.patientAge,
+      patientGender: c.patientGender,
       triageLevel: c.triageLevel,
       currentState: c.currentState,
       assignedDoctorId: c.assignedDoctorId,
@@ -760,18 +777,18 @@ export const emergencyHelpers = {
       skipReason: c.skipReason,
       createdAt: parseDate(c.createdAt),
       updatedAt: parseDate(c.updatedAt),
-      patient: {
+      patient: c.patient_id ? {
         $id: c.patient_id,
         name: c.patient_name,
         email: c.patient_email,
         phone: c.patient_phone,
         birthDate: parseDate(c.patient_birthDate),
         gender: c.patient_gender,
-      },
+      } : null,
     };
   },
 
-  updateState: (id: string, newState: "arrival" | "triage" | "consent" | "admission" | "treatment" | "discharge", performedBy: string, skipReason?: string) => {
+  updateState: (id: string, newState: "arrival" | "triage" | "consent" | "admission" | "treatment" | "icu" | "discharge", performedBy: string, skipReason?: string) => {
     const now = new Date().toISOString();
     const caseData = emergencyHelpers.getById(id);
     if (!caseData) return null;
@@ -781,8 +798,9 @@ export const emergencyHelpers = {
       arrival: ["triage"],
       triage: ["consent", "admission"],
       consent: ["admission", "treatment"],
-      admission: ["treatment"],
-      treatment: ["discharge"],
+      admission: ["treatment", "icu"],
+      treatment: ["icu", "discharge"],
+      icu: ["treatment", "discharge"],
       discharge: [],
     };
 
@@ -821,7 +839,7 @@ export const emergencyHelpers = {
     db.prepare(`UPDATE emergency_cases SET ${updates.join(", ")} WHERE id = ?`).run(...values);
 
     // Adaugă tranziția în istoric
-    emergencyHelpers.addStateTransition(id, caseData.currentState as "arrival" | "triage" | "consent" | "admission" | "treatment" | "discharge", newState, skipReason || "Tranziție normală", performedBy);
+    emergencyHelpers.addStateTransition(id, caseData.currentState as "arrival" | "triage" | "consent" | "admission" | "treatment" | "icu" | "discharge", newState as "arrival" | "triage" | "consent" | "admission" | "treatment" | "icu" | "discharge", skipReason || "Tranziție normală", performedBy);
 
     return emergencyHelpers.getById(id);
   },
@@ -832,7 +850,7 @@ export const emergencyHelpers = {
     return emergencyHelpers.getById(id);
   },
 
-  addStateTransition: (emergencyCaseId: string, fromState: "arrival" | "triage" | "consent" | "admission" | "treatment" | "discharge", toState: "arrival" | "triage" | "consent" | "admission" | "treatment" | "discharge", reason: string, performedBy: string, metadata?: any) => {
+  addStateTransition: (emergencyCaseId: string, fromState: "arrival" | "triage" | "consent" | "admission" | "treatment" | "icu" | "discharge", toState: "arrival" | "triage" | "consent" | "admission" | "treatment" | "icu" | "discharge", reason: string, performedBy: string, metadata?: any) => {
     const id = generateId();
     db.prepare(`
       INSERT INTO emergency_state_transitions (
@@ -2014,5 +2032,417 @@ export const familyHistoryHelpers = {
       createdAt: parseDate(fh.createdAt),
       updatedAt: parseDate(fh.updatedAt),
     }));
+  },
+};
+
+// ICU (ATI) Helpers
+export const icuHelpers = {
+  // Room helpers
+  getAllRooms: () => {
+    const rooms = db.prepare("SELECT * FROM icu_rooms ORDER BY roomNumber ASC").all() as any[];
+    return rooms.map((r) => ({
+      $id: r.id,
+      roomNumber: r.roomNumber,
+      maxCapacity: r.maxCapacity,
+      currentOccupancy: r.currentOccupancy,
+      isAvailable: r.isAvailable === 1,
+      equipment: r.equipment ? JSON.parse(r.equipment) : null,
+      notes: r.notes,
+      createdAt: parseDate(r.createdAt),
+      updatedAt: parseDate(r.updatedAt),
+    }));
+  },
+
+  getRoomById: (roomId: string) => {
+    const r = db.prepare("SELECT * FROM icu_rooms WHERE id = ?").get(roomId) as any;
+    if (!r) return null;
+    return {
+      $id: r.id,
+      roomNumber: r.roomNumber,
+      maxCapacity: r.maxCapacity,
+      currentOccupancy: r.currentOccupancy,
+      isAvailable: r.isAvailable === 1,
+      equipment: r.equipment ? JSON.parse(r.equipment) : null,
+      notes: r.notes,
+      createdAt: parseDate(r.createdAt),
+      updatedAt: parseDate(r.updatedAt),
+    };
+  },
+
+  findAvailableRoom: () => {
+    // Găsește prima sală disponibilă cu locuri libere
+    const room = db.prepare(`
+      SELECT * FROM icu_rooms 
+      WHERE isAvailable = 1 AND currentOccupancy < maxCapacity 
+      ORDER BY currentOccupancy ASC, roomNumber ASC 
+      LIMIT 1
+    `).get() as any;
+    
+    if (!room) return null;
+    
+    return {
+      $id: room.id,
+      roomNumber: room.roomNumber,
+      maxCapacity: room.maxCapacity,
+      currentOccupancy: room.currentOccupancy,
+      isAvailable: room.isAvailable === 1,
+      equipment: room.equipment ? JSON.parse(room.equipment) : null,
+      notes: room.notes,
+      createdAt: parseDate(room.createdAt),
+      updatedAt: parseDate(room.updatedAt),
+    };
+  },
+
+  updateRoomOccupancy: (roomId: string, delta: number) => {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE icu_rooms 
+      SET currentOccupancy = currentOccupancy + ?, 
+          updatedAt = ?,
+          isAvailable = CASE WHEN (currentOccupancy + ?) < maxCapacity THEN 1 ELSE 0 END
+      WHERE id = ?
+    `).run(delta, now, delta, roomId);
+    return icuHelpers.getRoomById(roomId);
+  },
+
+  // Patient helpers
+  admitPatient: (params: {
+    emergencyCaseId?: string | null;
+    patientId?: string | null;
+    patientName?: string;
+    patientPhone?: string;
+    patientAge?: string;
+    patientGender?: string;
+    diagnosis?: string;
+    assignedDoctorId?: string;
+  }) => {
+    // Găsește o sală disponibilă
+    const availableRoom = icuHelpers.findAvailableRoom();
+    if (!availableRoom) {
+      throw new Error("Nu există săli ATI disponibile");
+    }
+
+    // Găsește primul pat liber din sală
+    const occupiedBeds = db.prepare(`
+      SELECT bedNumber FROM icu_patients 
+      WHERE roomId = ? AND dischargeDate IS NULL
+    `).all(availableRoom.$id) as { bedNumber: number }[];
+    
+    const occupiedBedNumbers = new Set(occupiedBeds.map(b => b.bedNumber));
+    let bedNumber = 1;
+    while (occupiedBedNumbers.has(bedNumber) && bedNumber <= availableRoom.maxCapacity) {
+      bedNumber++;
+    }
+    
+    if (bedNumber > availableRoom.maxCapacity) {
+      throw new Error("Nu există paturi disponibile în sală");
+    }
+
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO icu_patients (
+        id, emergencyCaseId, patientId, patientName, patientPhone, patientAge, patientGender,
+        roomId, bedNumber, admissionDate, status, assignedDoctorId, diagnosis, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'critical', ?, ?, ?, ?)
+    `).run(
+      id,
+      params.emergencyCaseId || null,
+      params.patientId || null,
+      params.patientName || null,
+      params.patientPhone || null,
+      params.patientAge || null,
+      params.patientGender || null,
+      availableRoom.$id,
+      bedNumber,
+      now,
+      params.assignedDoctorId || null,
+      params.diagnosis || null,
+      now,
+      now
+    );
+
+    // Actualizează ocuparea sălii
+    icuHelpers.updateRoomOccupancy(availableRoom.$id, 1);
+
+    return icuHelpers.getPatientById(id);
+  },
+
+  getAllPatients: () => {
+    const patients = db.prepare(`
+      SELECT 
+        p.*,
+        r.roomNumber,
+        pat.id as patient_id,
+        pat.name as patient_name
+      FROM icu_patients p
+      LEFT JOIN icu_rooms r ON p.roomId = r.id
+      LEFT JOIN patients pat ON p.patientId = pat.id
+      WHERE p.dischargeDate IS NULL
+      ORDER BY p.admissionDate DESC
+    `).all() as any[];
+
+    return patients.map((p) => ({
+      $id: p.id,
+      emergencyCaseId: p.emergencyCaseId,
+      patientId: p.patientId,
+      patientName: p.patientName || p.patient_name,
+      patientPhone: p.patientPhone,
+      patientAge: p.patientAge,
+      patientGender: p.patientGender,
+      roomId: p.roomId,
+      bedNumber: p.bedNumber,
+      admissionDate: parseDate(p.admissionDate),
+      dischargeDate: p.dischargeDate ? parseDate(p.dischargeDate) : null,
+      status: p.status,
+      assignedDoctorId: p.assignedDoctorId,
+      diagnosis: p.diagnosis,
+      notes: p.notes,
+      createdAt: parseDate(p.createdAt),
+      updatedAt: parseDate(p.updatedAt),
+      room: {
+        $id: p.roomId,
+        roomNumber: p.roomNumber,
+      },
+    }));
+  },
+
+  getPatientById: (id: string) => {
+    const p = db.prepare(`
+      SELECT 
+        p.*,
+        r.roomNumber,
+        r.maxCapacity,
+        pat.id as patient_id,
+        pat.name as patient_name
+      FROM icu_patients p
+      LEFT JOIN icu_rooms r ON p.roomId = r.id
+      LEFT JOIN patients pat ON p.patientId = pat.id
+      WHERE p.id = ?
+    `).get(id) as any;
+
+    if (!p) return null;
+
+    return {
+      $id: p.id,
+      emergencyCaseId: p.emergencyCaseId,
+      patientId: p.patientId,
+      patientName: p.patientName || p.patient_name,
+      patientPhone: p.patientPhone,
+      patientAge: p.patientAge,
+      patientGender: p.patientGender,
+      roomId: p.roomId,
+      bedNumber: p.bedNumber,
+      admissionDate: parseDate(p.admissionDate),
+      dischargeDate: p.dischargeDate ? parseDate(p.dischargeDate) : null,
+      status: p.status,
+      assignedDoctorId: p.assignedDoctorId,
+      diagnosis: p.diagnosis,
+      notes: p.notes,
+      createdAt: parseDate(p.createdAt),
+      updatedAt: parseDate(p.updatedAt),
+      room: {
+        $id: p.roomId,
+        roomNumber: p.roomNumber,
+        maxCapacity: p.maxCapacity,
+      },
+    };
+  },
+
+  updatePatientStatus: (id: string, status: "critical" | "stable" | "improving" | "deteriorating") => {
+    const now = new Date().toISOString();
+    db.prepare(`UPDATE icu_patients SET status = ?, updatedAt = ? WHERE id = ?`).run(status, now, id);
+    return icuHelpers.getPatientById(id);
+  },
+
+  dischargePatient: (id: string) => {
+    const patient = icuHelpers.getPatientById(id);
+    if (!patient) return null;
+
+    const now = new Date().toISOString();
+    db.prepare(`UPDATE icu_patients SET dischargeDate = ?, updatedAt = ? WHERE id = ?`).run(now, now, id);
+
+    // Actualizează ocuparea sălii
+    icuHelpers.updateRoomOccupancy(patient.roomId, -1);
+
+    return icuHelpers.getPatientById(id);
+  },
+
+  // Vital signs helpers
+  addVitalSigns: (params: {
+    icuPatientId: string;
+    bloodPressureSystolic?: number;
+    bloodPressureDiastolic?: number;
+    pulse?: number;
+    temperature?: number;
+    oxygenSaturation?: number;
+    respiratoryRate?: number;
+    glucoseLevel?: number;
+    consciousnessLevel?: "conscious" | "drowsy" | "unconscious";
+    notes?: string;
+    recordedBy?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO icu_vital_signs (
+        id, icuPatientId, recordedAt, bloodPressureSystolic, bloodPressureDiastolic,
+        pulse, temperature, oxygenSaturation, respiratoryRate, glucoseLevel,
+        consciousnessLevel, notes, recordedBy, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      params.icuPatientId,
+      now,
+      params.bloodPressureSystolic || null,
+      params.bloodPressureDiastolic || null,
+      params.pulse || null,
+      params.temperature || null,
+      params.oxygenSaturation || null,
+      params.respiratoryRate || null,
+      params.glucoseLevel || null,
+      params.consciousnessLevel || null,
+      params.notes || null,
+      params.recordedBy || null,
+      now
+    );
+
+    return icuHelpers.getVitalSignsById(id);
+  },
+
+  getVitalSignsById: (id: string) => {
+    const vs = db.prepare("SELECT * FROM icu_vital_signs WHERE id = ?").get(id) as any;
+    if (!vs) return null;
+    return {
+      $id: vs.id,
+      icuPatientId: vs.icuPatientId,
+      recordedAt: parseDate(vs.recordedAt),
+      bloodPressureSystolic: vs.bloodPressureSystolic,
+      bloodPressureDiastolic: vs.bloodPressureDiastolic,
+      pulse: vs.pulse,
+      temperature: vs.temperature,
+      oxygenSaturation: vs.oxygenSaturation,
+      respiratoryRate: vs.respiratoryRate,
+      glucoseLevel: vs.glucoseLevel,
+      consciousnessLevel: vs.consciousnessLevel,
+      notes: vs.notes,
+      recordedBy: vs.recordedBy,
+      createdAt: parseDate(vs.createdAt),
+    };
+  },
+
+  getVitalSignsByPatientId: (icuPatientId: string, limit?: number) => {
+    const query = limit
+      ? `SELECT * FROM icu_vital_signs WHERE icuPatientId = ? ORDER BY recordedAt DESC LIMIT ?`
+      : `SELECT * FROM icu_vital_signs WHERE icuPatientId = ? ORDER BY recordedAt DESC`;
+    
+    const signs = (limit
+      ? db.prepare(query).all(icuPatientId, limit)
+      : db.prepare(query).all(icuPatientId)) as any[];
+
+    return signs.map((vs) => ({
+      $id: vs.id,
+      icuPatientId: vs.icuPatientId,
+      recordedAt: parseDate(vs.recordedAt),
+      bloodPressureSystolic: vs.bloodPressureSystolic,
+      bloodPressureDiastolic: vs.bloodPressureDiastolic,
+      pulse: vs.pulse,
+      temperature: vs.temperature,
+      oxygenSaturation: vs.oxygenSaturation,
+      respiratoryRate: vs.respiratoryRate,
+      glucoseLevel: vs.glucoseLevel,
+      consciousnessLevel: vs.consciousnessLevel,
+      notes: vs.notes,
+      recordedBy: vs.recordedBy,
+      createdAt: parseDate(vs.createdAt),
+    }));
+  },
+
+  // Treatment helpers
+  addTreatment: (params: {
+    icuPatientId: string;
+    medicationName: string;
+    dosage: string;
+    frequency: string;
+    route?: string;
+    administeredBy?: string;
+    notes?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO icu_treatments (
+        id, icuPatientId, medicationName, dosage, frequency, route,
+        startTime, administeredBy, notes, status, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)
+    `).run(
+      id,
+      params.icuPatientId,
+      params.medicationName,
+      params.dosage,
+      params.frequency,
+      params.route || null,
+      now,
+      params.administeredBy || null,
+      params.notes || null,
+      now
+    );
+
+    return icuHelpers.getTreatmentById(id);
+  },
+
+  getTreatmentById: (id: string) => {
+    const t = db.prepare("SELECT * FROM icu_treatments WHERE id = ?").get(id) as any;
+    if (!t) return null;
+    return {
+      $id: t.id,
+      icuPatientId: t.icuPatientId,
+      medicationName: t.medicationName,
+      dosage: t.dosage,
+      frequency: t.frequency,
+      route: t.route,
+      startTime: parseDate(t.startTime),
+      endTime: t.endTime ? parseDate(t.endTime) : null,
+      administeredBy: t.administeredBy,
+      notes: t.notes,
+      status: t.status,
+      createdAt: parseDate(t.createdAt),
+    };
+  },
+
+  getTreatmentsByPatientId: (icuPatientId: string) => {
+    const treatments = db.prepare(`
+      SELECT * FROM icu_treatments 
+      WHERE icuPatientId = ? 
+      ORDER BY startTime DESC
+    `).all(icuPatientId) as any[];
+
+    return treatments.map((t) => ({
+      $id: t.id,
+      icuPatientId: t.icuPatientId,
+      medicationName: t.medicationName,
+      dosage: t.dosage,
+      frequency: t.frequency,
+      route: t.route,
+      startTime: parseDate(t.startTime),
+      endTime: t.endTime ? parseDate(t.endTime) : null,
+      administeredBy: t.administeredBy,
+      notes: t.notes,
+      status: t.status,
+      createdAt: parseDate(t.createdAt),
+    }));
+  },
+
+  updateTreatmentStatus: (id: string, status: "active" | "completed" | "discontinued", endTime?: string) => {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE icu_treatments 
+      SET status = ?, endTime = ?, updatedAt = ? 
+      WHERE id = ?
+    `).run(status, endTime || now, now, id);
+    return icuHelpers.getTreatmentById(id);
   },
 };

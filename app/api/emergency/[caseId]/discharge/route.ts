@@ -11,6 +11,15 @@ export async function POST(
     const body = await request.json();
     const { dischargeLetter } = body;
 
+    // Obține starea curentă a cazului
+    const currentCase = emergencyHelpers.getById(caseId);
+    if (!currentCase) {
+      return NextResponse.json(
+        { error: "Cazul de urgență nu a fost găsit" },
+        { status: 404 }
+      );
+    }
+
     // Actualizează scrisoarea de externare
     emergencyHelpers.updateDischargeLetter(caseId, dischargeLetter);
 
@@ -30,8 +39,19 @@ export async function POST(
       now
     );
 
-    // Tranziție la starea discharge
-    emergencyHelpers.updateState(caseId, "discharge", "System", undefined);
+    // Tranziție la starea discharge doar dacă nu este deja în acea stare
+    if (currentCase.currentState !== "discharge") {
+      emergencyHelpers.updateState(caseId, "discharge", "System", undefined);
+    } else {
+      // Dacă este deja în discharge, doar adaugă o înregistrare în istoric pentru actualizare
+      emergencyHelpers.addStateTransition(
+        caseId,
+        "discharge",
+        "discharge",
+        "Actualizare scrisoare externare",
+        "System"
+      );
+    }
 
     const updatedCase = emergencyHelpers.getById(caseId);
     return NextResponse.json(updatedCase);
