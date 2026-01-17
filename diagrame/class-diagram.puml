@@ -1,0 +1,278 @@
+@startuml Class Diagram - Platformă eHealth
+
+skinparam backgroundColor #FFFFFF
+skinparam handwritten false
+skinparam monochrome false
+skinparam shadowing false
+skinparam roundcorner 20
+
+title Diagramă Clase - Platformă eHealth
+
+package "Domain Models" {
+  class User {
+    +id: string
+    +name: string
+    +email: string
+    +phone: string
+    +createdAt: Date
+    +updatedAt: Date
+  }
+
+  class Patient {
+    +id: string
+    +userId: string
+    +name: string
+    +email: string
+    +phone: string
+    +birthDate: Date
+    +gender: Gender
+    +address: string
+    +occupation: string
+    +emergencyContactName: string
+    +emergencyContactNumber: string
+    +primaryPhysician: string
+    +insuranceProvider: string
+    +insurancePolicyNumber: string
+    +bloodType: string
+    +height: number
+    +weight: number
+    +allergies: string
+    +currentMedication: string
+    +familyMedicalHistory: string
+    +pastMedicalHistory: string
+    +cardiovascularDiseases: string
+    +chronicDiseases: string
+    +surgeries: string
+    +smokingStatus: string
+    +alcoholConsumption: string
+    +exerciseFrequency: string
+  }
+
+  class Appointment {
+    +id: string
+    +userId: string
+    +patientId: string
+    +schedule: Date
+    +status: Status
+    +primaryPhysician: string
+    +reason: string
+    +note: string
+    +cancellationReason: string
+    +analysisResults: string
+    +createdAt: Date
+    +updatedAt: Date
+  }
+
+  class Doctor {
+    +image: string
+    +name: string
+    +specialty: string
+    +age: number
+    +education: DoctorEducation[]
+    +experience: number
+    +additionalSpecializations: string[]
+    +languages: string[]
+    +certifications: string[]
+  }
+
+  class EmergencyCase {
+    +id: string
+    +patientId: string
+    +triageLevel: TriageLevel
+    +currentState: EmergencyState
+    +assignedDoctorId: string
+    +arrivalTime: Date
+    +triageTime: Date
+    +admissionTime: Date
+    +dischargeTime: Date
+    +priority: number
+    +chiefComplaint: string
+    +vitalSigns: string
+    +consentGiven: boolean
+    +carePlan: string
+    +dischargeLetter: string
+    +skipReason: string
+  }
+
+  class MedicalRecord {
+    +id: string
+    +patientId: string
+    +appointmentId: string
+    +doctorName: string
+    +recordType: MedicalRecordType
+    +visitDate: Date
+    +chiefComplaint: string
+    +subjectiveNotes: string
+    +objectiveFindings: string
+    +assessment: string
+    +plan: string
+    +notes: string
+    +diagnoses: Diagnosis[]
+    +prescriptions: Prescription[]
+    +vitalSigns: VitalSigns
+    +labResults: LabResult[]
+    +procedures: Procedure[]
+  }
+
+  class Diagnosis {
+    +id: string
+    +medicalRecordId: string
+    +diagnosisCode: string
+    +diagnosisName: string
+    +diagnosisType: string
+    +status: string
+    +onsetDate: Date
+    +resolvedDate: Date
+    +notes: string
+  }
+
+  class Prescription {
+    +id: string
+    +medicalRecordId: string
+    +medicationName: string
+    +dosage: string
+    +frequency: string
+    +route: string
+    +quantity: string
+    +startDate: Date
+    +endDate: Date
+    +instructions: string
+    +refills: number
+    +status: string
+    +discontinuedReason: string
+  }
+
+  class VitalSigns {
+    +id: string
+    +medicalRecordId: string
+    +patientId: string
+    +bloodPressureSystolic: number
+    +bloodPressureDiastolic: number
+    +pulse: number
+    +temperature: number
+    +oxygenSaturation: number
+    +respiratoryRate: number
+    +weight: number
+    +height: number
+    +bmi: number
+    +glucoseLevel: number
+    +recordedAt: Date
+  }
+
+  class LabResult {
+    +id: string
+    +medicalRecordId: string
+    +appointmentId: string
+    +testName: string
+    +testCategory: string
+    +resultValue: string
+    +unit: string
+    +referenceRange: string
+    +status: string
+    +notes: string
+    +performedDate: Date
+  }
+
+  class Notification {
+    +id: string
+    +userId: string
+    +type: string
+    +title: string
+    +message: string
+    +appointmentId: string
+    +isRead: boolean
+    +createdAt: Date
+  }
+}
+
+package "Services" {
+  class AppointmentService {
+    +createAppointment(params): Appointment
+    +getAppointment(id): Appointment
+    +updateAppointment(id, updates): Appointment
+    +cancelAppointment(id, reason): Appointment
+    +getByUserId(userId): Appointment[]
+  }
+
+  class EmergencyService {
+    +createEmergencyCase(params): EmergencyCase
+    +getEmergencyCase(id): EmergencyCase
+    +updateState(id, newState): EmergencyCase
+    +validateTransition(currentState, newState): boolean
+    +getAll(): EmergencyCase[]
+  }
+
+  class MedicalRecordService {
+    +createMedicalRecord(params): MedicalRecord
+    +getMedicalRecord(id): MedicalRecord
+    +updateMedicalRecord(id, updates): MedicalRecord
+    +getByPatientId(patientId): MedicalRecord[]
+    +getByAppointmentId(appointmentId): MedicalRecord
+  }
+
+  class AnalysisService {
+    +calculateReferenceRange(testName, patientInfo): ReferenceRange
+    +isValueInRange(value, range): boolean
+    +formatReferenceRange(range): string
+  }
+
+  class NotificationService {
+    +createNotification(params): Notification
+    +getNotifications(userId): Notification[]
+    +markAsRead(notificationId): Notification
+  }
+}
+
+package "Database Helpers" {
+  class AppointmentHelpers {
+    +create(params): Appointment
+    +getById(id): Appointment
+    +getAll(): Appointment[]
+    +getByUserId(userId): Appointment[]
+    +update(id, updates): Appointment
+  }
+
+  class EmergencyHelpers {
+    +create(params): EmergencyCase
+    +getById(id): EmergencyCase
+    +getAll(): EmergencyCase[]
+    +updateState(id, newState): EmergencyCase
+    +addStateTransition(caseId, transition): void
+  }
+
+  class MedicalRecordHelpers {
+    +create(params): MedicalRecord
+    +getById(id): MedicalRecord
+    +getByPatientId(patientId): MedicalRecord[]
+    +getByAppointmentId(appointmentId): MedicalRecord
+    +update(id, updates): MedicalRecord
+  }
+
+  class LabResultHelpers {
+    +create(params): LabResult
+    +getById(id): LabResult
+    +getByMedicalRecordId(recordId): LabResult[]
+    +getByPatientId(patientId): LabResult[]
+  }
+}
+
+' Relații
+User "1" --> "*" Patient : has
+User "1" --> "*" Appointment : creates
+Patient "1" --> "*" Appointment : has
+Patient "1" --> "*" EmergencyCase : has
+Patient "1" --> "*" MedicalRecord : has
+Appointment "1" --> "0..1" MedicalRecord : generates
+Appointment "1" --> "*" Notification : generates
+MedicalRecord "1" --> "*" Diagnosis : contains
+MedicalRecord "1" --> "*" Prescription : contains
+MedicalRecord "1" --> "0..1" VitalSigns : contains
+MedicalRecord "1" --> "*" LabResult : contains
+EmergencyCase "1" --> "*" EmergencyStateTransition : has
+
+AppointmentService ..> AppointmentHelpers : uses
+EmergencyService ..> EmergencyHelpers : uses
+MedicalRecordService ..> MedicalRecordHelpers : uses
+AnalysisService ..> LabResult : analyzes
+
+@enduml

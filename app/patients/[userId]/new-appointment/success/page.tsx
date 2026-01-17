@@ -41,7 +41,6 @@ const RequestSuccess = async ({
             Cererea dvs. de <span className="text-green-500">programare</span> a
             fost trimisă cu succes!
           </h2>
-          <p>Vă vom contacta în curând pentru confirmare.</p>
         </section>
 
         <section className="request-details">

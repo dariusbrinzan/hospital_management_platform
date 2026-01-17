@@ -1,0 +1,52 @@
+@startuml Sequence Diagram - Creare Programare
+
+skinparam backgroundColor #FFFFFF
+skinparam handwritten false
+skinparam monochrome false
+skinparam shadowing false
+skinparam roundcorner 20
+skinparam maxMessageSize 60
+
+title Diagramă Secvență - Creare Programare Medicală
+
+actor "Pacient" as Patient
+participant "Frontend\n(Next.js)" as Frontend
+participant "API Route\n/app/api/appointments" as API
+participant "DB Helpers\nappointmentHelpers" as DBHelpers
+database "SQLite\nDatabase" as Database
+participant "Notification\nService" as Notification
+
+Patient -> Frontend: Accesează pagina new-appointment
+Frontend -> Frontend: Încarcă lista specializări
+Frontend -> Frontend: Încarcă lista medici
+Frontend -> Frontend: Încarcă pachete analize
+
+Patient -> Frontend: Selectează specializare
+Frontend -> Frontend: Filtrează medici după specializare
+
+Patient -> Frontend: Selectează doctor
+Frontend -> Frontend: Afișează metadate doctor
+
+Patient -> Frontend: Selectează pachet analize (opțional)
+Patient -> Frontend: Selectează dată și oră
+Patient -> Frontend: Completează motiv consultație
+Patient -> Frontend: Submit formular
+
+Frontend -> API: POST /api/appointments\n{userId, patientId, primaryPhysician,\nschedule, reason, note}
+
+API -> DBHelpers: createAppointment(params)
+DBHelpers -> Database: INSERT INTO appointments
+Database --> DBHelpers: appointmentId
+DBHelpers --> API: Appointment object
+
+API -> Notification: createNotification(\nuserId, "appointment_created")
+Notification -> Database: INSERT INTO notifications
+Database --> Notification: notificationId
+Notification --> API: Success
+
+API --> Frontend: 200 OK\n{appointmentId, success: true}
+
+Frontend -> Frontend: Redirect la success page
+Frontend -> Patient: Afișează confirmare programare
+
+@enduml

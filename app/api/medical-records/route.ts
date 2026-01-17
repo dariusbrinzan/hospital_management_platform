@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { medicalRecordHelpers } from "@/lib/db-helpers";
+import { medicalRecordHelpers, patientHelpers, appointmentHelpers } from "@/lib/db-helpers";
+import { createNotification } from "@/lib/actions/notification.actions";
+import { formatDateTime } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -61,6 +63,28 @@ export async function POST(request: NextRequest) {
       plan,
       notes,
     });
+
+    // Obține userId-ul din patientId pentru a crea notificare
+    const patient = patientHelpers.getById(patientId);
+    if (patient && patient.userId) {
+      // Obține informații despre programare dacă există
+      let appointmentInfo = "";
+      if (appointmentId) {
+        const appointment = appointmentHelpers.getById(appointmentId);
+        if (appointment) {
+          appointmentInfo = ` pentru programarea din ${formatDateTime(appointment.schedule).dateTime}`;
+        }
+      }
+
+      // Creează notificare pentru pacient că consultația a fost adăugată
+      await createNotification({
+        userId: patient.userId,
+        type: "consultation_added",
+        title: "Consultație medicală adăugată",
+        message: `Dr. ${doctorName} a adăugat o consultație medicală${appointmentInfo}. Puteți vizualiza detaliile în istoricul medical.`,
+        appointmentId: appointmentId || undefined,
+      });
+    }
 
     return NextResponse.json(record);
   } catch (error: any) {

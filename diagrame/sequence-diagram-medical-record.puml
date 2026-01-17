@@ -1,0 +1,116 @@
+@startuml Sequence Diagram - Adăugare Înregistrare Medicală
+
+skinparam backgroundColor #FFFFFF
+skinparam handwritten false
+skinparam monochrome false
+skinparam shadowing false
+skinparam roundcorner 20
+skinparam maxMessageSize 60
+
+title Diagramă Secvență - Adăugare/Editare Înregistrare Medicală
+
+actor "Medic" as Doctor
+participant "Frontend\nAdmin Dashboard" as Frontend
+participant "API Route\n/app/api/medical-records" as API
+participant "Medical Record\nHelpers" as Helpers
+database "SQLite\nDatabase" as Database
+
+== Verificare Înregistrare Existentă ==
+Doctor -> Frontend: Click "Adaugă Consultație" pe programare
+Frontend -> API: GET /api/medical-records/by-appointment/[appointmentId]
+API -> Helpers: getByAppointmentId(appointmentId)
+Helpers -> Database: SELECT * FROM medical_records\nWHERE appointmentId = ?
+Database --> Helpers: medicalRecord (sau null)
+Helpers --> API: MedicalRecord | null
+API --> Frontend: MedicalRecord | null
+
+alt Înregistrare există (Edit Mode)
+  Frontend -> Frontend: Setează isEditMode = true
+  Frontend -> Frontend: Pre-populează formular cu date existente
+else Înregistrare nu există (Create Mode)
+  Frontend -> Frontend: Setează isEditMode = false
+  Frontend -> Frontend: Afișează formular gol
+end
+
+== Pasul 1: Consultație de Bază ==
+Doctor -> Frontend: Completează chiefComplaint
+Doctor -> Frontend: Completează subjectiveNotes
+Doctor -> Frontend: Completează objectiveFindings
+Doctor -> Frontend: Completează assessment
+Doctor -> Frontend: Completează plan
+Doctor -> Frontend: Click "Următorul Pas"
+
+== Pasul 2: Diagnosticuri ==
+Doctor -> Frontend: Adaugă diagnostic
+Doctor -> Frontend: Completează diagnosisName, diagnosisCode
+Doctor -> Frontend: Selectează diagnosisType, status
+Doctor -> Frontend: Click "Adaugă Diagnostic"
+Frontend -> Frontend: Adaugă diagnostic în listă locală
+Doctor -> Frontend: Poate adăuga mai multe diagnosticuri
+Doctor -> Frontend: Click "Următorul Pas"
+
+== Pasul 3: Rețete ==
+Doctor -> Frontend: Adaugă rețetă
+Doctor -> Frontend: Completează medicationName, dosage
+Doctor -> Frontend: Completează frequency, route, quantity
+Doctor -> Frontend: Selectează startDate, endDate
+Doctor -> Frontend: Completează instructions, refills
+Doctor -> Frontend: Click "Adaugă Rețetă"
+Frontend -> Frontend: Adaugă rețetă în listă locală
+Doctor -> Frontend: Poate adăuga mai multe rețete
+Doctor -> Frontend: Click "Următorul Pas"
+
+== Pasul 4: Semne Vitale ==
+Doctor -> Frontend: Completează bloodPressure (systolic/diastolic)
+Doctor -> Frontend: Completează pulse, temperature
+Doctor -> Frontend: Completează oxygenSaturation, respiratoryRate
+Doctor -> Frontend: Completează weight, height
+Doctor -> Frontend: Completează glucoseLevel
+Doctor -> Frontend: Click "Salvează Consultație"
+
+== Salvare Înregistrare ==
+alt Edit Mode
+  Frontend -> API: PATCH /api/medical-records/[recordId]\n{chiefComplaint, subjectiveNotes,\nobjectiveFindings, assessment, plan}
+  API -> Helpers: update(recordId, updates)
+  Helpers -> Database: UPDATE medical_records\nSET ... WHERE id = ?
+  Database --> Helpers: Success
+  Helpers --> API: Updated record
+else Create Mode
+  Frontend -> API: POST /api/medical-records\n{patientId, appointmentId, doctorName,\nrecordType, visitDate, ...}
+  API -> Helpers: create(medicalRecord)
+  Helpers -> Database: INSERT INTO medical_records
+  Database --> Helpers: recordId
+  Helpers --> API: Created record
+end
+
+== Salvare Diagnosticuri ==
+loop Pentru fiecare diagnostic
+  Frontend -> API: POST /api/medical-records/[recordId]/diagnoses\n{diagnosisName, diagnosisCode,\ndiagnosisType, status, notes}
+  API -> Helpers: diagnosisHelpers.create(diagnosis)
+  Helpers -> Database: INSERT INTO diagnoses
+  Database --> Helpers: diagnosisId
+  Helpers --> API: Created diagnosis
+end
+
+== Salvare Rețete ==
+loop Pentru fiecare rețetă
+  Frontend -> API: POST /api/medical-records/[recordId]/prescriptions\n{medicationName, dosage, frequency,\nroute, quantity, startDate, ...}
+  API -> Helpers: prescriptionHelpers.create(prescription)
+  Helpers -> Database: INSERT INTO prescriptions
+  Database --> Helpers: prescriptionId
+  Helpers --> API: Created prescription
+end
+
+== Salvare Semne Vitale ==
+Frontend -> API: POST /api/medical-records/[recordId]/vital-signs\n{bloodPressureSystolic, bloodPressureDiastolic,\npulse, temperature, ...}
+API -> Helpers: vitalSignsHelpers.create(vitalSigns)
+Helpers -> Database: INSERT INTO vital_signs
+Database --> Helpers: vitalSignsId
+Helpers --> API: Created vital signs
+API --> Frontend: 200 OK
+
+Frontend -> Frontend: Închide modal
+Frontend -> Frontend: Actualizează tabel programări
+Frontend -> Doctor: Afișează confirmare salvare
+
+@enduml

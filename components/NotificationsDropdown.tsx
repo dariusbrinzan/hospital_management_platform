@@ -90,6 +90,8 @@ export const NotificationsDropdown = ({ userId }: { userId: string }) => {
         return "/assets/icons/calendar.svg";
       case "appointment_created":
         return "/assets/icons/clock.svg";
+      case "consultation_added":
+        return "/assets/icons/file-text.svg";
       default:
         return "/assets/icons/bell.svg";
     }
@@ -107,6 +109,8 @@ export const NotificationsDropdown = ({ userId }: { userId: string }) => {
         return "text-yellow-600";
       case "appointment_created":
         return "text-gray-600";
+      case "consultation_added":
+        return "text-purple-600";
       default:
         return "text-dark-600";
     }

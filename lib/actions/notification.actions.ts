@@ -9,7 +9,8 @@ export type NotificationType =
   | "appointment_cancelled"
   | "analysis_results_ready"
   | "appointment_reminder"
-  | "appointment_created";
+  | "appointment_created"
+  | "consultation_added";
 
 export interface CreateNotificationParams {
   userId: string;

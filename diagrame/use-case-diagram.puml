@@ -1,0 +1,133 @@
+@startuml Use Case Diagram - Platformă eHealth
+
+!define RECTANGLE class
+
+skinparam backgroundColor #FFFFFF
+skinparam handwritten false
+skinparam monochrome false
+skinparam shadowing false
+skinparam roundcorner 20
+skinparam maxMessageSize 60
+
+title Diagramă Use Case - Platformă eHealth
+
+left to right direction
+
+actor "Pacient" as Patient
+actor "Medic" as Doctor
+actor "Administrator" as Admin
+
+rectangle "Platformă eHealth" {
+  ' Autentificare și Înregistrare
+  usecase "Autentificare" as UC1
+  usecase "Înregistrare Pacient" as UC2
+  usecase "Upload Document Identitate" as UC3
+  
+  ' Gestionare Programări
+  usecase "Creare Programare" as UC4
+  usecase "Vizualizare Programări" as UC5
+  usecase "Anulare Programare" as UC6
+  usecase "Selectare Pachet Analize" as UC7
+  
+  ' Gestionare Istoric Medical
+  usecase "Vizualizare Istoric Medical" as UC8
+  usecase "Vizualizare Consultații" as UC9
+  usecase "Vizualizare Analize" as UC10
+  usecase "Vizualizare Alergii" as UC11
+  usecase "Vizualizare Vaccinări" as UC12
+  
+  ' Gestionare Medici
+  usecase "Filtrare Medici" as UC13
+  usecase "Vizualizare Detalii Doctor" as UC14
+  
+  ' Dashboard Administrator
+  usecase "Vizualizare Toate Programările" as UC15
+  usecase "Gestionare Pacienți" as UC16
+  usecase "Editare Consultație" as UC17
+  usecase "Introducere Rezultate Analize" as UC18
+  
+  ' Primiri Urgente
+  usecase "Creare Caz Urgență" as UC19
+  usecase "Vizualizare Kanban Urgențe" as UC20
+  usecase "Tranziție Stare Urgență" as UC21
+  usecase "Documentare Triaj" as UC22
+  usecase "Documentare Consimțământ" as UC23
+  usecase "Documentare Plan Îngrijire" as UC24
+  usecase "Documentare Externare" as UC25
+  
+  ' Gestionare Medici de Gardă
+  usecase "Programare Medici Gardă" as UC26
+  usecase "Vizualizare Workload" as UC27
+  usecase "Generare Rotație Automată" as UC28
+  
+  ' Notificări
+  usecase "Vizualizare Notificări" as UC29
+  usecase "Marcare Notificare Citită" as UC30
+}
+
+' Relații Pacient
+Patient --> UC1
+Patient --> UC2
+Patient --> UC3
+Patient --> UC4
+Patient --> UC5
+Patient --> UC6
+Patient --> UC7
+Patient --> UC8
+Patient --> UC9
+Patient --> UC10
+Patient --> UC11
+Patient --> UC12
+Patient --> UC13
+Patient --> UC14
+Patient --> UC29
+Patient --> UC30
+
+' Relații Medic
+Doctor --> UC1
+Doctor --> UC15
+Doctor --> UC17
+Doctor --> UC18
+Doctor --> UC19
+Doctor --> UC20
+Doctor --> UC21
+Doctor --> UC22
+Doctor --> UC23
+Doctor --> UC24
+Doctor --> UC25
+Doctor --> UC26
+Doctor --> UC27
+Doctor --> UC28
+
+' Relații Administrator
+Admin --> UC1
+Admin --> UC15
+Admin --> UC16
+Admin --> UC17
+Admin --> UC18
+Admin --> UC19
+Admin --> UC20
+Admin --> UC21
+Admin --> UC22
+Admin --> UC23
+Admin --> UC24
+Admin --> UC25
+Admin --> UC26
+Admin --> UC27
+Admin --> UC28
+
+' Extindere use case-uri
+UC2 ..> UC3 : <<include>>
+UC4 ..> UC7 : <<include>>
+UC4 ..> UC13 : <<include>>
+UC4 ..> UC14 : <<include>>
+UC8 ..> UC9 : <<extend>>
+UC8 ..> UC10 : <<extend>>
+UC8 ..> UC11 : <<extend>>
+UC8 ..> UC12 : <<extend>>
+UC21 ..> UC22 : <<extend>>
+UC21 ..> UC23 : <<extend>>
+UC21 ..> UC24 : <<extend>>
+UC21 ..> UC25 : <<extend>>
+
+@enduml

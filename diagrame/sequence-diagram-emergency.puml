@@ -1,0 +1,124 @@
+@startuml Sequence Diagram - Gestionare Caz Urgență
+
+skinparam backgroundColor #FFFFFF
+skinparam handwritten false
+skinparam monochrome false
+skinparam shadowing false
+skinparam roundcorner 20
+skinparam maxMessageSize 60
+
+title Diagramă Secvență - Gestionare Caz Urgență
+
+actor "Medic" as Doctor
+participant "Frontend\nEmergency Dashboard" as Frontend
+participant "API Route\n/app/api/emergency" as API
+participant "Emergency Helpers" as Helpers
+database "SQLite\nDatabase" as Database
+participant "State Machine\nValidator" as Validator
+
+== Creare Caz Urgență ==
+Doctor -> Frontend: Accesează pagina /admin/emergency/new
+Frontend -> Frontend: Încarcă lista pacienți
+
+Doctor -> Frontend: Selectează pacient
+Doctor -> Frontend: Completează chiefComplaint
+Doctor -> Frontend: Selectează triageLevel
+Doctor -> Frontend: Submit formular
+
+Frontend -> API: POST /api/emergency\n{patientId, triageLevel, chiefComplaint}
+API -> Helpers: createEmergencyCase(params)
+Helpers -> Database: INSERT INTO emergency_cases\n(state: 'arrival')
+Database --> Helpers: caseId
+Helpers -> Database: INSERT INTO emergency_state_transitions\n(from: null, to: 'arrival')
+Database --> Helpers: transitionId
+Helpers --> API: EmergencyCase object
+API --> Frontend: 200 OK\n{caseId, success: true}
+
+== Tranziție Stare: Arrival -> Triage ==
+Doctor -> Frontend: Click pe caz în Kanban
+Frontend -> API: GET /api/emergency/[caseId]
+API -> Helpers: getById(caseId)
+Helpers -> Database: SELECT * FROM emergency_cases
+Database --> Helpers: case data
+Helpers --> API: EmergencyCase
+API --> Frontend: Case details
+
+Doctor -> Frontend: Completează formular triaj
+Doctor -> Frontend: Introducere vital signs
+Doctor -> Frontend: Setează priority
+Doctor -> Frontend: Submit
+
+Frontend -> API: POST /api/emergency/[caseId]/triage\n{vitalSigns, priority}
+API -> Validator: validateTransition(\ncurrentState: 'arrival',\nnewState: 'triage')
+Validator --> API: Valid
+
+API -> Helpers: updateState(caseId, 'triage')
+Helpers -> Database: UPDATE emergency_cases\nSET currentState = 'triage',\ntriageTime = NOW()
+Database --> Helpers: Success
+Helpers -> Database: INSERT INTO emergency_state_transitions\n(from: 'arrival', to: 'triage')
+Database --> Helpers: transitionId
+Helpers --> API: Updated case
+API --> Frontend: 200 OK
+
+== Tranziție Stare: Triage -> Consent ==
+Doctor -> Frontend: Completează formular consimțământ
+Doctor -> Frontend: Bifează consentGiven
+Doctor -> Frontend: Introducere signedBy
+Doctor -> Frontend: Submit
+
+Frontend -> API: POST /api/emergency/[caseId]/consent\n{consentGiven: true, signedBy}
+API -> Validator: validateTransition(\ncurrentState: 'triage',\nnewState: 'consent')
+Validator --> API: Valid
+
+API -> Helpers: updateState(caseId, 'consent')
+Helpers -> Database: UPDATE emergency_cases\nSET currentState = 'consent',\nconsentGiven = 1
+Database --> Helpers: Success
+Helpers -> Database: INSERT INTO emergency_state_transitions
+Database --> Helpers: transitionId
+Helpers --> API: Updated case
+API --> Frontend: 200 OK
+
+== Tranziție Stare: Consent -> Admission ==
+Doctor -> Frontend: Completează plan îngrijire
+Doctor -> Frontend: Submit
+
+Frontend -> API: POST /api/emergency/[caseId]/care-plan\n{carePlan}
+API -> Validator: validateTransition(\ncurrentState: 'consent',\nnewState: 'admission')
+Validator --> API: Valid
+
+API -> Helpers: updateState(caseId, 'admission')
+Helpers -> Database: UPDATE emergency_cases\nSET currentState = 'admission',\nadmissionTime = NOW(),\ncarePlan = ?
+Database --> Helpers: Success
+Helpers --> API: Updated case
+API --> Frontend: 200 OK
+
+== Tranziție Stare: Admission -> Treatment ==
+Doctor -> Frontend: Click "Începe Tratament"
+Frontend -> API: POST /api/emergency/[caseId]/transition\n{toState: 'treatment'}
+API -> Validator: validateTransition(\ncurrentState: 'admission',\nnewState: 'treatment')
+Validator --> API: Valid
+
+API -> Helpers: updateState(caseId, 'treatment')
+Helpers -> Database: UPDATE emergency_cases\nSET currentState = 'treatment'
+Database --> Helpers: Success
+Helpers --> API: Updated case
+API --> Frontend: 200 OK
+
+== Tranziție Stare: Treatment -> Discharge ==
+Doctor -> Frontend: Completează scrisoare externare
+Doctor -> Frontend: Submit
+
+Frontend -> API: POST /api/emergency/[caseId]/discharge\n{dischargeLetter}
+API -> Validator: validateTransition(\ncurrentState: 'treatment',\nnewState: 'discharge')
+Validator --> API: Valid
+
+API -> Helpers: updateState(caseId, 'discharge')
+Helpers -> Database: UPDATE emergency_cases\nSET currentState = 'discharge',\ndischargeTime = NOW(),\ndischargeLetter = ?
+Database --> Helpers: Success
+Helpers --> API: Updated case
+API --> Frontend: 200 OK
+
+Frontend -> Frontend: Actualizează Kanban board
+Frontend -> Doctor: Afișează caz în coloana "Externare"
+
+@enduml

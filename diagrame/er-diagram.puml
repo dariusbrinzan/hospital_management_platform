@@ -1,0 +1,319 @@
+@startuml ER Diagram - Baza de Date eHealth
+
+!define RECTANGLE class
+
+skinparam backgroundColor #FFFFFF
+skinparam handwritten false
+skinparam monochrome false
+skinparam shadowing false
+skinparam roundcorner 20
+
+title Diagramă Entitate-Relație - Baza de Date eHealth
+
+entity "users" {
+  * **id** : TEXT <<PK>>
+  --
+  * name : TEXT
+  * email : TEXT <<UNIQUE>>
+  * phone : TEXT
+  * createdAt : TEXT
+  * updatedAt : TEXT
+}
+
+entity "patients" {
+  * **id** : TEXT <<PK>>
+  * userId : TEXT <<FK>>
+  --
+  * name : TEXT
+  * email : TEXT
+  * phone : TEXT
+  * birthDate : TEXT
+  * gender : TEXT
+  * address : TEXT
+  * occupation : TEXT
+  * emergencyContactName : TEXT
+  * emergencyContactNumber : TEXT
+  * primaryPhysician : TEXT
+  * insuranceProvider : TEXT
+  * insurancePolicyNumber : TEXT
+  allergies : TEXT
+  currentMedication : TEXT
+  familyMedicalHistory : TEXT
+  pastMedicalHistory : TEXT
+  identificationType : TEXT
+  identificationNumber : TEXT
+  identificationDocumentId : TEXT
+  identificationDocumentUrl : TEXT
+  privacyConsent : INTEGER
+  bloodType : TEXT
+  height : REAL
+  weight : REAL
+  cardiovascularDiseases : TEXT
+  chronicDiseases : TEXT
+  surgeries : TEXT
+  vaccinations : TEXT
+  smokingStatus : TEXT
+  alcoholConsumption : TEXT
+  exerciseFrequency : TEXT
+  * createdAt : TEXT
+  * updatedAt : TEXT
+}
+
+entity "appointments" {
+  * **id** : TEXT <<PK>>
+  * userId : TEXT <<FK>>
+  * patientId : TEXT <<FK>>
+  --
+  * schedule : TEXT
+  * status : TEXT
+  * primaryPhysician : TEXT
+  * reason : TEXT
+  note : TEXT
+  cancellationReason : TEXT
+  analysisResults : TEXT
+  * createdAt : TEXT
+  * updatedAt : TEXT
+}
+
+entity "notifications" {
+  * **id** : TEXT <<PK>>
+  * userId : TEXT <<FK>>
+  --
+  * type : TEXT
+  * title : TEXT
+  * message : TEXT
+  appointmentId : TEXT <<FK>>
+  * isRead : INTEGER
+  * createdAt : TEXT
+}
+
+entity "emergency_cases" {
+  * **id** : TEXT <<PK>>
+  * patientId : TEXT <<FK>>
+  --
+  * triageLevel : TEXT
+  * currentState : TEXT
+  assignedDoctorId : TEXT
+  * arrivalTime : TEXT
+  triageTime : TEXT
+  admissionTime : TEXT
+  dischargeTime : TEXT
+  * priority : INTEGER
+  * chiefComplaint : TEXT
+  vitalSigns : TEXT
+  * consentGiven : INTEGER
+  carePlan : TEXT
+  dischargeLetter : TEXT
+  skipReason : TEXT
+  * createdAt : TEXT
+  * updatedAt : TEXT
+}
+
+entity "doctors_on_duty" {
+  * **id** : TEXT <<PK>>
+  --
+  * doctorName : TEXT
+  * weekStartDate : TEXT
+  * weekEndDate : TEXT
+  specialty : TEXT
+  * isAvailable : INTEGER
+  * maxConcurrentEmergencies : INTEGER
+  * createdAt : TEXT
+  * updatedAt : TEXT
+}
+
+entity "emergency_state_transitions" {
+  * **id** : TEXT <<PK>>
+  * emergencyCaseId : TEXT <<FK>>
+  --
+  * fromState : TEXT
+  * toState : TEXT
+  transitionReason : TEXT
+  * performedBy : TEXT
+  * timestamp : TEXT
+  metadata : TEXT
+}
+
+entity "emergency_documents" {
+  * **id** : TEXT <<PK>>
+  * emergencyCaseId : TEXT <<FK>>
+  --
+  * documentType : TEXT
+  * content : TEXT
+  signedBy : TEXT
+  signedAt : TEXT
+  * createdAt : TEXT
+}
+
+entity "medical_records" {
+  * **id** : TEXT <<PK>>
+  * patientId : TEXT <<FK>>
+  appointmentId : TEXT <<FK>>
+  --
+  * doctorName : TEXT
+  * recordType : TEXT
+  * visitDate : TEXT
+  chiefComplaint : TEXT
+  subjectiveNotes : TEXT
+  objectiveFindings : TEXT
+  assessment : TEXT
+  plan : TEXT
+  notes : TEXT
+  * createdAt : TEXT
+  * updatedAt : TEXT
+}
+
+entity "diagnoses" {
+  * **id** : TEXT <<PK>>
+  * medicalRecordId : TEXT <<FK>>
+  --
+  diagnosisCode : TEXT
+  * diagnosisName : TEXT
+  * diagnosisType : TEXT
+  * status : TEXT
+  onsetDate : TEXT
+  resolvedDate : TEXT
+  notes : TEXT
+  * createdAt : TEXT
+}
+
+entity "prescriptions" {
+  * **id** : TEXT <<PK>>
+  * medicalRecordId : TEXT <<FK>>
+  --
+  * medicationName : TEXT
+  * dosage : TEXT
+  * frequency : TEXT
+  route : TEXT
+  quantity : TEXT
+  * startDate : TEXT
+  endDate : TEXT
+  instructions : TEXT
+  refills : INTEGER
+  * status : TEXT
+  discontinuedReason : TEXT
+  * createdAt : TEXT
+}
+
+entity "vital_signs" {
+  * **id** : TEXT <<PK>>
+  * medicalRecordId : TEXT <<FK>>
+  * patientId : TEXT <<FK>>
+  --
+  bloodPressureSystolic : INTEGER
+  bloodPressureDiastolic : INTEGER
+  pulse : INTEGER
+  temperature : REAL
+  oxygenSaturation : INTEGER
+  respiratoryRate : INTEGER
+  weight : REAL
+  height : REAL
+  bmi : REAL
+  glucoseLevel : REAL
+  notes : TEXT
+  * recordedAt : TEXT
+  * createdAt : TEXT
+}
+
+entity "lab_results" {
+  * **id** : TEXT <<PK>>
+  * medicalRecordId : TEXT <<FK>>
+  appointmentId : TEXT <<FK>>
+  --
+  * testName : TEXT
+  testCategory : TEXT
+  resultValue : TEXT
+  unit : TEXT
+  referenceRange : TEXT
+  * status : TEXT
+  notes : TEXT
+  * performedDate : TEXT
+  * createdAt : TEXT
+}
+
+entity "procedures" {
+  * **id** : TEXT <<PK>>
+  * medicalRecordId : TEXT <<FK>>
+  --
+  * procedureName : TEXT
+  procedureCode : TEXT
+  * procedureDate : TEXT
+  * performedBy : TEXT
+  location : TEXT
+  anesthesiaType : TEXT
+  complications : TEXT
+  outcome : TEXT
+  followUpRequired : INTEGER
+  followUpDate : TEXT
+  notes : TEXT
+  * createdAt : TEXT
+}
+
+entity "allergies_adverse_reactions" {
+  * **id** : TEXT <<PK>>
+  * patientId : TEXT <<FK>>
+  --
+  * allergenType : TEXT
+  * allergenName : TEXT
+  * reactionType : TEXT
+  * severity : TEXT
+  symptoms : TEXT
+  firstOccurrenceDate : TEXT
+  lastOccurrenceDate : TEXT
+  * status : TEXT
+  notes : TEXT
+  reportedBy : TEXT
+  * createdAt : TEXT
+  * updatedAt : TEXT
+}
+
+entity "vaccinations" {
+  * **id** : TEXT <<PK>>
+  * patientId : TEXT <<FK>>
+  --
+  * vaccineName : TEXT
+  vaccineType : TEXT
+  * administrationDate : TEXT
+  administeredBy : TEXT
+  lotNumber : TEXT
+  manufacturer : TEXT
+  site : TEXT
+  nextDoseDate : TEXT
+  notes : TEXT
+  * createdAt : TEXT
+}
+
+entity "family_history" {
+  * **id** : TEXT <<PK>>
+  * patientId : TEXT <<FK>>
+  --
+  * relation : TEXT
+  * condition : TEXT
+  ageOfOnset : INTEGER
+  status : TEXT
+  notes : TEXT
+  * createdAt : TEXT
+  * updatedAt : TEXT
+}
+
+' Relații
+users ||--o{ patients : "are"
+users ||--o{ appointments : "face"
+patients ||--o{ appointments : "are"
+patients ||--o{ emergency_cases : "au"
+patients ||--o{ medical_records : "au"
+patients ||--o{ allergies_adverse_reactions : "au"
+patients ||--o{ vaccinations : "au"
+patients ||--o{ family_history : "au"
+appointments ||--o{ notifications : "generează"
+appointments ||--o{ medical_records : "generează"
+appointments ||--o{ lab_results : "generează"
+emergency_cases ||--o{ emergency_state_transitions : "are"
+emergency_cases ||--o{ emergency_documents : "are"
+medical_records ||--o{ diagnoses : "conține"
+medical_records ||--o{ prescriptions : "conține"
+medical_records ||--o{ vital_signs : "conține"
+medical_records ||--o{ lab_results : "conține"
+medical_records ||--o{ procedures : "conține"
+
+@enduml
