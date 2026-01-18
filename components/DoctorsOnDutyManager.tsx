@@ -127,21 +127,6 @@ export const DoctorsOnDutyManager = () => {
     }
   };
 
-  const toggleAvailability = async (dutyId: string, isAvailable: boolean) => {
-    try {
-      const response = await fetch(`/api/emergency/doctors/${dutyId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isAvailable: !isAvailable }),
-      });
-
-      if (response.ok) {
-        await loadDoctorsOnDuty();
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
   const getWorkloadColor = (score: number) => {
     if (score < 5) return "text-green-600 bg-green-50";
@@ -328,12 +313,6 @@ export const DoctorsOnDutyManager = () => {
                     </p>
                   </div>
                 </div>
-                <Button
-                  onClick={() => toggleAvailability(duty.$id, duty.isAvailable)}
-                  className={duty.isAvailable ? "shad-primary-btn" : "shad-gray-btn"}
-                >
-                  {duty.isAvailable ? "Disponibil" : "Indisponibil"}
-                </Button>
               </div>
             );
           })}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,6 +31,42 @@ interface AddVitalSignsFormProps {
 
 export const AddVitalSignsForm = ({ patientId, onSuccess, onCancel }: AddVitalSignsFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [doctorsOnDuty, setDoctorsOnDuty] = useState<{ doctorName: string; specialty?: string }[]>([]);
+
+  useEffect(() => {
+    loadDoctorsOnDuty();
+  }, []);
+
+  const loadDoctorsOnDuty = async () => {
+    try {
+      const response = await fetch("/api/emergency/doctors");
+      if (response.ok) {
+        const data = await response.json();
+        // Filtrează medicii activi (disponibili și în perioada de gardă)
+        const now = new Date();
+        const currentDoctors = data.filter((d: any) => {
+          const weekStart = new Date(d.weekStartDate);
+          const weekEnd = new Date(d.weekEndDate);
+          // Include medicii care sunt în perioada de gardă (trecut sau prezent)
+          return d.isAvailable && now <= weekEnd;
+        });
+        // Extrage doar numele medicilor (unic) - păstrează ultima înregistrare pentru fiecare medic
+        const doctorsMap = new Map<string, any>();
+        currentDoctors.forEach((d: any) => {
+          if (!doctorsMap.has(d.doctorName) || new Date(d.weekStartDate) > new Date(doctorsMap.get(d.doctorName).weekStartDate)) {
+            doctorsMap.set(d.doctorName, d);
+          }
+        });
+        const uniqueDoctors = Array.from(doctorsMap.values()).map((d: any) => ({
+          doctorName: d.doctorName,
+          specialty: d.specialty,
+        }));
+        setDoctorsOnDuty(uniqueDoctors);
+      }
+    } catch (error) {
+      console.error("Error loading doctors on duty:", error);
+    }
+  };
 
   const form = useForm<z.infer<typeof vitalSignsSchema>>({
     resolver: zodResolver(vitalSignsSchema),
@@ -208,8 +244,24 @@ export const AddVitalSignsForm = ({ patientId, onSuccess, onCancel }: AddVitalSi
               <FormItem>
                 <FormLabel>Înregistrat de</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Select onValueChange={field.onChange} value={field.value || undefined}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selectează medic de gardă" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {doctorsOnDuty.length > 0 ? (
+                        doctorsOnDuty.map((doctor) => (
+                          <SelectItem key={doctor.doctorName} value={doctor.doctorName}>
+                            {doctor.doctorName} {doctor.specialty && `(${doctor.specialty})`}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1.5 text-sm text-dark-500">Nu există medici de gardă</div>
+                      )}
+                    </SelectContent>
+                  </Select>
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />

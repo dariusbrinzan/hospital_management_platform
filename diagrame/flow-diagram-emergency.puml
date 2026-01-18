@@ -1,0 +1,54 @@
+@startuml Flow Diagram - Workflow Cazuri Urgență
+
+skinparam backgroundColor #FFFFFF
+skinparam handwritten false
+skinparam monochrome false
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam ArrowColor #333333
+skinparam ActivityBackgroundColor #E8F4F8
+skinparam ActivityBorderColor #0066CC
+skinparam ActivityFontColor #000000
+skinparam ActivityDiamondBackgroundColor #FFF4E6
+skinparam ActivityDiamondBorderColor #FF9900
+
+title Workflow Cazuri Urgență
+
+start
+
+:📝 Creare caz\nARRIVAL;
+note right: Pacient existent/nou
+
+:🏥 Triaj\nTRIAGE;
+note right: Vital signs, priority
+
+if (Critic?) then (da)
+  :🏥 Transfer ATI\nICU;
+  :Asignare sală/păt\n(automat 1-3/1-6);
+  :Monitorizare + tratamente;
+  if (Îmbunătățire?) then (da)
+    :TREATMENT;
+  endif
+else (nu)
+  :✅ Consimțământ\nCONSENT;
+  :🏥 Internare\nADMISSION;
+  
+  if (Necesită ATI?) then (da)
+    :Transfer ATI\nICU;
+    :Asignare + monitorizare;
+  else (nu)
+    :💊 Tratament\nTREATMENT;
+    if (Agravare?) then (da)
+      :Transfer ATI\nICU;
+    endif
+  endif
+endif
+
+:📄 Externare\nDISCHARGE;
+if (Era în ATI?) then (da)
+  :Eliberare pat;
+endif
+
+stop
+
+@enduml

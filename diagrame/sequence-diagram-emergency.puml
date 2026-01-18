@@ -4,47 +4,94 @@ skinparam backgroundColor #FFFFFF
 skinparam handwritten false
 skinparam monochrome false
 skinparam shadowing false
-skinparam roundcorner 15
-skinparam maxMessageSize 50
-skinparam ParticipantPadding 10
-skinparam BoxPadding 5
+skinparam roundcorner 12
+skinparam maxMessageSize 45
+skinparam ParticipantPadding 8
+skinparam BoxPadding 4
 
-title Diagramă Secvență - Gestionare Caz Urgență
+title Diagramă Secvență - Gestionare Caz Urgență + ATI
 
 actor "Medic" as Doctor
 participant "Frontend" as Frontend
 participant "API" as API
-participant "Helpers" as Helpers
+participant "Emergency\nHelpers" as EHelpers
+participant "ICU\nHelpers" as ICUHelpers
 database "Database" as DB
 
 == Creare Caz ==
-Doctor -> Frontend: Completează formular\n(patientId, triageLevel, chiefComplaint)
+Doctor -> Frontend: Formular\n(patientId/date, triageLevel)
 Frontend -> API: POST /api/emergency
-API -> Helpers: createEmergencyCase()
-Helpers -> DB: INSERT emergency_cases\n(state: 'arrival')
-DB --> Helpers: caseId
-Helpers --> API: EmergencyCase
+API -> EHelpers: createEmergencyCase()
+EHelpers -> DB: INSERT emergency_cases\n(state: 'arrival')
+DB --> EHelpers: caseId
+EHelpers --> API: EmergencyCase
 API --> Frontend: 200 OK
 
-== Workflow Tranziții Stare ==
+== Workflow Tranziții ==
 loop Pentru fiecare etapă
-    Doctor -> Frontend: Completează formular etapă
+    Doctor -> Frontend: Completează formular
     Frontend -> API: POST /api/emergency/[id]/[etapă]
-    API -> Helpers: updateState(caseId, newState)
-    Helpers -> DB: UPDATE currentState\n+ INSERT transition
-    DB --> Helpers: Success
-    Helpers --> API: Updated case
+    API -> EHelpers: updateState(caseId, newState)
+    EHelpers -> DB: UPDATE currentState\n+ INSERT transition
+    DB --> EHelpers: Success
+    EHelpers --> API: Updated case
     API --> Frontend: 200 OK
     Frontend -> Frontend: Actualizează Kanban
 end
 
-note right of Helpers
+== Transfer în ATI ==
+alt Transfer din admission/treatment
+    Doctor -> Frontend: Click "Transfer în ATI"
+    Frontend -> API: POST /api/emergency/[id]/icu
+    API -> ICUHelpers: admitPatient()\n+ findAvailableRoom()
+    ICUHelpers -> DB: SELECT icu_rooms\nWHERE available
+    DB --> ICUHelpers: Available room
+    ICUHelpers -> DB: INSERT icu_patients\n+ UPDATE room occupancy
+    DB --> ICUHelpers: icuPatientId
+    API -> EHelpers: updateState('icu')
+    EHelpers -> DB: UPDATE currentState
+    DB --> EHelpers: Success
+    ICUHelpers --> API: ICUPatient
+    API --> Frontend: 200 OK
+    Frontend -> Frontend: Redirect /admin/icu
+end
+
+== Gestionare ATI ==
+loop Monitorizare continuă
+    Doctor -> Frontend: Adaugă semne vitale
+    Frontend -> API: POST /api/icu/patients/[id]/vital-signs
+    API -> ICUHelpers: addVitalSigns()
+    ICUHelpers -> DB: INSERT icu_vital_signs
+    DB --> ICUHelpers: Success
+    API --> Frontend: 200 OK
+    
+    Doctor -> Frontend: Adaugă tratament
+    Frontend -> API: POST /api/icu/patients/[id]/treatments
+    API -> ICUHelpers: addTreatment()
+    ICUHelpers -> DB: INSERT icu_treatments
+    DB --> ICUHelpers: Success
+    API --> Frontend: 200 OK
+end
+
+== Externare ==
+Doctor -> Frontend: Externare din ATI
+Frontend -> API: DELETE /api/icu/patients/[id]
+API -> ICUHelpers: dischargePatient()
+ICUHelpers -> DB: UPDATE dischargeDate\n+ UPDATE room occupancy
+DB --> ICUHelpers: Success
+API -> EHelpers: updateState('discharge')
+EHelpers -> DB: UPDATE currentState
+DB --> EHelpers: Success
+API --> Frontend: 200 OK
+
+note right of EHelpers
   Tranziții valide:
   arrival → triage
   triage → consent
   consent → admission
-  admission → treatment
-  treatment → discharge
+  admission → treatment/icu
+  treatment → icu/discharge
+  icu → treatment/discharge
 end note
 
 @enduml

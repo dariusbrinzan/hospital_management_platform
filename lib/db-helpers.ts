@@ -1039,6 +1039,68 @@ export const doctorsOnDutyHelpers = {
     ).sort((a: { workloadScore: number }, b: { workloadScore: number }) => a.workloadScore - b.workloadScore);
   },
 
+  // Generează rotație automată pentru o perioadă specifică (12 ore)
+  generateAutomaticRotationForPeriod: (options: {
+    startDate: Date | string;
+    endDate: Date | string;
+    doctorsCount?: number;
+  }) => {
+    const { Doctors } = require("@/constants");
+    const { startDate, endDate, doctorsCount = 3 } = options;
+
+    // Helper pentru formatarea datelor
+    const formatDate = (date: Date | string): string => {
+      if (typeof date === "string") return date;
+      return date.toISOString();
+    };
+
+    const startDateStr = formatDate(startDate);
+    const endDateStr = formatDate(endDate);
+
+    // Calculează workload-ul pentru toți medicii (bazat pe programări + urgente)
+    const workloads = doctorsOnDutyHelpers.getAllWorkloads();
+    
+    // Sortează după workload (cel mai puțin ocupat primul)
+    const sortedDoctors = workloads.sort((a: { workloadScore: number }, b: { workloadScore: number }) => a.workloadScore - b.workloadScore);
+
+    // Verifică dacă există deja o rotație pentru această perioadă
+    const existingRotation = db.prepare(`
+      SELECT * FROM doctors_on_duty
+      WHERE weekStartDate = ? AND weekEndDate = ?
+    `).all(startDateStr, endDateStr) as any[];
+
+    if (existingRotation.length > 0) {
+      // Șterge rotația existentă
+      db.prepare(`
+        DELETE FROM doctors_on_duty
+        WHERE weekStartDate = ? AND weekEndDate = ?
+      `).run(startDateStr, endDateStr);
+    }
+
+    // Selectează medicii cu cel mai mic workload
+    const selectedDoctors = sortedDoctors.slice(0, Math.min(doctorsCount, sortedDoctors.length));
+
+    // Creează înregistrări pentru fiecare medic selectat
+    const rotation = selectedDoctors.map((workload: { doctorName: string }) => {
+      const doctor = Doctors.find((d: { name: string; specialty?: string }) => d.name === workload.doctorName);
+      return doctorsOnDutyHelpers.create({
+        doctorName: workload.doctorName,
+        weekStartDate: startDate,
+        weekEndDate: endDate,
+        specialty: doctor?.specialty,
+        isAvailable: true,
+        maxConcurrentEmergencies: 3,
+      });
+    });
+
+    return {
+      startDate: startDateStr,
+      endDate: endDateStr,
+      doctors: rotation,
+      totalDoctors: rotation.length,
+    };
+  },
+
   // Generează rotație automată pentru săptămâna următoare
   generateAutomaticRotation: (options?: {
     doctorsPerWeek?: number;
