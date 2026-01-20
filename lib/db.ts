@@ -668,6 +668,54 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_allergies_patientId ON allergies_adverse_reactions(patientId);
   CREATE INDEX IF NOT EXISTS idx_vaccinations_patientId ON vaccinations(patientId);
   CREATE INDEX IF NOT EXISTS idx_family_history_patientId ON family_history(patientId);
+
+  -- Tabele pentru Documente Medicale
+  CREATE TABLE IF NOT EXISTS medical_documents (
+    id TEXT PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    appointmentId TEXT, -- Opțional: asociat cu o programare specifică
+    documentType TEXT NOT NULL, -- 'analysis', 'image', 'report', 'consent', 'certificate', 'other'
+    category TEXT, -- 'external_analysis', 'radiology', 'laboratory', 'consultation', 'administrative', etc.
+    fileName TEXT NOT NULL,
+    originalFileName TEXT NOT NULL,
+    filePath TEXT NOT NULL,
+    fileSize INTEGER NOT NULL, -- în bytes
+    mimeType TEXT NOT NULL, -- 'application/pdf', 'image/jpeg', etc.
+    description TEXT,
+    tags TEXT, -- JSON array cu tag-uri
+    uploadedBy TEXT NOT NULL, -- Numele persoanei care a uploadat
+    uploadedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    isApproved INTEGER NOT NULL DEFAULT 1, -- 0 = în așteptare aprobare, 1 = aprobat
+    approvedBy TEXT,
+    approvedAt TEXT,
+    version INTEGER NOT NULL DEFAULT 1, -- Pentru versioning
+    parentDocumentId TEXT, -- Pentru versiuni noi ale aceluiași document
+    isDeleted INTEGER NOT NULL DEFAULT 0,
+    deletedAt TEXT,
+    deletedBy TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id),
+    FOREIGN KEY (appointmentId) REFERENCES appointments(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS document_access_log (
+    id TEXT PRIMARY KEY,
+    documentId TEXT NOT NULL,
+    accessedBy TEXT NOT NULL,
+    accessType TEXT NOT NULL, -- 'view', 'download', 'delete', 'approve'
+    accessedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    ipAddress TEXT,
+    userAgent TEXT,
+    FOREIGN KEY (documentId) REFERENCES medical_documents(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_medical_documents_patientId ON medical_documents(patientId);
+  CREATE INDEX IF NOT EXISTS idx_medical_documents_appointmentId ON medical_documents(appointmentId);
+  CREATE INDEX IF NOT EXISTS idx_medical_documents_type ON medical_documents(documentType);
+  CREATE INDEX IF NOT EXISTS idx_medical_documents_category ON medical_documents(category);
+  CREATE INDEX IF NOT EXISTS idx_medical_documents_uploadedAt ON medical_documents(uploadedAt);
+  CREATE INDEX IF NOT EXISTS idx_document_access_log_documentId ON document_access_log(documentId);
 `);
 
 // Inițializare medicamente și stocuri

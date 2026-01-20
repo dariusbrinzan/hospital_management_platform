@@ -3361,3 +3361,248 @@ export const medicationTransactionHelpers = {
     }));
   },
 };
+
+// Medical Document Helpers
+export const medicalDocumentHelpers = {
+  create: (document: {
+    patientId: string;
+    appointmentId?: string;
+    documentType: string;
+    category?: string;
+    fileName: string;
+    originalFileName: string;
+    filePath: string;
+    fileSize: number;
+    mimeType: string;
+    description?: string;
+    tags?: string[];
+    uploadedBy: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    
+    db.prepare(`
+      INSERT INTO medical_documents (
+        id, patientId, appointmentId, documentType, category, fileName, originalFileName,
+        filePath, fileSize, mimeType, description, tags, uploadedBy, uploadedAt, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      document.patientId,
+      document.appointmentId || null,
+      document.documentType,
+      document.category || null,
+      document.fileName,
+      document.originalFileName,
+      document.filePath,
+      document.fileSize,
+      document.mimeType,
+      document.description || null,
+      document.tags ? JSON.stringify(document.tags) : null,
+      document.uploadedBy,
+      now,
+      now,
+      now
+    );
+    
+    return medicalDocumentHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const doc = db.prepare(`
+      SELECT d.*, p.name as patientName
+      FROM medical_documents d
+      LEFT JOIN patients p ON d.patientId = p.id
+      WHERE d.id = ? AND d.isDeleted = 0
+    `).get(id) as any;
+    
+    if (!doc) return null;
+    
+    return {
+      $id: doc.id,
+      patientId: doc.patientId,
+      appointmentId: doc.appointmentId,
+      documentType: doc.documentType,
+      category: doc.category,
+      fileName: doc.fileName,
+      originalFileName: doc.originalFileName,
+      filePath: doc.filePath,
+      fileSize: doc.fileSize,
+      mimeType: doc.mimeType,
+      description: doc.description,
+      tags: doc.tags ? JSON.parse(doc.tags) : null,
+      uploadedBy: doc.uploadedBy,
+      uploadedAt: parseDate(doc.uploadedAt),
+      isApproved: doc.isApproved === 1,
+      approvedBy: doc.approvedBy,
+      approvedAt: doc.approvedAt ? parseDate(doc.approvedAt) : null,
+      version: doc.version,
+      parentDocumentId: doc.parentDocumentId,
+      isDeleted: doc.isDeleted === 1,
+      deletedAt: doc.deletedAt ? parseDate(doc.deletedAt) : null,
+      deletedBy: doc.deletedBy,
+      createdAt: parseDate(doc.createdAt),
+      updatedAt: parseDate(doc.updatedAt),
+      patient: doc.patientName ? { name: doc.patientName } : null,
+    };
+  },
+
+  getByPatientId: (patientId: string, filters?: {
+    documentType?: string;
+    category?: string;
+    appointmentId?: string;
+  }) => {
+    let query = `
+      SELECT d.*, p.name as patientName
+      FROM medical_documents d
+      LEFT JOIN patients p ON d.patientId = p.id
+      WHERE d.patientId = ? AND d.isDeleted = 0
+    `;
+    const params: any[] = [patientId];
+    
+    if (filters?.documentType) {
+      query += " AND d.documentType = ?";
+      params.push(filters.documentType);
+    }
+    
+    if (filters?.category) {
+      query += " AND d.category = ?";
+      params.push(filters.category);
+    }
+    
+    if (filters?.appointmentId) {
+      query += " AND d.appointmentId = ?";
+      params.push(filters.appointmentId);
+    }
+    
+    query += " ORDER BY d.uploadedAt DESC";
+    
+    const docs = db.prepare(query).all(...params) as any[];
+    return docs.map((doc) => ({
+      $id: doc.id,
+      patientId: doc.patientId,
+      appointmentId: doc.appointmentId,
+      documentType: doc.documentType,
+      category: doc.category,
+      fileName: doc.fileName,
+      originalFileName: doc.originalFileName,
+      filePath: doc.filePath,
+      fileSize: doc.fileSize,
+      mimeType: doc.mimeType,
+      description: doc.description,
+      tags: doc.tags ? JSON.parse(doc.tags) : null,
+      uploadedBy: doc.uploadedBy,
+      uploadedAt: parseDate(doc.uploadedAt),
+      isApproved: doc.isApproved === 1,
+      approvedBy: doc.approvedBy,
+      approvedAt: doc.approvedAt ? parseDate(doc.approvedAt) : null,
+      version: doc.version,
+      parentDocumentId: doc.parentDocumentId,
+      isDeleted: doc.isDeleted === 1,
+      deletedAt: doc.deletedAt ? parseDate(doc.deletedAt) : null,
+      deletedBy: doc.deletedBy,
+      createdAt: parseDate(doc.createdAt),
+      updatedAt: parseDate(doc.updatedAt),
+      patient: doc.patientName ? { name: doc.patientName } : null,
+    }));
+  },
+
+  update: (id: string, updates: {
+    description?: string;
+    tags?: string[];
+    category?: string;
+  }) => {
+    const now = new Date().toISOString();
+    const updatesList: string[] = [];
+    const params: any[] = [];
+    
+    if (updates.description !== undefined) {
+      updatesList.push("description = ?");
+      params.push(updates.description || null);
+    }
+    
+    if (updates.tags !== undefined) {
+      updatesList.push("tags = ?");
+      params.push(updates.tags ? JSON.stringify(updates.tags) : null);
+    }
+    
+    if (updates.category !== undefined) {
+      updatesList.push("category = ?");
+      params.push(updates.category || null);
+    }
+    
+    if (updatesList.length > 0) {
+      updatesList.push("updatedAt = ?");
+      params.push(now);
+      params.push(id);
+      
+      db.prepare(`
+        UPDATE medical_documents 
+        SET ${updatesList.join(", ")}
+        WHERE id = ?
+      `).run(...params);
+    }
+    
+    return medicalDocumentHelpers.getById(id);
+  },
+
+  approve: (id: string, approvedBy: string) => {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE medical_documents 
+      SET isApproved = 1, approvedBy = ?, approvedAt = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(approvedBy, now, now, id);
+    
+    return medicalDocumentHelpers.getById(id);
+  },
+
+  delete: (id: string, deletedBy: string) => {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE medical_documents 
+      SET isDeleted = 1, deletedBy = ?, deletedAt = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(deletedBy, now, now, id);
+    
+    return medicalDocumentHelpers.getById(id);
+  },
+
+  logAccess: (documentId: string, accessedBy: string, accessType: string, ipAddress?: string, userAgent?: string) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    
+    db.prepare(`
+      INSERT INTO document_access_log (
+        id, documentId, accessedBy, accessType, accessedAt, ipAddress, userAgent
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      documentId,
+      accessedBy,
+      accessType,
+      now,
+      ipAddress || null,
+      userAgent || null
+    );
+  },
+
+  getAccessLog: (documentId: string) => {
+    const logs = db.prepare(`
+      SELECT * FROM document_access_log
+      WHERE documentId = ?
+      ORDER BY accessedAt DESC
+      LIMIT 100
+    `).all(documentId) as any[];
+    
+    return logs.map((log) => ({
+      $id: log.id,
+      documentId: log.documentId,
+      accessedBy: log.accessedBy,
+      accessType: log.accessType,
+      accessedAt: parseDate(log.accessedAt),
+      ipAddress: log.ipAddress,
+      userAgent: log.userAgent,
+    }));
+  },
+};

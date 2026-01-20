@@ -6,12 +6,14 @@ import { requireAuth } from "@/lib/actions/auth.actions";
 import { medicalRecordHelpers } from "@/lib/db-helpers";
 import { allergyHelpers, vaccinationHelpers, familyHistoryHelpers } from "@/lib/db-helpers";
 import { vitalSignsHelpers, labResultHelpers, appointmentHelpers } from "@/lib/db-helpers";
+import { medicalDocumentHelpers } from "@/lib/db-helpers";
 import { calculateAge } from "@/lib/analysis-reference-ranges";
 import { LogoutButton } from "@/components/LogoutButton";
 import { LogoLink } from "@/components/LogoLink";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 import { MedicalHistoryTimeline } from "@/components/MedicalHistoryTimeline";
 import { MedicalHistorySummary } from "@/components/MedicalHistorySummary";
+import { MedicalDocumentsManager } from "@/components/MedicalDocumentsManager";
 
 const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
   const session = await requireAuth();
@@ -34,6 +36,7 @@ const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
   const vaccinations = vaccinationHelpers.getByPatientId(patientId);
   const familyHistory = familyHistoryHelpers.getByPatientId(patientId);
   const vitalSignsHistory = vitalSignsHelpers.getByPatientId(patientId);
+  const documents = medicalDocumentHelpers.getByPatientId(patientId);
   
   // Obține analizele din lab_results
   const labResults = labResultHelpers.getByPatientId(patientId);
@@ -202,6 +205,14 @@ const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
             familyHistory={familyHistory}
             analysisGroups={allAnalysisGroups}
             patientInfo={patientInfo}
+          />
+        </div>
+
+        {/* Documente Medicale */}
+        <div className="mt-12">
+          <MedicalDocumentsManager
+            patientId={patientId}
+            canUpload={false}
           />
         </div>
       </main>

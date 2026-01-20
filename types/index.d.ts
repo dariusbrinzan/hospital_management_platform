@@ -426,3 +426,47 @@ declare interface MedicationTransaction {
   medication?: Medication | null;
   stock?: MedicationStock | null;
 }
+
+// Sistem Documente Medicale
+declare type MedicalDocumentType = "analysis" | "image" | "report" | "consent" | "certificate" | "other";
+declare type MedicalDocumentCategory = "external_analysis" | "radiology" | "laboratory" | "consultation" | "administrative" | "legal" | "other";
+
+declare interface MedicalDocument {
+  $id: string;
+  patientId: string;
+  appointmentId?: string | null;
+  documentType: MedicalDocumentType;
+  category?: MedicalDocumentCategory | null;
+  fileName: string;
+  originalFileName: string;
+  filePath: string;
+  fileSize: number;
+  mimeType: string;
+  description?: string | null;
+  tags?: string[] | null;
+  uploadedBy: string;
+  uploadedAt: Date | string;
+  isApproved: boolean;
+  approvedBy?: string | null;
+  approvedAt?: Date | string | null;
+  version: number;
+  parentDocumentId?: string | null;
+  isDeleted: boolean;
+  deletedAt?: Date | string | null;
+  deletedBy?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  patient?: Patient | null;
+  appointment?: Appointment | null;
+  downloadUrl?: string; // Generat dinamic pentru securitate
+}
+
+declare interface DocumentAccessLog {
+  $id: string;
+  documentId: string;
+  accessedBy: string;
+  accessType: "view" | "download" | "delete" | "approve";
+  accessedAt: Date | string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}

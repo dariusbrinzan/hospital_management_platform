@@ -10,6 +10,7 @@ import { Doctors } from "@/constants";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LogoLink } from "@/components/LogoLink";
 import { AnalysisResultDisplay } from "@/components/AnalysisResultDisplay";
+import { MedicalDocumentsManager } from "@/components/MedicalDocumentsManager";
 
 const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) => {
   const patient = await getPatientById(patientId);
@@ -354,6 +355,14 @@ const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) =
                 })}
               </div>
             )}
+          </div>
+
+          {/* Documente Medicale */}
+          <div className="rounded-lg border border-dark-200 bg-white p-6 shadow-lg">
+            <MedicalDocumentsManager
+              patientId={patientId}
+              canUpload={true}
+            />
           </div>
         </div>
       </div>
