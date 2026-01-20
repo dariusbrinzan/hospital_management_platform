@@ -42,11 +42,13 @@ const Home = async ({ searchParams }: SearchParamProps) => {
       </section>
 
       <Image
-        src="/assets/images/onboarding-img.png"
-        height={1000}
-        width={1000}
-        alt="patient"
+        src="/assets/images/imag_health.png"
+        height={1500}
+        width={1500}
+        alt="health"
         className="side-img max-w-[50%]"
+        quality={100}
+        priority
       />
     </div>
   );
