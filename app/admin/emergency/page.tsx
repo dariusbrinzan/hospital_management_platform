@@ -90,6 +90,12 @@ const EmergencyPage = async () => {
               >
                 🏥 Dashboard ATI
               </Link>
+              <Link
+                href="/admin/emergency/dispatcher"
+                className="shad-primary-btn px-6 py-3 rounded-md text-14-medium hover:bg-purple-600 transition-colors"
+              >
+                🚑 Dispecerat
+              </Link>
             </div>
           </div>
         </section>

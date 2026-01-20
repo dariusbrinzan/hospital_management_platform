@@ -2508,3 +2508,385 @@ export const icuHelpers = {
     return icuHelpers.getTreatmentById(id);
   },
 };
+
+// Ambulance Helpers
+export const ambulanceHelpers = {
+  getAll: () => {
+    const ambulances = db.prepare("SELECT * FROM ambulances ORDER BY ambulanceNumber").all() as any[];
+    return ambulances.map((amb) => ({
+      $id: amb.id,
+      ambulanceNumber: amb.ambulanceNumber,
+      licensePlate: amb.licensePlate,
+      status: amb.status,
+      currentLocation: amb.currentLocation ? JSON.parse(amb.currentLocation) : null,
+      crew: JSON.parse(amb.crew),
+      equipment: JSON.parse(amb.equipment),
+      lastMaintenanceDate: amb.lastMaintenanceDate ? parseDate(amb.lastMaintenanceDate) : null,
+      nextMaintenanceDate: amb.nextMaintenanceDate ? parseDate(amb.nextMaintenanceDate) : null,
+      notes: amb.notes,
+      createdAt: parseDate(amb.createdAt),
+      updatedAt: parseDate(amb.updatedAt),
+    }));
+  },
+
+  getById: (id: string) => {
+    const amb = db.prepare("SELECT * FROM ambulances WHERE id = ?").get(id) as any;
+    if (!amb) return null;
+    return {
+      $id: amb.id,
+      ambulanceNumber: amb.ambulanceNumber,
+      licensePlate: amb.licensePlate,
+      status: amb.status,
+      currentLocation: amb.currentLocation ? JSON.parse(amb.currentLocation) : null,
+      crew: JSON.parse(amb.crew),
+      equipment: JSON.parse(amb.equipment),
+      lastMaintenanceDate: amb.lastMaintenanceDate ? parseDate(amb.lastMaintenanceDate) : null,
+      nextMaintenanceDate: amb.nextMaintenanceDate ? parseDate(amb.nextMaintenanceDate) : null,
+      notes: amb.notes,
+      createdAt: parseDate(amb.createdAt),
+      updatedAt: parseDate(amb.updatedAt),
+    };
+  },
+
+  getAvailable: () => {
+    const ambulances = db.prepare("SELECT * FROM ambulances WHERE status = 'available' ORDER BY ambulanceNumber").all() as any[];
+    return ambulances.map((amb) => ({
+      $id: amb.id,
+      ambulanceNumber: amb.ambulanceNumber,
+      licensePlate: amb.licensePlate,
+      status: amb.status,
+      currentLocation: amb.currentLocation ? JSON.parse(amb.currentLocation) : null,
+      crew: JSON.parse(amb.crew),
+      equipment: JSON.parse(amb.equipment),
+      lastMaintenanceDate: amb.lastMaintenanceDate ? parseDate(amb.lastMaintenanceDate) : null,
+      nextMaintenanceDate: amb.nextMaintenanceDate ? parseDate(amb.nextMaintenanceDate) : null,
+      notes: amb.notes,
+      createdAt: parseDate(amb.createdAt),
+      updatedAt: parseDate(amb.updatedAt),
+    }));
+  },
+
+  updateStatus: (id: string, status: string) => {
+    const now = new Date().toISOString();
+    db.prepare("UPDATE ambulances SET status = ?, updatedAt = ? WHERE id = ?").run(status, now, id);
+    return ambulanceHelpers.getById(id);
+  },
+
+  updateLocation: (id: string, location: { lat: number; lng: number; address: string }) => {
+    const now = new Date().toISOString();
+    db.prepare("UPDATE ambulances SET currentLocation = ?, updatedAt = ? WHERE id = ?").run(
+      JSON.stringify(location),
+      now,
+      id
+    );
+    return ambulanceHelpers.getById(id);
+  },
+};
+
+// Ambulance Mission Helpers
+export const ambulanceMissionHelpers = {
+  create: (mission: {
+    ambulanceId: string;
+    emergencyCaseId?: string;
+    missionType: string;
+    priority: number;
+    callerName?: string;
+    callerPhone: string;
+    pickupLocation: { address: string; lat?: number; lng?: number };
+    destinationLocation?: { address: string; lat?: number; lng?: number };
+    patientName?: string;
+    patientAge?: string;
+    patientGender?: string;
+    chiefComplaint: string;
+    estimatedArrivalTime?: Date | string;
+    estimatedReturnTime?: Date | string;
+    dispatcherName: string;
+    notes?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    // Actualizează statusul ambulanței
+    ambulanceHelpers.updateStatus(mission.ambulanceId, "on_mission");
+
+    db.prepare(`
+      INSERT INTO ambulance_missions (
+        id, ambulanceId, emergencyCaseId, missionType, priority,
+        callerName, callerPhone, pickupLocation, destinationLocation,
+        patientName, patientAge, patientGender, chiefComplaint,
+        estimatedArrivalTime, estimatedReturnTime, status,
+        dispatchedAt, dispatcherName, notes, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'dispatched', ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      mission.ambulanceId,
+      mission.emergencyCaseId || null,
+      mission.missionType,
+      mission.priority,
+      mission.callerName || null,
+      mission.callerPhone,
+      JSON.stringify(mission.pickupLocation),
+      mission.destinationLocation ? JSON.stringify(mission.destinationLocation) : null,
+      mission.patientName || null,
+      mission.patientAge || null,
+      mission.patientGender || null,
+      mission.chiefComplaint,
+      mission.estimatedArrivalTime ? formatDate(mission.estimatedArrivalTime) : null,
+      mission.estimatedReturnTime ? formatDate(mission.estimatedReturnTime) : null,
+      now,
+      mission.dispatcherName,
+      mission.notes || null,
+      now,
+      now
+    );
+
+    return ambulanceMissionHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const mission = db.prepare(`
+      SELECT m.*, a.*
+      FROM ambulance_missions m
+      LEFT JOIN ambulances a ON m.ambulanceId = a.id
+      WHERE m.id = ?
+    `).get(id) as any;
+
+    if (!mission) return null;
+
+    const emergencyCase = mission.emergencyCaseId
+      ? emergencyHelpers.getById(mission.emergencyCaseId)
+      : null;
+
+    return {
+      $id: mission.id,
+      ambulanceId: mission.ambulanceId,
+      emergencyCaseId: mission.emergencyCaseId || null,
+      missionType: mission.missionType,
+      priority: mission.priority,
+      callerName: mission.callerName,
+      callerPhone: mission.callerPhone,
+      pickupLocation: JSON.parse(mission.pickupLocation),
+      destinationLocation: mission.destinationLocation ? JSON.parse(mission.destinationLocation) : null,
+      patientName: mission.patientName,
+      patientAge: mission.patientAge,
+      patientGender: mission.patientGender,
+      chiefComplaint: mission.chiefComplaint,
+      estimatedArrivalTime: mission.estimatedArrivalTime ? parseDate(mission.estimatedArrivalTime) : null,
+      estimatedReturnTime: mission.estimatedReturnTime ? parseDate(mission.estimatedReturnTime) : null,
+      status: mission.status,
+      dispatchedAt: parseDate(mission.dispatchedAt),
+      enRouteAt: mission.enRouteAt ? parseDate(mission.enRouteAt) : null,
+      atSceneAt: mission.atSceneAt ? parseDate(mission.atSceneAt) : null,
+      transportingAt: mission.transportingAt ? parseDate(mission.transportingAt) : null,
+      atHospitalAt: mission.atHospitalAt ? parseDate(mission.atHospitalAt) : null,
+      completedAt: mission.completedAt ? parseDate(mission.completedAt) : null,
+      cancelledAt: mission.cancelledAt ? parseDate(mission.cancelledAt) : null,
+      cancelledReason: mission.cancelledReason,
+      dispatcherName: mission.dispatcherName,
+      notes: mission.notes,
+      createdAt: parseDate(mission.createdAt),
+      updatedAt: parseDate(mission.updatedAt),
+      ambulance: mission.ambulanceId ? {
+        $id: mission.ambulanceId,
+        ambulanceNumber: mission.ambulanceNumber,
+        licensePlate: mission.licensePlate,
+        status: mission.status,
+        crew: JSON.parse(mission.crew),
+      } : null,
+      emergencyCase,
+    };
+  },
+
+  getAll: () => {
+    const missions = db.prepare(`
+      SELECT m.*, a.ambulanceNumber, a.licensePlate, a.crew
+      FROM ambulance_missions m
+      LEFT JOIN ambulances a ON m.ambulanceId = a.id
+      ORDER BY m.dispatchedAt DESC
+    `).all() as any[];
+
+    return missions.map((mission) => {
+      const emergencyCase = mission.emergencyCaseId
+        ? emergencyHelpers.getById(mission.emergencyCaseId)
+        : null;
+
+      return {
+        $id: mission.id,
+        ambulanceId: mission.ambulanceId,
+        emergencyCaseId: mission.emergencyCaseId || null,
+        missionType: mission.missionType,
+        priority: mission.priority,
+        callerName: mission.callerName,
+        callerPhone: mission.callerPhone,
+        pickupLocation: JSON.parse(mission.pickupLocation),
+        destinationLocation: mission.destinationLocation ? JSON.parse(mission.destinationLocation) : null,
+        patientName: mission.patientName,
+        patientAge: mission.patientAge,
+        patientGender: mission.patientGender,
+        chiefComplaint: mission.chiefComplaint,
+        estimatedArrivalTime: mission.estimatedArrivalTime ? parseDate(mission.estimatedArrivalTime) : null,
+        estimatedReturnTime: mission.estimatedReturnTime ? parseDate(mission.estimatedReturnTime) : null,
+        status: mission.status,
+        dispatchedAt: parseDate(mission.dispatchedAt),
+        enRouteAt: mission.enRouteAt ? parseDate(mission.enRouteAt) : null,
+        atSceneAt: mission.atSceneAt ? parseDate(mission.atSceneAt) : null,
+        transportingAt: mission.transportingAt ? parseDate(mission.transportingAt) : null,
+        atHospitalAt: mission.atHospitalAt ? parseDate(mission.atHospitalAt) : null,
+        completedAt: mission.completedAt ? parseDate(mission.completedAt) : null,
+        cancelledAt: mission.cancelledAt ? parseDate(mission.cancelledAt) : null,
+        cancelledReason: mission.cancelledReason,
+        dispatcherName: mission.dispatcherName,
+        notes: mission.notes,
+        createdAt: parseDate(mission.createdAt),
+        updatedAt: parseDate(mission.updatedAt),
+        ambulance: {
+          $id: mission.ambulanceId,
+          ambulanceNumber: mission.ambulanceNumber,
+          licensePlate: mission.licensePlate,
+          crew: JSON.parse(mission.crew),
+        },
+        emergencyCase,
+      };
+    });
+  },
+
+  getActive: () => {
+    const missions = db.prepare(`
+      SELECT m.*, a.ambulanceNumber, a.licensePlate, a.crew
+      FROM ambulance_missions m
+      LEFT JOIN ambulances a ON m.ambulanceId = a.id
+      WHERE m.status NOT IN ('completed', 'cancelled')
+      ORDER BY m.priority ASC, m.dispatchedAt DESC
+    `).all() as any[];
+
+    return missions.map((mission) => {
+      const emergencyCase = mission.emergencyCaseId
+        ? emergencyHelpers.getById(mission.emergencyCaseId)
+        : null;
+
+      return {
+        $id: mission.id,
+        ambulanceId: mission.ambulanceId,
+        emergencyCaseId: mission.emergencyCaseId || null,
+        missionType: mission.missionType,
+        priority: mission.priority,
+        callerName: mission.callerName,
+        callerPhone: mission.callerPhone,
+        pickupLocation: JSON.parse(mission.pickupLocation),
+        destinationLocation: mission.destinationLocation ? JSON.parse(mission.destinationLocation) : null,
+        patientName: mission.patientName,
+        patientAge: mission.patientAge,
+        patientGender: mission.patientGender,
+        chiefComplaint: mission.chiefComplaint,
+        estimatedArrivalTime: mission.estimatedArrivalTime ? parseDate(mission.estimatedArrivalTime) : null,
+        estimatedReturnTime: mission.estimatedReturnTime ? parseDate(mission.estimatedReturnTime) : null,
+        status: mission.status,
+        dispatchedAt: parseDate(mission.dispatchedAt),
+        enRouteAt: mission.enRouteAt ? parseDate(mission.enRouteAt) : null,
+        atSceneAt: mission.atSceneAt ? parseDate(mission.atSceneAt) : null,
+        transportingAt: mission.transportingAt ? parseDate(mission.transportingAt) : null,
+        atHospitalAt: mission.atHospitalAt ? parseDate(mission.atHospitalAt) : null,
+        completedAt: mission.completedAt ? parseDate(mission.completedAt) : null,
+        cancelledAt: mission.cancelledAt ? parseDate(mission.cancelledAt) : null,
+        cancelledReason: mission.cancelledReason,
+        dispatcherName: mission.dispatcherName,
+        notes: mission.notes,
+        createdAt: parseDate(mission.createdAt),
+        updatedAt: parseDate(mission.updatedAt),
+        ambulance: {
+          $id: mission.ambulanceId,
+          ambulanceNumber: mission.ambulanceNumber,
+          licensePlate: mission.licensePlate,
+          crew: JSON.parse(mission.crew),
+        },
+        emergencyCase,
+      };
+    });
+  },
+
+  updateStatus: (id: string, status: string, timestamp?: Date | string) => {
+    const now = timestamp ? formatDate(timestamp) : new Date().toISOString();
+    const mission = ambulanceMissionHelpers.getById(id);
+    if (!mission) return null;
+
+    let updateQuery = "UPDATE ambulance_missions SET status = ?, updatedAt = ?";
+    const params: any[] = [status, now];
+
+    // Actualizează timestamp-ul corespunzător statusului
+    switch (status) {
+      case "en_route":
+        updateQuery += ", enRouteAt = ?";
+        params.push(now);
+        break;
+      case "at_scene":
+        updateQuery += ", atSceneAt = ?";
+        params.push(now);
+        break;
+      case "transporting":
+        updateQuery += ", transportingAt = ?";
+        params.push(now);
+        break;
+      case "at_hospital":
+        updateQuery += ", atHospitalAt = ?";
+        params.push(now);
+        // Când ambulanța ajunge la spital, actualizează statusul ambulanței
+        ambulanceHelpers.updateStatus(mission.ambulanceId, "at_hospital");
+        break;
+      case "completed":
+        updateQuery += ", completedAt = ?";
+        params.push(now);
+        // Când misiunea este completată, ambulanța devine disponibilă
+        ambulanceHelpers.updateStatus(mission.ambulanceId, "available");
+        break;
+      case "cancelled":
+        updateQuery += ", cancelledAt = ?";
+        params.push(now);
+        // Când misiunea este anulată, ambulanța devine disponibilă
+        ambulanceHelpers.updateStatus(mission.ambulanceId, "available");
+        break;
+    }
+
+    params.push(id);
+    updateQuery += " WHERE id = ?";
+
+    db.prepare(updateQuery).run(...params);
+
+    // Dacă misiunea ajunge la spital și există un emergencyCaseId, cazul de urgență este deja creat
+    // Dacă nu există emergencyCaseId, creează unul nou
+    if (status === "at_hospital" && !mission.emergencyCaseId) {
+      const emergencyCase = emergencyHelpers.create({
+        patientName: mission.patientName || undefined,
+        patientPhone: mission.callerPhone,
+        patientAge: mission.patientAge || undefined,
+        patientGender: mission.patientGender || undefined,
+        triageLevel: mission.priority <= 3 ? "critic" : mission.priority <= 6 ? "urgent" : "normal",
+        priority: mission.priority,
+        chiefComplaint: mission.chiefComplaint,
+      });
+
+      // Actualizează misiunea cu emergencyCaseId
+      if (emergencyCase) {
+        db.prepare("UPDATE ambulance_missions SET emergencyCaseId = ? WHERE id = ?").run(emergencyCase.$id, id);
+      }
+    }
+
+    return ambulanceMissionHelpers.getById(id);
+  },
+
+  cancel: (id: string, reason: string) => {
+    const mission = ambulanceMissionHelpers.getById(id);
+    if (!mission) return null;
+
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE ambulance_missions 
+      SET status = 'cancelled', cancelledAt = ?, cancelledReason = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(now, reason, now, id);
+
+    // Ambulanța devine disponibilă
+    ambulanceHelpers.updateStatus(mission.ambulanceId, "available");
+
+    return ambulanceMissionHelpers.getById(id);
+  },
+};

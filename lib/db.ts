@@ -297,6 +297,61 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_emergency_state_transitions_caseId ON emergency_state_transitions(emergencyCaseId);
   CREATE INDEX IF NOT EXISTS idx_emergency_documents_caseId ON emergency_documents(emergencyCaseId);
 
+  -- Tabele pentru sistemul de Dispecerat Ambulanțe
+  CREATE TABLE IF NOT EXISTS ambulances (
+    id TEXT PRIMARY KEY,
+    ambulanceNumber TEXT NOT NULL UNIQUE,
+    licensePlate TEXT NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'available', -- 'available', 'on_mission', 'at_hospital', 'maintenance', 'out_of_service'
+    currentLocation TEXT, -- JSON: {lat, lng, address}
+    crew TEXT, -- JSON: {driver: "Nume", medic: "Nume", assistant: "Nume"}
+    equipment TEXT, -- JSON: {defibrillator: true, oxygen: true, stretcher: true, etc.}
+    lastMaintenanceDate TEXT,
+    nextMaintenanceDate TEXT,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS ambulance_missions (
+    id TEXT PRIMARY KEY,
+    ambulanceId TEXT NOT NULL,
+    emergencyCaseId TEXT,
+    missionType TEXT NOT NULL, -- 'emergency', 'transfer', 'standby'
+    priority INTEGER NOT NULL DEFAULT 3, -- 1-10, 1 = cel mai critic
+    callerName TEXT,
+    callerPhone TEXT NOT NULL,
+    pickupLocation TEXT NOT NULL, -- JSON: {address, lat, lng}
+    destinationLocation TEXT, -- JSON: {address, lat, lng} - de obicei spitalul
+    patientName TEXT,
+    patientAge TEXT,
+    patientGender TEXT,
+    chiefComplaint TEXT NOT NULL,
+    estimatedArrivalTime TEXT, -- Timp estimat până la locație
+    estimatedReturnTime TEXT, -- Timp estimat până la spital
+    status TEXT NOT NULL DEFAULT 'dispatched', -- 'dispatched', 'en_route', 'at_scene', 'transporting', 'at_hospital', 'completed', 'cancelled'
+    dispatchedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    enRouteAt TEXT,
+    atSceneAt TEXT,
+    transportingAt TEXT,
+    atHospitalAt TEXT,
+    completedAt TEXT,
+    cancelledAt TEXT,
+    cancelledReason TEXT,
+    dispatcherName TEXT NOT NULL,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (ambulanceId) REFERENCES ambulances(id),
+    FOREIGN KEY (emergencyCaseId) REFERENCES emergency_cases(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_ambulances_status ON ambulances(status);
+  CREATE INDEX IF NOT EXISTS idx_ambulance_missions_ambulanceId ON ambulance_missions(ambulanceId);
+  CREATE INDEX IF NOT EXISTS idx_ambulance_missions_emergencyCaseId ON ambulance_missions(emergencyCaseId);
+  CREATE INDEX IF NOT EXISTS idx_ambulance_missions_status ON ambulance_missions(status);
+  CREATE INDEX IF NOT EXISTS idx_ambulance_missions_priority ON ambulance_missions(priority);
+
   -- Tabele pentru Terapie Intensivă (ATI)
   CREATE TABLE IF NOT EXISTS icu_rooms (
     id TEXT PRIMARY KEY,
@@ -552,6 +607,41 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_vaccinations_patientId ON vaccinations(patientId);
   CREATE INDEX IF NOT EXISTS idx_family_history_patientId ON family_history(patientId);
 `);
+
+// Inițializare ambulanțe (6 ambulanțe)
+try {
+  const ambulanceCount = db.prepare("SELECT COUNT(*) as count FROM ambulances").get() as { count: number };
+  if (ambulanceCount.count === 0) {
+    const ambulances = [
+      { number: "AMB-001", plate: "B-001-AMB", crew: { driver: "Ion Popescu", medic: "Dr. Maria Ionescu", assistant: "Ana Georgescu" } },
+      { number: "AMB-002", plate: "B-002-AMB", crew: { driver: "Gheorghe Radu", medic: "Dr. Alexandru Popa", assistant: "Elena Dumitru" } },
+      { number: "AMB-003", plate: "B-003-AMB", crew: { driver: "Mihai Stoica", medic: "Dr. Carmen Vasile", assistant: "Ioana Marin" } },
+      { number: "AMB-004", plate: "B-004-AMB", crew: { driver: "Vasile Ionescu", medic: "Dr. Radu Constantinescu", assistant: "Maria Popescu" } },
+      { number: "AMB-005", plate: "B-005-AMB", crew: { driver: "Florin Nistor", medic: "Dr. Andreea Munteanu", assistant: "Cristina Stan" } },
+      { number: "AMB-006", plate: "B-006-AMB", crew: { driver: "Adrian Gheorghe", medic: "Dr. Daniela Petre", assistant: "Simona Ionescu" } },
+    ];
+
+    ambulances.forEach((amb, index) => {
+      const id = `amb-${index + 1}`;
+      const equipment = JSON.stringify({
+        defibrillator: true,
+        oxygen: true,
+        stretcher: true,
+        firstAidKit: true,
+        monitor: true,
+        ventilator: index < 2, // Primele 2 au ventilator
+      });
+      const crew = JSON.stringify(amb.crew);
+      
+      db.prepare(`
+        INSERT INTO ambulances (id, ambulanceNumber, licensePlate, status, crew, equipment, createdAt, updatedAt)
+        VALUES (?, ?, ?, 'available', ?, ?, datetime('now'), datetime('now'))
+      `).run(id, amb.number, amb.plate, crew, equipment);
+    });
+  }
+} catch (error) {
+  console.error("Error initializing ambulances:", error);
+}
 
 // Inițializare săli ATI (1-3, fiecare cu 6 locuri)
 try {

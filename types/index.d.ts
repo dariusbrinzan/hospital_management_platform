@@ -290,3 +290,80 @@ declare interface FamilyHistory {
   createdAt: Date | string;
   updatedAt: Date | string;
 }
+
+// Sistem Dispecerat Ambulanțe
+declare type AmbulanceStatus = "available" | "on_mission" | "at_hospital" | "maintenance" | "out_of_service";
+declare type MissionStatus = "dispatched" | "en_route" | "at_scene" | "transporting" | "at_hospital" | "completed" | "cancelled";
+declare type MissionType = "emergency" | "transfer" | "standby";
+
+declare interface Ambulance {
+  $id: string;
+  ambulanceNumber: string;
+  licensePlate: string;
+  status: AmbulanceStatus;
+  currentLocation?: {
+    lat: number;
+    lng: number;
+    address: string;
+  } | null;
+  crew: {
+    driver: string;
+    medic?: string;
+    assistant?: string;
+  };
+  equipment: {
+    defibrillator?: boolean;
+    oxygen?: boolean;
+    stretcher?: boolean;
+    firstAidKit?: boolean;
+    monitor?: boolean;
+    ventilator?: boolean;
+    [key: string]: any;
+  };
+  lastMaintenanceDate?: Date | string | null;
+  nextMaintenanceDate?: Date | string | null;
+  notes?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+declare interface AmbulanceMission {
+  $id: string;
+  ambulanceId: string;
+  emergencyCaseId?: string | null;
+  missionType: MissionType;
+  priority: number; // 1-10, 1 = cel mai critic
+  callerName?: string | null;
+  callerPhone: string;
+  pickupLocation: {
+    address: string;
+    lat?: number;
+    lng?: number;
+  };
+  destinationLocation?: {
+    address: string;
+    lat?: number;
+    lng?: number;
+  } | null;
+  patientName?: string | null;
+  patientAge?: string | null;
+  patientGender?: string | null;
+  chiefComplaint: string;
+  estimatedArrivalTime?: Date | string | null;
+  estimatedReturnTime?: Date | string | null;
+  status: MissionStatus;
+  dispatchedAt: Date | string;
+  enRouteAt?: Date | string | null;
+  atSceneAt?: Date | string | null;
+  transportingAt?: Date | string | null;
+  atHospitalAt?: Date | string | null;
+  completedAt?: Date | string | null;
+  cancelledAt?: Date | string | null;
+  cancelledReason?: string | null;
+  dispatcherName: string;
+  notes?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  ambulance?: Ambulance | null;
+  emergencyCase?: EmergencyCase | null;
+}
