@@ -4,6 +4,8 @@ import { formatDateTime } from "@/lib/utils";
 import Image from "next/image";
 import { Doctor } from "@/types";
 import { AnalysisResultDisplay } from "./AnalysisResultDisplay";
+import { Button } from "./ui/button";
+import { Download } from "lucide-react";
 
 interface MedicalRecordCardProps {
   record: any;
@@ -48,9 +50,21 @@ export const MedicalRecordCard = ({ record, doctor, patientInfo }: MedicalRecord
             </p>
           </div>
         </div>
-        <span className="text-12-regular text-dark-500 whitespace-nowrap">
-          {formatDateTime(record.visitDate).dateTime}
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          <span className="text-12-regular text-dark-500 whitespace-nowrap">
+            {formatDateTime(record.visitDate).dateTime}
+          </span>
+          <Button
+            onClick={() => {
+              window.open(`/api/pdf/consultation/${record.$id}`, "_blank");
+            }}
+            className="shad-gray-btn flex items-center gap-2 text-12-medium"
+            size="sm"
+          >
+            <Download className="size-4" />
+            Descarcă PDF
+          </Button>
+        </div>
       </div>
 
       {/* Chief Complaint */}

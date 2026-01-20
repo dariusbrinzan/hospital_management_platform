@@ -2,6 +2,8 @@
 
 import { formatDateTime } from "@/lib/utils";
 import { AnalysisResultDisplay } from "./AnalysisResultDisplay";
+import { Button } from "./ui/button";
+import { Download } from "lucide-react";
 
 interface AnalysisGroupCardProps {
   analysisGroup: {
@@ -49,9 +51,24 @@ export const AnalysisGroupCard = ({ analysisGroup, patientInfo }: AnalysisGroupC
             )}
           </p>
         </div>
-        <span className="text-12-regular text-dark-500">
-          {formatDateTime(analysisGroup.date).date}
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          <span className="text-12-regular text-dark-500">
+            {formatDateTime(analysisGroup.date).date}
+          </span>
+          <Button
+            onClick={() => {
+              const groupId = analysisGroup.appointmentId
+                ? `appointment-${analysisGroup.appointmentId}`
+                : `date-${encodeURIComponent(new Date(analysisGroup.date).toISOString())}`;
+              window.open(`/api/pdf/analysis/${groupId}`, "_blank");
+            }}
+            className="shad-gray-btn flex items-center gap-2 text-12-medium"
+            size="sm"
+          >
+            <Download className="size-4" />
+            Descarcă PDF
+          </Button>
+        </div>
       </div>
 
       {/* Afișează analizele cu rezultate */}
