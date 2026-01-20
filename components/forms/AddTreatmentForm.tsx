@@ -11,8 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const treatmentSchema = z.object({
+  medicationStockId: z.string().min(1, "Selectează un medicament"),
   medicationName: z.string().min(1, "Numele medicamentului este obligatoriu"),
   dosage: z.string().min(1, "Doza este obligatorie"),
+  quantity: z.number().min(0.01, "Cantitatea este obligatorie"),
   frequency: z.string().min(1, "Frecvența este obligatorie"),
   route: z.string().optional(),
   administeredBy: z.string().optional(),
@@ -28,9 +30,21 @@ interface AddTreatmentFormProps {
 export const AddTreatmentForm = ({ patientId, onSuccess, onCancel }: AddTreatmentFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [doctorsOnDuty, setDoctorsOnDuty] = useState<{ doctorName: string; specialty?: string }[]>([]);
+  const [availableMedications, setAvailableMedications] = useState<Array<{
+    $id: string;
+    medication: {
+      $id: string;
+      name: string;
+      strength?: string | null;
+      unit: string;
+    };
+    availableQuantity: number;
+  }>>([]);
+  const [selectedMedication, setSelectedMedication] = useState<string>("");
 
   useEffect(() => {
     loadDoctorsOnDuty();
+    loadAvailableMedications();
   }, []);
 
   const loadDoctorsOnDuty = async () => {
@@ -64,10 +78,39 @@ export const AddTreatmentForm = ({ patientId, onSuccess, onCancel }: AddTreatmen
     }
   };
 
+  const loadAvailableMedications = async () => {
+    try {
+      const response = await fetch("/api/medications/stock?location=icu_ward&available=true");
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableMedications(data);
+      }
+    } catch (error) {
+      console.error("Error loading available medications:", error);
+    }
+  };
+
   const form = useForm<z.infer<typeof treatmentSchema>>({
     resolver: zodResolver(treatmentSchema),
-    defaultValues: {},
+    defaultValues: {
+      quantity: 1,
+    },
   });
+
+  const watchedMedication = form.watch("medicationStockId");
+  
+  useEffect(() => {
+    if (watchedMedication) {
+      const selected = availableMedications.find((m) => m.$id === watchedMedication);
+      if (selected) {
+        form.setValue("medicationName", selected.medication.name);
+        // Auto-populează doza cu strength-ul medicamentului dacă există
+        if (selected.medication.strength) {
+          form.setValue("dosage", selected.medication.strength);
+        }
+      }
+    }
+  }, [watchedMedication, availableMedications, form]);
 
   const onSubmit = async (values: z.infer<typeof treatmentSchema>) => {
     setIsLoading(true);
@@ -75,12 +118,24 @@ export const AddTreatmentForm = ({ patientId, onSuccess, onCancel }: AddTreatmen
       const response = await fetch(`/api/icu/patients/${patientId}/treatments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          medicationStockId: values.medicationStockId,
+          medicationName: values.medicationName,
+          dosage: values.dosage,
+          quantity: values.quantity,
+          frequency: values.frequency,
+          route: values.route,
+          administeredBy: values.administeredBy,
+          notes: values.notes,
+        }),
       });
 
       if (response.ok) {
         onSuccess();
         form.reset();
+        setSelectedMedication("");
+        // Reîncarcă medicamentele disponibile pentru a actualiza stocul
+        loadAvailableMedications();
       } else {
         const error = await response.json();
         alert(error.error || "Eroare la adăugarea tratamentului");
@@ -99,13 +154,76 @@ export const AddTreatmentForm = ({ patientId, onSuccess, onCancel }: AddTreatmen
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
+            name="medicationStockId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Medicament / Perfuzie *</FormLabel>
+                <FormControl>
+                  <Select onValueChange={(value) => {
+                    field.onChange(value);
+                    setSelectedMedication(value);
+                  }} value={field.value || undefined}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selectează medicament din stoc" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableMedications.length > 0 ? (
+                        availableMedications.map((stock) => (
+                          <SelectItem key={stock.$id} value={stock.$id}>
+                            {stock.medication.name}
+                            {stock.medication.strength && ` (${stock.medication.strength})`}
+                            {` - Disponibil: ${stock.availableQuantity} ${stock.medication.unit}`}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1.5 text-sm text-dark-500">Nu există medicamente disponibile în stoc</div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
             name="medicationName"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Nume medicament *</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input {...field} readOnly />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="quantity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cantitate utilizată *</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={0.01}
+                    step={0.01}
+                    {...field}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    placeholder="ex: 1"
+                  />
+                </FormControl>
+                {selectedMedication && (() => {
+                  const selected = availableMedications.find((m) => m.$id === selectedMedication);
+                  return selected && (
+                    <p className="text-12-regular text-dark-500">
+                      Disponibil: {selected.availableQuantity} {selected.medication.unit}
+                    </p>
+                  );
+                })()}
                 <FormMessage />
               </FormItem>
             )}

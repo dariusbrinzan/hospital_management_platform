@@ -2890,3 +2890,474 @@ export const ambulanceMissionHelpers = {
     return ambulanceMissionHelpers.getById(id);
   },
 };
+
+// Medication Helpers
+export const medicationHelpers = {
+  getAll: () => {
+    const medications = db.prepare("SELECT * FROM medications ORDER BY name").all() as any[];
+    return medications.map((med) => ({
+      $id: med.id,
+      name: med.name,
+      genericName: med.genericName,
+      category: med.category,
+      unit: med.unit,
+      dosageForm: med.dosageForm,
+      strength: med.strength,
+      manufacturer: med.manufacturer,
+      batchNumber: med.batchNumber,
+      expirationDate: med.expirationDate ? parseDate(med.expirationDate) : null,
+      storageConditions: med.storageConditions,
+      description: med.description,
+      indications: med.indications ? JSON.parse(med.indications) : null,
+      contraindications: med.contraindications ? JSON.parse(med.contraindications) : null,
+      sideEffects: med.sideEffects ? JSON.parse(med.sideEffects) : null,
+      createdAt: parseDate(med.createdAt),
+      updatedAt: parseDate(med.updatedAt),
+    }));
+  },
+
+  getById: (id: string) => {
+    const med = db.prepare("SELECT * FROM medications WHERE id = ?").get(id) as any;
+    if (!med) return null;
+    return {
+      $id: med.id,
+      name: med.name,
+      genericName: med.genericName,
+      category: med.category,
+      unit: med.unit,
+      dosageForm: med.dosageForm,
+      strength: med.strength,
+      manufacturer: med.manufacturer,
+      batchNumber: med.batchNumber,
+      expirationDate: med.expirationDate ? parseDate(med.expirationDate) : null,
+      storageConditions: med.storageConditions,
+      description: med.description,
+      indications: med.indications ? JSON.parse(med.indications) : null,
+      contraindications: med.contraindications ? JSON.parse(med.contraindications) : null,
+      sideEffects: med.sideEffects ? JSON.parse(med.sideEffects) : null,
+      createdAt: parseDate(med.createdAt),
+      updatedAt: parseDate(med.updatedAt),
+    };
+  },
+
+  getByCategory: (category: string) => {
+    const medications = db.prepare("SELECT * FROM medications WHERE category = ? ORDER BY name").all(category) as any[];
+    return medications.map((med) => ({
+      $id: med.id,
+      name: med.name,
+      genericName: med.genericName,
+      category: med.category,
+      unit: med.unit,
+      dosageForm: med.dosageForm,
+      strength: med.strength,
+      manufacturer: med.manufacturer,
+      batchNumber: med.batchNumber,
+      expirationDate: med.expirationDate ? parseDate(med.expirationDate) : null,
+      storageConditions: med.storageConditions,
+      description: med.description,
+      indications: med.indications ? JSON.parse(med.indications) : null,
+      contraindications: med.contraindications ? JSON.parse(med.contraindications) : null,
+      sideEffects: med.sideEffects ? JSON.parse(med.sideEffects) : null,
+      createdAt: parseDate(med.createdAt),
+      updatedAt: parseDate(med.updatedAt),
+    }));
+  },
+};
+
+// Medication Stock Helpers
+export const medicationStockHelpers = {
+  getAll: (location?: string) => {
+    let query = `
+      SELECT s.*, m.name, m.genericName, m.category, m.unit, m.dosageForm, m.strength
+      FROM medication_stock s
+      LEFT JOIN medications m ON s.medicationId = m.id
+    `;
+    const params: any[] = [];
+    
+    if (location) {
+      query += " WHERE s.location = ?";
+      params.push(location);
+    }
+    
+    query += " ORDER BY m.name";
+    
+    const stocks = db.prepare(query).all(...params) as any[];
+    return stocks.map((stock) => ({
+      $id: stock.id,
+      medicationId: stock.medicationId,
+      location: stock.location,
+      quantity: stock.quantity,
+      reservedQuantity: stock.reservedQuantity,
+      minimumStockLevel: stock.minimumStockLevel,
+      maximumStockLevel: stock.maximumStockLevel,
+      lastRestockedDate: stock.lastRestockedDate ? parseDate(stock.lastRestockedDate) : null,
+      lastRestockedQuantity: stock.lastRestockedQuantity,
+      notes: stock.notes,
+      createdAt: parseDate(stock.createdAt),
+      updatedAt: parseDate(stock.updatedAt),
+      medication: stock.medicationId ? {
+        $id: stock.medicationId,
+        name: stock.name,
+        genericName: stock.genericName,
+        category: stock.category,
+        unit: stock.unit,
+        dosageForm: stock.dosageForm,
+        strength: stock.strength,
+      } : null,
+      availableQuantity: stock.quantity - stock.reservedQuantity,
+    }));
+  },
+
+  getById: (id: string) => {
+    const stock = db.prepare(`
+      SELECT s.*, m.name, m.genericName, m.category, m.unit, m.dosageForm, m.strength
+      FROM medication_stock s
+      LEFT JOIN medications m ON s.medicationId = m.id
+      WHERE s.id = ?
+    `).get(id) as any;
+    
+    if (!stock) return null;
+    
+    return {
+      $id: stock.id,
+      medicationId: stock.medicationId,
+      location: stock.location,
+      quantity: stock.quantity,
+      reservedQuantity: stock.reservedQuantity,
+      minimumStockLevel: stock.minimumStockLevel,
+      maximumStockLevel: stock.maximumStockLevel,
+      lastRestockedDate: stock.lastRestockedDate ? parseDate(stock.lastRestockedDate) : null,
+      lastRestockedQuantity: stock.lastRestockedQuantity,
+      notes: stock.notes,
+      createdAt: parseDate(stock.createdAt),
+      updatedAt: parseDate(stock.updatedAt),
+      medication: {
+        $id: stock.medicationId,
+        name: stock.name,
+        genericName: stock.genericName,
+        category: stock.category,
+        unit: stock.unit,
+        dosageForm: stock.dosageForm,
+        strength: stock.strength,
+      },
+      availableQuantity: stock.quantity - stock.reservedQuantity,
+    };
+  },
+
+  getByMedicationId: (medicationId: string, location?: string) => {
+    let query = `
+      SELECT s.*, m.name, m.genericName, m.category, m.unit, m.dosageForm, m.strength
+      FROM medication_stock s
+      LEFT JOIN medications m ON s.medicationId = m.id
+      WHERE s.medicationId = ?
+    `;
+    const params: any[] = [medicationId];
+    
+    if (location) {
+      query += " AND s.location = ?";
+      params.push(location);
+    }
+    
+    const stocks = db.prepare(query).all(...params) as any[];
+    return stocks.map((stock) => ({
+      $id: stock.id,
+      medicationId: stock.medicationId,
+      location: stock.location,
+      quantity: stock.quantity,
+      reservedQuantity: stock.reservedQuantity,
+      minimumStockLevel: stock.minimumStockLevel,
+      maximumStockLevel: stock.maximumStockLevel,
+      lastRestockedDate: stock.lastRestockedDate ? parseDate(stock.lastRestockedDate) : null,
+      lastRestockedQuantity: stock.lastRestockedQuantity,
+      notes: stock.notes,
+      createdAt: parseDate(stock.createdAt),
+      updatedAt: parseDate(stock.updatedAt),
+      medication: {
+        $id: stock.medicationId,
+        name: stock.name,
+        genericName: stock.genericName,
+        category: stock.category,
+        unit: stock.unit,
+        dosageForm: stock.dosageForm,
+        strength: stock.strength,
+      },
+      availableQuantity: stock.quantity - stock.reservedQuantity,
+    }));
+  },
+
+  getAvailableForLocation: (location: string) => {
+    const stocks = db.prepare(`
+      SELECT s.*, m.name, m.genericName, m.category, m.unit, m.dosageForm, m.strength
+      FROM medication_stock s
+      LEFT JOIN medications m ON s.medicationId = m.id
+      WHERE s.location = ? AND (s.quantity - s.reservedQuantity) > 0
+      ORDER BY m.name
+    `).all(location) as any[];
+    
+    return stocks.map((stock) => ({
+      $id: stock.id,
+      medicationId: stock.medicationId,
+      location: stock.location,
+      quantity: stock.quantity,
+      reservedQuantity: stock.reservedQuantity,
+      minimumStockLevel: stock.minimumStockLevel,
+      maximumStockLevel: stock.maximumStockLevel,
+      lastRestockedDate: stock.lastRestockedDate ? parseDate(stock.lastRestockedDate) : null,
+      lastRestockedQuantity: stock.lastRestockedQuantity,
+      notes: stock.notes,
+      createdAt: parseDate(stock.createdAt),
+      updatedAt: parseDate(stock.updatedAt),
+      medication: {
+        $id: stock.medicationId,
+        name: stock.name,
+        genericName: stock.genericName,
+        category: stock.category,
+        unit: stock.unit,
+        dosageForm: stock.dosageForm,
+        strength: stock.strength,
+      },
+      availableQuantity: stock.quantity - stock.reservedQuantity,
+    }));
+  },
+
+  getLowStock: (location?: string) => {
+    let query = `
+      SELECT s.*, m.name, m.genericName, m.category, m.unit, m.dosageForm, m.strength
+      FROM medication_stock s
+      LEFT JOIN medications m ON s.medicationId = m.id
+      WHERE (s.quantity - s.reservedQuantity) <= s.minimumStockLevel
+    `;
+    const params: any[] = [];
+    
+    if (location) {
+      query += " AND s.location = ?";
+      params.push(location);
+    }
+    
+    query += " ORDER BY (s.quantity - s.reservedQuantity) ASC, m.name";
+    
+    const stocks = db.prepare(query).all(...params) as any[];
+    return stocks.map((stock) => ({
+      $id: stock.id,
+      medicationId: stock.medicationId,
+      location: stock.location,
+      quantity: stock.quantity,
+      reservedQuantity: stock.reservedQuantity,
+      minimumStockLevel: stock.minimumStockLevel,
+      maximumStockLevel: stock.maximumStockLevel,
+      lastRestockedDate: stock.lastRestockedDate ? parseDate(stock.lastRestockedDate) : null,
+      lastRestockedQuantity: stock.lastRestockedQuantity,
+      notes: stock.notes,
+      createdAt: parseDate(stock.createdAt),
+      updatedAt: parseDate(stock.updatedAt),
+      medication: {
+        $id: stock.medicationId,
+        name: stock.name,
+        genericName: stock.genericName,
+        category: stock.category,
+        unit: stock.unit,
+        dosageForm: stock.dosageForm,
+        strength: stock.strength,
+      },
+      availableQuantity: stock.quantity - stock.reservedQuantity,
+    }));
+  },
+
+  updateQuantity: (id: string, quantity: number, reservedQuantity?: number) => {
+    const now = new Date().toISOString();
+    if (reservedQuantity !== undefined) {
+      db.prepare(`
+        UPDATE medication_stock 
+        SET quantity = ?, reservedQuantity = ?, updatedAt = ?
+        WHERE id = ?
+      `).run(quantity, reservedQuantity, now, id);
+    } else {
+      db.prepare(`
+        UPDATE medication_stock 
+        SET quantity = ?, updatedAt = ?
+        WHERE id = ?
+      `).run(quantity, now, id);
+    }
+    return medicationStockHelpers.getById(id);
+  },
+
+  reserveQuantity: (id: string, quantity: number) => {
+    const stock = medicationStockHelpers.getById(id);
+    if (!stock) return null;
+    
+    if (stock.availableQuantity < quantity) {
+      throw new Error(`Stoc insuficient. Disponibil: ${stock.availableQuantity}, Cerut: ${quantity}`);
+    }
+    
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE medication_stock 
+      SET reservedQuantity = reservedQuantity + ?, updatedAt = ?
+      WHERE id = ?
+    `).run(quantity, now, id);
+    
+    return medicationStockHelpers.getById(id);
+  },
+
+  releaseReservation: (id: string, quantity: number) => {
+    const stock = medicationStockHelpers.getById(id);
+    if (!stock) return null;
+    
+    const now = new Date().toISOString();
+    const newReserved = Math.max(0, stock.reservedQuantity - quantity);
+    db.prepare(`
+      UPDATE medication_stock 
+      SET reservedQuantity = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(newReserved, now, id);
+    
+    return medicationStockHelpers.getById(id);
+  },
+
+  consumeQuantity: (id: string, quantity: number) => {
+    const stock = medicationStockHelpers.getById(id);
+    if (!stock) return null;
+    
+    if (stock.quantity < quantity) {
+      throw new Error(`Stoc insuficient. Disponibil: ${stock.quantity}, Cerut: ${quantity}`);
+    }
+    
+    const now = new Date().toISOString();
+    const newReserved = Math.max(0, stock.reservedQuantity - quantity);
+    db.prepare(`
+      UPDATE medication_stock 
+      SET quantity = quantity - ?, reservedQuantity = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(quantity, newReserved, now, id);
+    
+    return medicationStockHelpers.getById(id);
+  },
+
+  restock: (id: string, quantity: number) => {
+    const stock = medicationStockHelpers.getById(id);
+    if (!stock) return null;
+    
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE medication_stock 
+      SET quantity = quantity + ?, lastRestockedDate = ?, lastRestockedQuantity = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(quantity, now, quantity, now, id);
+    
+    return medicationStockHelpers.getById(id);
+  },
+};
+
+// Medication Transaction Helpers
+export const medicationTransactionHelpers = {
+  create: (transaction: {
+    medicationId: string;
+    stockId: string;
+    transactionType: string;
+    quantity: number;
+    reason?: string;
+    performedBy: string;
+    relatedTo?: string;
+    relatedId?: string;
+    notes?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    
+    db.prepare(`
+      INSERT INTO medication_transactions (
+        id, medicationId, stockId, transactionType, quantity, reason,
+        performedBy, relatedTo, relatedId, notes, transactionDate, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      transaction.medicationId,
+      transaction.stockId,
+      transaction.transactionType,
+      transaction.quantity,
+      transaction.reason || null,
+      transaction.performedBy,
+      transaction.relatedTo || null,
+      transaction.relatedId || null,
+      transaction.notes || null,
+      now,
+      now
+    );
+    
+    return medicationTransactionHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const trans = db.prepare(`
+      SELECT t.*, m.name as medicationName, m.unit as medicationUnit
+      FROM medication_transactions t
+      LEFT JOIN medications m ON t.medicationId = m.id
+      WHERE t.id = ?
+    `).get(id) as any;
+    
+    if (!trans) return null;
+    
+    return {
+      $id: trans.id,
+      medicationId: trans.medicationId,
+      stockId: trans.stockId,
+      transactionType: trans.transactionType,
+      quantity: trans.quantity,
+      reason: trans.reason,
+      performedBy: trans.performedBy,
+      relatedTo: trans.relatedTo,
+      relatedId: trans.relatedId,
+      notes: trans.notes,
+      transactionDate: parseDate(trans.transactionDate),
+      createdAt: parseDate(trans.createdAt),
+      medication: {
+        $id: trans.medicationId,
+        name: trans.medicationName,
+        unit: trans.medicationUnit,
+      },
+    };
+  },
+
+  getAll: (medicationId?: string, stockId?: string) => {
+    let query = `
+      SELECT t.*, m.name as medicationName, m.unit as medicationUnit
+      FROM medication_transactions t
+      LEFT JOIN medications m ON t.medicationId = m.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    
+    if (medicationId) {
+      query += " AND t.medicationId = ?";
+      params.push(medicationId);
+    }
+    
+    if (stockId) {
+      query += " AND t.stockId = ?";
+      params.push(stockId);
+    }
+    
+    query += " ORDER BY t.transactionDate DESC";
+    
+    const transactions = db.prepare(query).all(...params) as any[];
+    return transactions.map((trans) => ({
+      $id: trans.id,
+      medicationId: trans.medicationId,
+      stockId: trans.stockId,
+      transactionType: trans.transactionType,
+      quantity: trans.quantity,
+      reason: trans.reason,
+      performedBy: trans.performedBy,
+      relatedTo: trans.relatedTo,
+      relatedId: trans.relatedId,
+      notes: trans.notes,
+      transactionDate: parseDate(trans.transactionDate),
+      createdAt: parseDate(trans.createdAt),
+      medication: {
+        $id: trans.medicationId,
+        name: trans.medicationName,
+        unit: trans.medicationUnit,
+      },
+    }));
+  },
+};

@@ -352,6 +352,68 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_ambulance_missions_status ON ambulance_missions(status);
   CREATE INDEX IF NOT EXISTS idx_ambulance_missions_priority ON ambulance_missions(priority);
 
+  -- Tabele pentru Management Stocuri Medicamente și Tratamente
+  CREATE TABLE IF NOT EXISTS medications (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    genericName TEXT,
+    category TEXT NOT NULL, -- 'medication', 'infusion', 'syringe', 'supply'
+    unit TEXT NOT NULL, -- 'ml', 'mg', 'tablet', 'vial', 'bag', 'unit'
+    dosageForm TEXT, -- 'tablet', 'capsule', 'injection', 'infusion', 'syrup', etc.
+    strength TEXT, -- ex: "500mg", "10ml", "100mg/ml"
+    manufacturer TEXT,
+    batchNumber TEXT,
+    expirationDate TEXT,
+    storageConditions TEXT, -- 'room_temperature', 'refrigerated', 'frozen'
+    description TEXT,
+    indications TEXT, -- JSON array cu indicații
+    contraindications TEXT, -- JSON array cu contraindicații
+    sideEffects TEXT, -- JSON array cu efecte secundare
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS medication_stock (
+    id TEXT PRIMARY KEY,
+    medicationId TEXT NOT NULL,
+    location TEXT NOT NULL DEFAULT 'main_pharmacy', -- 'main_pharmacy', 'emergency_department', 'icu_ward', 'surgery_ward'
+    quantity INTEGER NOT NULL DEFAULT 0,
+    reservedQuantity INTEGER NOT NULL DEFAULT 0, -- Cantitate rezervată pentru tratamente active
+    minimumStockLevel INTEGER NOT NULL DEFAULT 10, -- Nivel minim de stoc pentru alertă
+    maximumStockLevel INTEGER NOT NULL DEFAULT 1000, -- Nivel maxim de stoc
+    lastRestockedDate TEXT,
+    lastRestockedQuantity INTEGER,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (medicationId) REFERENCES medications(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS medication_transactions (
+    id TEXT PRIMARY KEY,
+    medicationId TEXT NOT NULL,
+    stockId TEXT NOT NULL,
+    transactionType TEXT NOT NULL, -- 'restock', 'usage', 'adjustment', 'expired', 'damaged', 'return'
+    quantity INTEGER NOT NULL, -- Pozitiv pentru restock, negativ pentru usage
+    reason TEXT,
+    performedBy TEXT NOT NULL,
+    relatedTo TEXT, -- 'icu_treatment', 'emergency_case', 'appointment', etc.
+    relatedId TEXT, -- ID-ul entității legate (icu_treatment.id, emergency_case.id, etc.)
+    notes TEXT,
+    transactionDate TEXT NOT NULL DEFAULT (datetime('now')),
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (medicationId) REFERENCES medications(id),
+    FOREIGN KEY (stockId) REFERENCES medication_stock(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_medications_category ON medications(category);
+  CREATE INDEX IF NOT EXISTS idx_medication_stock_medicationId ON medication_stock(medicationId);
+  CREATE INDEX IF NOT EXISTS idx_medication_stock_location ON medication_stock(location);
+  CREATE INDEX IF NOT EXISTS idx_medication_transactions_medicationId ON medication_transactions(medicationId);
+  CREATE INDEX IF NOT EXISTS idx_medication_transactions_stockId ON medication_transactions(stockId);
+  CREATE INDEX IF NOT EXISTS idx_medication_transactions_type ON medication_transactions(transactionType);
+  CREATE INDEX IF NOT EXISTS idx_medication_transactions_date ON medication_transactions(transactionDate);
+
   -- Tabele pentru Terapie Intensivă (ATI)
   CREATE TABLE IF NOT EXISTS icu_rooms (
     id TEXT PRIMARY KEY,
@@ -607,6 +669,90 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_vaccinations_patientId ON vaccinations(patientId);
   CREATE INDEX IF NOT EXISTS idx_family_history_patientId ON family_history(patientId);
 `);
+
+// Inițializare medicamente și stocuri
+try {
+  const medicationCount = db.prepare("SELECT COUNT(*) as count FROM medications").get() as { count: number };
+  if (medicationCount.count === 0) {
+    const commonMedications = [
+      // Analgezice și antiinflamatoare
+      { name: "Paracetamol", genericName: "Acetaminophen", category: "medication", unit: "ml", dosageForm: "injection", strength: "1000mg/100ml", location: "emergency_department", quantity: 50 },
+      { name: "Morfina", genericName: "Morphine", category: "medication", unit: "ml", dosageForm: "injection", strength: "10mg/ml", location: "emergency_department", quantity: 30 },
+      { name: "Ketorolac", genericName: "Ketorolac tromethamine", category: "medication", unit: "ml", dosageForm: "injection", strength: "30mg/ml", location: "emergency_department", quantity: 40 },
+      { name: "Ibuprofen", genericName: "Ibuprofen", category: "medication", unit: "tablet", dosageForm: "tablet", strength: "400mg", location: "emergency_department", quantity: 200 },
+      
+      // Antibiotice
+      { name: "Amoxicilină", genericName: "Amoxicillin", category: "medication", unit: "vial", dosageForm: "injection", strength: "1000mg", location: "emergency_department", quantity: 100 },
+      { name: "Ceftriaxon", genericName: "Ceftriaxone", category: "medication", unit: "vial", dosageForm: "injection", strength: "1000mg", location: "emergency_department", quantity: 80 },
+      { name: "Azitromicină", genericName: "Azithromycin", category: "medication", unit: "vial", dosageForm: "injection", strength: "500mg", location: "emergency_department", quantity: 60 },
+      { name: "Metronidazol", genericName: "Metronidazole", category: "medication", unit: "ml", dosageForm: "infusion", strength: "500mg/100ml", location: "emergency_department", quantity: 50 },
+      
+      // Cardiovascular
+      { name: "Adrenalină", genericName: "Epinephrine", category: "medication", unit: "ml", dosageForm: "injection", strength: "1mg/ml", location: "emergency_department", quantity: 50 },
+      { name: "Atropină", genericName: "Atropine", category: "medication", unit: "ml", dosageForm: "injection", strength: "1mg/ml", location: "emergency_department", quantity: 40 },
+      { name: "Aminofilină", genericName: "Aminophylline", category: "medication", unit: "ml", dosageForm: "infusion", strength: "250mg/10ml", location: "emergency_department", quantity: 30 },
+      { name: "Dopamină", genericName: "Dopamine", category: "medication", unit: "ml", dosageForm: "infusion", strength: "200mg/5ml", location: "emergency_department", quantity: 25 },
+      { name: "Noradrenalină", genericName: "Norepinephrine", category: "medication", unit: "ml", dosageForm: "infusion", strength: "4mg/4ml", location: "emergency_department", quantity: 20 },
+      
+      // Perfuzii
+      { name: "Serum Fiziologic", genericName: "Sodium Chloride 0.9%", category: "infusion", unit: "bag", dosageForm: "infusion", strength: "500ml", location: "emergency_department", quantity: 200 },
+      { name: "Serum Fiziologic", genericName: "Sodium Chloride 0.9%", category: "infusion", unit: "bag", dosageForm: "infusion", strength: "1000ml", location: "emergency_department", quantity: 150 },
+      { name: "Glucoză 5%", genericName: "Dextrose 5%", category: "infusion", unit: "bag", dosageForm: "infusion", strength: "500ml", location: "emergency_department", quantity: 180 },
+      { name: "Glucoză 5%", genericName: "Dextrose 5%", category: "infusion", unit: "bag", dosageForm: "infusion", strength: "1000ml", location: "emergency_department", quantity: 120 },
+      { name: "Ringer Lactat", genericName: "Lactated Ringer's", category: "infusion", unit: "bag", dosageForm: "infusion", strength: "500ml", location: "emergency_department", quantity: 100 },
+      { name: "Ringer Lactat", genericName: "Lactated Ringer's", category: "infusion", unit: "bag", dosageForm: "infusion", strength: "1000ml", location: "emergency_department", quantity: 80 },
+      
+      // Medicamente ATI
+      { name: "Propofol", genericName: "Propofol", category: "medication", unit: "ml", dosageForm: "injection", strength: "10mg/ml", location: "icu_ward", quantity: 40 },
+      { name: "Midazolam", genericName: "Midazolam", category: "medication", unit: "ml", dosageForm: "injection", strength: "5mg/ml", location: "icu_ward", quantity: 35 },
+      { name: "Fentanil", genericName: "Fentanyl", category: "medication", unit: "ml", dosageForm: "injection", strength: "0.05mg/ml", location: "icu_ward", quantity: 30 },
+      { name: "Vecuroniu", genericName: "Vecuronium", category: "medication", unit: "vial", dosageForm: "injection", strength: "10mg", location: "icu_ward", quantity: 25 },
+      { name: "Insulină", genericName: "Insulin", category: "medication", unit: "vial", dosageForm: "injection", strength: "100UI/ml", location: "icu_ward", quantity: 50 },
+      { name: "Heparină", genericName: "Heparin", category: "medication", unit: "ml", dosageForm: "injection", strength: "5000UI/ml", location: "icu_ward", quantity: 40 },
+      { name: "Furosemidă", genericName: "Furosemide", category: "medication", unit: "ml", dosageForm: "injection", strength: "20mg/2ml", location: "icu_ward", quantity: 45 },
+      { name: "Dobutamină", genericName: "Dobutamine", category: "medication", unit: "ml", dosageForm: "infusion", strength: "250mg/20ml", location: "icu_ward", quantity: 20 },
+    ];
+
+    commonMedications.forEach((med, index) => {
+      const medId = `med-${index + 1}`;
+      const stockId = `stock-${index + 1}`;
+      const now = new Date().toISOString();
+      
+      // Inserează medicamentul
+      db.prepare(`
+        INSERT INTO medications (id, name, genericName, category, unit, dosageForm, strength, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        medId,
+        med.name,
+        med.genericName,
+        med.category,
+        med.unit,
+        med.dosageForm,
+        med.strength,
+        now,
+        now
+      );
+
+      // Inserează stocul
+      db.prepare(`
+        INSERT INTO medication_stock (id, medicationId, location, quantity, minimumStockLevel, maximumStockLevel, lastRestockedDate, lastRestockedQuantity, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, 10, 1000, ?, ?, ?, ?)
+      `).run(
+        stockId,
+        medId,
+        med.location || "main_pharmacy",
+        med.quantity,
+        now,
+        med.quantity,
+        now,
+        now
+      );
+    });
+  }
+} catch (error) {
+  console.error("Error initializing medications:", error);
+}
 
 // Inițializare ambulanțe (6 ambulanțe)
 try {

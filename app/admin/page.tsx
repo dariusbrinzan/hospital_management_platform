@@ -47,6 +47,12 @@ const AdminPage = async ({ searchParams }: SearchParamProps) => {
           >
             🚨 Primiri Urgente
           </Link>
+          <Link
+            href="/admin/medications"
+            className="shad-primary-btn px-4 py-2 rounded-md text-14-medium hover:bg-blue-600 transition-colors"
+          >
+            💊 Stocuri Medicamente
+          </Link>
           <p className="text-16-semibold">
             {selectedDoctor === "all" 
               ? selectedSpecialty && selectedSpecialty !== "all"

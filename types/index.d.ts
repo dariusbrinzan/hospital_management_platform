@@ -367,3 +367,62 @@ declare interface AmbulanceMission {
   ambulance?: Ambulance | null;
   emergencyCase?: EmergencyCase | null;
 }
+
+// Management Stocuri Medicamente
+declare type MedicationCategory = "medication" | "infusion" | "syringe" | "supply";
+declare type MedicationLocation = "main_pharmacy" | "emergency_department" | "icu_ward" | "surgery_ward";
+declare type TransactionType = "restock" | "usage" | "adjustment" | "expired" | "damaged" | "return";
+
+declare interface Medication {
+  $id: string;
+  name: string;
+  genericName?: string | null;
+  category: MedicationCategory;
+  unit: string;
+  dosageForm?: string | null;
+  strength?: string | null;
+  manufacturer?: string | null;
+  batchNumber?: string | null;
+  expirationDate?: Date | string | null;
+  storageConditions?: string | null;
+  description?: string | null;
+  indications?: string[] | null;
+  contraindications?: string[] | null;
+  sideEffects?: string[] | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+declare interface MedicationStock {
+  $id: string;
+  medicationId: string;
+  location: MedicationLocation;
+  quantity: number;
+  reservedQuantity: number;
+  minimumStockLevel: number;
+  maximumStockLevel: number;
+  lastRestockedDate?: Date | string | null;
+  lastRestockedQuantity?: number | null;
+  notes?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  medication?: Medication | null;
+  availableQuantity?: number; // quantity - reservedQuantity
+}
+
+declare interface MedicationTransaction {
+  $id: string;
+  medicationId: string;
+  stockId: string;
+  transactionType: TransactionType;
+  quantity: number; // Pozitiv pentru restock, negativ pentru usage
+  reason?: string | null;
+  performedBy: string;
+  relatedTo?: string | null; // 'icu_treatment', 'emergency_case', 'appointment', etc.
+  relatedId?: string | null;
+  notes?: string | null;
+  transactionDate: Date | string;
+  createdAt: Date | string;
+  medication?: Medication | null;
+  stock?: MedicationStock | null;
+}

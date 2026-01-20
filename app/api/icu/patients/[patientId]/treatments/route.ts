@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { icuHelpers } from "@/lib/db-helpers";
+import { icuHelpers, medicationStockHelpers, medicationTransactionHelpers } from "@/lib/db-helpers";
 
 export async function GET(
   request: NextRequest,
@@ -24,8 +24,10 @@ export async function POST(
   try {
     const body = await request.json();
     const {
+      medicationStockId,
       medicationName,
       dosage,
+      quantity,
       frequency,
       route,
       administeredBy,
@@ -37,6 +39,40 @@ export async function POST(
         { error: "medicationName, dosage, și frequency sunt obligatorii" },
         { status: 400 }
       );
+    }
+
+    // Dacă există medicationStockId și quantity, scade din stoc
+    if (medicationStockId && quantity) {
+      const stock = medicationStockHelpers.getById(medicationStockId);
+      if (!stock) {
+        return NextResponse.json(
+          { error: "Stocul medicamentului nu a fost găsit" },
+          { status: 404 }
+        );
+      }
+
+      if (stock.availableQuantity < quantity) {
+        return NextResponse.json(
+          { error: `Stoc insuficient. Disponibil: ${stock.availableQuantity} ${stock.medication?.unit || ""}, Cerut: ${quantity}` },
+          { status: 400 }
+        );
+      }
+
+      // Consumă din stoc
+      medicationStockHelpers.consumeQuantity(medicationStockId, quantity);
+
+      // Creează tranzacție
+      medicationTransactionHelpers.create({
+        medicationId: stock.medicationId,
+        stockId: medicationStockId,
+        transactionType: "usage",
+        quantity: -quantity,
+        reason: `Tratament ATI - ${medicationName}`,
+        performedBy: administeredBy || "System",
+        relatedTo: "icu_treatment",
+        relatedId: params.patientId,
+        notes: notes || undefined,
+      });
     }
 
     const treatment = icuHelpers.addTreatment({
