@@ -156,6 +156,12 @@ const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
               Dashboard
             </Link>
             <Link
+              href={`/patients/${userId}/calendar`}
+              className="text-14-medium text-dark-600 hover:text-dark-700"
+            >
+              Calendar
+            </Link>
+            <Link
               href={`/patients/${userId}/new-appointment`}
               className="text-14-medium text-green-500 hover:text-green-600"
             >

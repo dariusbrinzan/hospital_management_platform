@@ -7,6 +7,7 @@ import { Appointment } from "@/types/appwrite.types";
 import { appointmentHelpers } from "../db-helpers";
 import { formatDateTime, parseStringify } from "../utils";
 import { createNotification } from "./notification.actions";
+import { getAvailableSlots } from "./slots.actions";
 
 // CREATE APPOINTMENT
 export const createAppointment = async (
@@ -215,5 +216,82 @@ export const updateAnalysisResults = async (
   } catch (error) {
     console.error("A apărut o eroare la actualizarea rezultatelor analizelor:", error);
     throw error;
+  }
+};
+
+// RESCHEDULE APPOINTMENT (for patients)
+export const rescheduleAppointment = async (
+  appointmentId: string,
+  newSchedule: Date,
+  userId: string
+) => {
+  try {
+    const appointment = appointmentHelpers.getById(appointmentId);
+    
+    if (!appointment) {
+      return { error: "Programarea nu a fost găsită" };
+    }
+
+    if (appointment.userId !== userId) {
+      return { error: "Nu ai permisiunea să reprogramezi această programare" };
+    }
+
+    if (appointment.status === "cancelled") {
+      return { error: "Nu poți reprograma o programare anulată" };
+    }
+
+    const now = new Date();
+    if (new Date(newSchedule) < now) {
+      return { error: "Nu poți programa în trecut" };
+    }
+
+    // Verifică disponibilitatea noului slot
+    const availableSlots = await getAvailableSlots(appointment.primaryPhysician, newSchedule);
+    const selectedSlotTime = newSchedule.getTime();
+    const isSlotAvailable = availableSlots.some(
+      (slot: any) => new Date(slot.time).getTime() === selectedSlotTime && slot.available
+    );
+
+    // Permite reprogramarea chiar dacă slot-ul pare ocupat, dacă e de către același pacient (eliberăm vechiul slot)
+    const oldScheduleDate = new Date(appointment.schedule);
+    const isSameDay = oldScheduleDate.toDateString() === newSchedule.toDateString();
+    const isSameSlot = oldScheduleDate.getTime() === selectedSlotTime;
+
+    if (!isSlotAvailable && !isSameSlot) {
+      return { error: "Slot-ul selectat nu este disponibil. Te rugăm să alegi alt slot." };
+    }
+
+    // Actualizează programarea
+    const updatedAppointment = appointmentHelpers.update(appointmentId, {
+      schedule: newSchedule,
+    });
+
+    if (!updatedAppointment) {
+      return { error: "Eroare la actualizarea programării" };
+    }
+
+    // Trimite notificare
+    await createNotification({
+      userId,
+      type: "appointment_rescheduled",
+      title: "Programare reprogramată",
+      message: `Programarea dvs. cu Dr. ${appointment.primaryPhysician} a fost reprogramată pentru ${formatDateTime(newSchedule).dateTime}.`,
+      appointmentId: appointmentId,
+    });
+
+    // Trimite SMS (mock)
+    await sendSMSNotification(
+      userId,
+      `Salutări de la eHealth.ro. Programarea dvs. cu Dr. ${appointment.primaryPhysician} a fost reprogramată pentru ${formatDateTime(newSchedule).dateTime}.`
+    );
+
+    revalidatePath(`/patients/${userId}/dashboard`);
+    revalidatePath(`/patients/${userId}/calendar`);
+    revalidatePath("/admin");
+
+    return parseStringify({ success: true, appointment: updatedAppointment });
+  } catch (error) {
+    console.error("Error rescheduling appointment:", error);
+    return { error: "A apărut o eroare la reprogramare" };
   }
 };

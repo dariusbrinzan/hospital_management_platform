@@ -34,6 +34,7 @@ export const AppointmentForm = ({
   appointment,
   setOpen,
   patientGender,
+  doctorRatings,
 }: {
   userId: string;
   patientId: string;
@@ -41,6 +42,7 @@ export const AppointmentForm = ({
   appointment?: Appointment;
   setOpen?: Dispatch<SetStateAction<boolean>>;
   patientGender?: "Bărbat" | "Femeie";
+  doctorRatings?: Record<string, { average: number; count: number }>;
 }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -455,24 +457,35 @@ export const AppointmentForm = ({
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent className="shad-select-content">
-                                {filteredDoctors.map((doctor, i) => (
-                                  <SelectItem key={doctor.name + i} value={doctor.name}>
-                                    <div className="flex cursor-pointer items-center gap-2">
-                                      <div className="relative flex-shrink-0">
-                                        <div className="size-8 overflow-hidden rounded-full border border-dark-300">
-                                          <Image
-                                            src={doctor.image}
-                                            width={32}
-                                            height={32}
-                                            alt="doctor"
-                                            className="h-full w-full object-cover object-center"
-                                          />
+                                {filteredDoctors.map((doctor, i) => {
+                                  const dr = doctorRatings?.[doctor.name];
+                                  return (
+                                    <SelectItem key={doctor.name + i} value={doctor.name}>
+                                      <div className="flex cursor-pointer items-center gap-2">
+                                        <div className="relative flex-shrink-0">
+                                          <div className="size-8 overflow-hidden rounded-full border border-dark-300">
+                                            <Image
+                                              src={doctor.image}
+                                              width={32}
+                                              height={32}
+                                              alt="doctor"
+                                              className="h-full w-full object-cover object-center"
+                                            />
+                                          </div>
                                         </div>
+                                        <p>{doctor.name}</p>
+                                        {dr && dr.count > 0 && (
+                                          <span className="ml-auto flex items-center gap-0.5 text-12-regular text-amber-600">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="2">
+                                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                            </svg>
+                                            {dr.average}
+                                          </span>
+                                        )}
                                       </div>
-                                      <p>{doctor.name}</p>
-                                    </div>
-                                  </SelectItem>
-                                ))}
+                                    </SelectItem>
+                                  );
+                                })}
                               </SelectContent>
                             </Select>
                           </FormControl>

@@ -716,6 +716,23 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_medical_documents_category ON medical_documents(category);
   CREATE INDEX IF NOT EXISTS idx_medical_documents_uploadedAt ON medical_documents(uploadedAt);
   CREATE INDEX IF NOT EXISTS idx_document_access_log_documentId ON document_access_log(documentId);
+
+  -- Tabela pentru Evaluări Doctori
+  CREATE TABLE IF NOT EXISTS doctor_reviews (
+    id TEXT PRIMARY KEY,
+    appointmentId TEXT NOT NULL UNIQUE,
+    patientId TEXT NOT NULL,
+    doctorName TEXT NOT NULL,
+    rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+    comment TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (appointmentId) REFERENCES appointments(id),
+    FOREIGN KEY (patientId) REFERENCES patients(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_doctor_reviews_appointmentId ON doctor_reviews(appointmentId);
+  CREATE INDEX IF NOT EXISTS idx_doctor_reviews_patientId ON doctor_reviews(patientId);
+  CREATE INDEX IF NOT EXISTS idx_doctor_reviews_doctorName ON doctor_reviews(doctorName);
 `);
 
 // Inițializare medicamente și stocuri

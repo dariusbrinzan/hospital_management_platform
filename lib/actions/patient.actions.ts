@@ -116,3 +116,17 @@ export const getPatientById = async (patientId: string) => {
     return null;
   }
 };
+
+// SEARCH PATIENTS
+export const searchPatients = async (query: string) => {
+  try {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+    const patients = patientHelpers.search(query.trim());
+    return parseStringify(patients);
+  } catch (error) {
+    console.error("An error occurred while searching patients:", error);
+    return [];
+  }
+};

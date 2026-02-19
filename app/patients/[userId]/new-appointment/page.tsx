@@ -2,9 +2,11 @@ import Image from "next/image";
 
 import { AppointmentForm } from "@/components/forms/AppointmentForm";
 import { getPatient } from "@/lib/actions/patient.actions";
+import { doctorReviewHelpers } from "@/lib/db-helpers";
 
 const Appointment = async ({ params: { userId } }: SearchParamProps) => {
   const patient = await getPatient(userId);
+  const doctorRatings = doctorReviewHelpers.getAllAverageRatings();
 
   return (
     <div className="relative flex min-h-screen">
@@ -23,6 +25,7 @@ const Appointment = async ({ params: { userId } }: SearchParamProps) => {
             userId={userId}
             type="create"
             patientGender={patient?.gender}
+            doctorRatings={doctorRatings}
           />
 
           <p className="copyright mt-10 py-12">© 2026 eHealth.ro</p>

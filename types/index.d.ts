@@ -461,6 +461,16 @@ declare interface MedicalDocument {
   downloadUrl?: string; // Generat dinamic pentru securitate
 }
 
+declare interface DoctorReview {
+  $id: string;
+  appointmentId: string;
+  patientId: string;
+  doctorName: string;
+  rating: number;
+  comment?: string | null;
+  createdAt: Date | string;
+}
+
 declare interface DocumentAccessLog {
   $id: string;
   documentId: string;

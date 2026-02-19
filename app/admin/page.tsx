@@ -53,6 +53,12 @@ const AdminPage = async ({ searchParams }: SearchParamProps) => {
           >
             💊 Stocuri Medicamente
           </Link>
+          <Link
+            href="/admin/patients"
+            className="shad-primary-btn px-4 py-2 rounded-md text-14-medium hover:bg-purple-600 transition-colors"
+          >
+            👥 Căutare Pacienți
+          </Link>
           <p className="text-16-semibold">
             {selectedDoctor === "all" 
               ? selectedSpecialty && selectedSpecialty !== "all"

@@ -188,6 +188,105 @@ export const patientHelpers = {
       updatedAt: patient.updatedAt,
     };
   },
+
+  // Căutare pacienți pentru admin
+  search: (query: string) => {
+    const searchTerm = `%${query.toLowerCase()}%`;
+    const patients = db.prepare(`
+      SELECT * FROM patients 
+      WHERE 
+        LOWER(name) LIKE ? OR 
+        LOWER(email) LIKE ? OR 
+        LOWER(phone) LIKE ? OR
+        LOWER(identificationNumber) LIKE ?
+      ORDER BY name ASC
+      LIMIT 50
+    `).all(searchTerm, searchTerm, searchTerm, searchTerm) as any[];
+
+    return patients.map((patient) => ({
+      $id: patient.id,
+      userId: patient.userId,
+      name: patient.name,
+      email: patient.email,
+      phone: patient.phone,
+      birthDate: patient.birthDate,
+      gender: patient.gender,
+      address: patient.address,
+      occupation: patient.occupation,
+      emergencyContactName: patient.emergencyContactName,
+      emergencyContactNumber: patient.emergencyContactNumber,
+      primaryPhysician: patient.primaryPhysician,
+      insuranceProvider: patient.insuranceProvider,
+      insurancePolicyNumber: patient.insurancePolicyNumber,
+      allergies: patient.allergies,
+      currentMedication: patient.currentMedication,
+      familyMedicalHistory: patient.familyMedicalHistory,
+      pastMedicalHistory: patient.pastMedicalHistory,
+      identificationType: patient.identificationType,
+      identificationNumber: patient.identificationNumber,
+      identificationDocumentId: patient.identificationDocumentId,
+      identificationDocumentUrl: patient.identificationDocumentUrl,
+      privacyConsent: patient.privacyConsent === 1,
+      bloodType: patient.bloodType,
+      height: patient.height,
+      weight: patient.weight,
+      cardiovascularDiseases: patient.cardiovascularDiseases,
+      chronicDiseases: patient.chronicDiseases,
+      surgeries: patient.surgeries,
+      vaccinations: patient.vaccinations,
+      smokingStatus: patient.smokingStatus,
+      alcoholConsumption: patient.alcoholConsumption,
+      exerciseFrequency: patient.exerciseFrequency,
+      createdAt: patient.createdAt,
+      updatedAt: patient.updatedAt,
+    }));
+  },
+
+  // Obține toți pacienții
+  getAll: () => {
+    const patients = db.prepare(`
+      SELECT * FROM patients 
+      ORDER BY name ASC
+    `).all() as any[];
+
+    return patients.map((patient) => ({
+      $id: patient.id,
+      userId: patient.userId,
+      name: patient.name,
+      email: patient.email,
+      phone: patient.phone,
+      birthDate: patient.birthDate,
+      gender: patient.gender,
+      address: patient.address,
+      occupation: patient.occupation,
+      emergencyContactName: patient.emergencyContactName,
+      emergencyContactNumber: patient.emergencyContactNumber,
+      primaryPhysician: patient.primaryPhysician,
+      insuranceProvider: patient.insuranceProvider,
+      insurancePolicyNumber: patient.insurancePolicyNumber,
+      allergies: patient.allergies,
+      currentMedication: patient.currentMedication,
+      familyMedicalHistory: patient.familyMedicalHistory,
+      pastMedicalHistory: patient.pastMedicalHistory,
+      identificationType: patient.identificationType,
+      identificationNumber: patient.identificationNumber,
+      identificationDocumentId: patient.identificationDocumentId,
+      identificationDocumentUrl: patient.identificationDocumentUrl,
+      privacyConsent: patient.privacyConsent === 1,
+      bloodType: patient.bloodType,
+      height: patient.height,
+      weight: patient.weight,
+      cardiovascularDiseases: patient.cardiovascularDiseases,
+      chronicDiseases: patient.chronicDiseases,
+      surgeries: patient.surgeries,
+      vaccinations: patient.vaccinations,
+      smokingStatus: patient.smokingStatus,
+      alcoholConsumption: patient.alcoholConsumption,
+      exerciseFrequency: patient.exerciseFrequency,
+      createdAt: patient.createdAt,
+      updatedAt: patient.updatedAt,
+    }));
+  },
 };
 
 // Appointments helpers
@@ -3363,6 +3462,115 @@ export const medicationTransactionHelpers = {
 };
 
 // Medical Document Helpers
+// Doctor Review Helpers
+export const doctorReviewHelpers = {
+  create: (review: {
+    appointmentId: string;
+    patientId: string;
+    doctorName: string;
+    rating: number;
+    comment?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO doctor_reviews (id, appointmentId, patientId, doctorName, rating, comment, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(id, review.appointmentId, review.patientId, review.doctorName, review.rating, review.comment || null, now);
+
+    return doctorReviewHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const r = db.prepare("SELECT * FROM doctor_reviews WHERE id = ?").get(id) as any;
+    if (!r) return null;
+    return {
+      $id: r.id,
+      appointmentId: r.appointmentId,
+      patientId: r.patientId,
+      doctorName: r.doctorName,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: parseDate(r.createdAt),
+    } as DoctorReview;
+  },
+
+  getByAppointmentId: (appointmentId: string) => {
+    const r = db.prepare("SELECT * FROM doctor_reviews WHERE appointmentId = ?").get(appointmentId) as any;
+    if (!r) return null;
+    return {
+      $id: r.id,
+      appointmentId: r.appointmentId,
+      patientId: r.patientId,
+      doctorName: r.doctorName,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: parseDate(r.createdAt),
+    } as DoctorReview;
+  },
+
+  getByPatientId: (patientId: string) => {
+    const reviews = db.prepare(`
+      SELECT * FROM doctor_reviews WHERE patientId = ? ORDER BY createdAt DESC
+    `).all(patientId) as any[];
+
+    return reviews.map((r) => ({
+      $id: r.id,
+      appointmentId: r.appointmentId,
+      patientId: r.patientId,
+      doctorName: r.doctorName,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: parseDate(r.createdAt),
+    })) as DoctorReview[];
+  },
+
+  getByDoctorName: (doctorName: string) => {
+    const reviews = db.prepare(`
+      SELECT * FROM doctor_reviews WHERE doctorName = ? ORDER BY createdAt DESC
+    `).all(doctorName) as any[];
+
+    return reviews.map((r) => ({
+      $id: r.id,
+      appointmentId: r.appointmentId,
+      patientId: r.patientId,
+      doctorName: r.doctorName,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: parseDate(r.createdAt),
+    })) as DoctorReview[];
+  },
+
+  getAverageRating: (doctorName: string): { average: number; count: number } => {
+    const result = db.prepare(`
+      SELECT AVG(rating) as average, COUNT(*) as count
+      FROM doctor_reviews WHERE doctorName = ?
+    `).get(doctorName) as any;
+
+    return {
+      average: result.average ? Math.round(result.average * 10) / 10 : 0,
+      count: result.count || 0,
+    };
+  },
+
+  getAllAverageRatings: (): Record<string, { average: number; count: number }> => {
+    const results = db.prepare(`
+      SELECT doctorName, AVG(rating) as average, COUNT(*) as count
+      FROM doctor_reviews GROUP BY doctorName
+    `).all() as any[];
+
+    const ratings: Record<string, { average: number; count: number }> = {};
+    results.forEach((r) => {
+      ratings[r.doctorName] = {
+        average: r.average ? Math.round(r.average * 10) / 10 : 0,
+        count: r.count || 0,
+      };
+    });
+    return ratings;
+  },
+};
+
 export const medicalDocumentHelpers = {
   create: (document: {
     patientId: string;

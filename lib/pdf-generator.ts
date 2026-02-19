@@ -409,3 +409,390 @@ export function generateAnalysisPDF(data: AnalysisPDFData): Buffer {
 
   return Buffer.from(doc.output("arraybuffer"));
 }
+
+interface FullMedicalRecordPDFData {
+  patient: {
+    name: string;
+    birthDate: string;
+    gender: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    bloodType?: string;
+    height?: number;
+    weight?: number;
+  };
+  allergies?: Array<{
+    allergenName: string;
+    allergenType: string;
+    severity: string;
+    status: string;
+  }>;
+  vaccinations?: Array<{
+    vaccineName: string;
+    administrationDate: Date | string;
+    nextDoseDate?: Date | string;
+  }>;
+  familyHistory?: Array<{
+    relation: string;
+    condition: string;
+    ageOfOnset?: number;
+  }>;
+  activePrescriptions?: Array<{
+    medicationName: string;
+    dosage: string;
+    frequency: string;
+    startDate: Date | string;
+    endDate?: Date | string;
+  }>;
+  medicalRecords?: Array<{
+    visitDate: Date | string;
+    doctorName: string;
+    chiefComplaint?: string;
+    assessment?: string;
+    diagnoses?: Array<{ diagnosisName: string; status: string }>;
+    prescriptions?: Array<{ medicationName: string; dosage: string; frequency: string }>;
+  }>;
+  labResults?: Array<{
+    testName: string;
+    resultValue?: string;
+    unit?: string;
+    referenceRange?: string;
+    performedDate: Date | string;
+  }>;
+  appointments?: Array<{
+    schedule: Date | string;
+    primaryPhysician: string;
+    reason?: string;
+    status: string;
+  }>;
+  documents?: Array<{
+    documentType: string;
+    fileName: string;
+    uploadedAt: Date | string;
+  }>;
+}
+
+export function generateFullMedicalRecordPDF(data: FullMedicalRecordPDFData): Buffer {
+  const doc = new jsPDF();
+  let yPos = 20;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  const contentWidth = pageWidth - 2 * margin;
+
+  // Helper pentru adăugare pagină nouă dacă e necesar
+  const checkPageBreak = (requiredSpace: number = 10) => {
+    if (yPos + requiredSpace > 270) {
+      doc.addPage();
+      yPos = 20;
+      return true;
+    }
+    return false;
+  };
+
+  // Helper pentru text wrapping
+  const addText = (text: string, x: number, y: number, maxWidth: number, fontSize: number = 10) => {
+    doc.setFontSize(fontSize);
+    const lines = doc.splitTextToSize(text, maxWidth);
+    doc.text(lines, x, y);
+    return lines.length * (fontSize * 0.4 + 2);
+  };
+
+  // Header
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.text("DOSAR MEDICAL COMPLET", pageWidth / 2, yPos, { align: "center" });
+  yPos += 10;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Generat pe ${formatDateTime(new Date().toISOString()).dateTime}`, pageWidth / 2, yPos, { align: "center" });
+  yPos += 15;
+
+  // ========== SECȚIUNEA 1: INFORMATII PERSONALE ==========
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("1. INFORMATII PERSONALE", margin, yPos);
+  yPos += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  
+  doc.text(`Nume complet: ${data.patient.name}`, margin, yPos);
+  yPos += 6;
+  doc.text(`Data nașterii: ${formatDateTime(data.patient.birthDate).dateOnly}`, margin, yPos);
+  yPos += 6;
+  doc.text(`Gen: ${data.patient.gender}`, margin, yPos);
+  yPos += 6;
+  if (data.patient.phone) {
+    doc.text(`Telefon: ${data.patient.phone}`, margin, yPos);
+    yPos += 6;
+  }
+  if (data.patient.email) {
+    doc.text(`Email: ${data.patient.email}`, margin, yPos);
+    yPos += 6;
+  }
+  if (data.patient.address) {
+    const addressHeight = addText(`Adresă: ${data.patient.address}`, margin, yPos, contentWidth);
+    yPos += addressHeight;
+  }
+  if (data.patient.bloodType) {
+    doc.text(`Grupa sanguină: ${data.patient.bloodType}`, margin, yPos);
+    yPos += 6;
+  }
+  if (data.patient.height && data.patient.weight) {
+    const bmi = (data.patient.weight / ((data.patient.height / 100) ** 2)).toFixed(1);
+    doc.text(`Înălțime: ${data.patient.height} cm | Greutate: ${data.patient.weight} kg | IMC: ${bmi}`, margin, yPos);
+    yPos += 6;
+  }
+  yPos += 5;
+  checkPageBreak();
+
+  // ========== SECȚIUNEA 2: ALERGII ==========
+  if (data.allergies && data.allergies.length > 0) {
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("2. ALERGII ȘI REACȚII ADVERSE", margin, yPos);
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    data.allergies.forEach((allergy) => {
+      checkPageBreak(8);
+      const severityText = allergy.severity === "mild" ? "Ușoară" : allergy.severity === "moderate" ? "Moderată" : allergy.severity === "severe" ? "Severă" : "Critică";
+      const statusText = allergy.status === "active" ? "Activă" : allergy.status === "resolved" ? "Rezolvată" : "Istoric";
+      doc.text(`• ${allergy.allergenName} (${allergy.allergenType}) - ${severityText} - ${statusText}`, margin + 5, yPos);
+      yPos += 6;
+    });
+    yPos += 5;
+    checkPageBreak();
+  }
+
+  // ========== SECȚIUNEA 3: VACCINĂRI ==========
+  if (data.vaccinations && data.vaccinations.length > 0) {
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("3. VACCINĂRI", margin, yPos);
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    data.vaccinations.forEach((vac) => {
+      checkPageBreak(8);
+      const nextDose = vac.nextDoseDate ? ` | Următoarea doză: ${formatDateTime(vac.nextDoseDate).dateOnly}` : "";
+      doc.text(`• ${vac.vaccineName} - ${formatDateTime(vac.administrationDate).dateOnly}${nextDose}`, margin + 5, yPos);
+      yPos += 6;
+    });
+    yPos += 5;
+    checkPageBreak();
+  }
+
+  // ========== SECȚIUNEA 4: ISTORIC FAMILIAL ==========
+  if (data.familyHistory && data.familyHistory.length > 0) {
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("4. ISTORIC MEDICAL FAMILIAL", margin, yPos);
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    data.familyHistory.forEach((fh) => {
+      checkPageBreak(8);
+      const ageText = fh.ageOfOnset ? ` (vârstă debut: ${fh.ageOfOnset} ani)` : "";
+      doc.text(`• ${fh.relation}: ${fh.condition}${ageText}`, margin + 5, yPos);
+      yPos += 6;
+    });
+    yPos += 5;
+    checkPageBreak();
+  }
+
+  // ========== SECȚIUNEA 5: REȚETE ACTIVE ==========
+  if (data.activePrescriptions && data.activePrescriptions.length > 0) {
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("5. REȚETE ACTIVE", margin, yPos);
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    data.activePrescriptions.forEach((rx) => {
+      checkPageBreak(12);
+      doc.text(`• ${rx.medicationName}`, margin + 5, yPos);
+      yPos += 6;
+      doc.text(`  Doză: ${rx.dosage} | Frecvență: ${rx.frequency}`, margin + 10, yPos);
+      yPos += 6;
+      const endDateText = rx.endDate ? ` | Expiră: ${formatDateTime(rx.endDate).dateOnly}` : " | Fără dată de expirare";
+      doc.text(`  Început: ${formatDateTime(rx.startDate).dateOnly}${endDateText}`, margin + 10, yPos);
+      yPos += 8;
+    });
+    yPos += 5;
+    checkPageBreak();
+  }
+
+  // ========== SECȚIUNEA 6: CONSULTAȚII MEDICALE ==========
+  if (data.medicalRecords && data.medicalRecords.length > 0) {
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("6. CONSULTAȚII MEDICALE", margin, yPos);
+    yPos += 8;
+    
+    data.medicalRecords.forEach((record, index) => {
+      checkPageBreak(30);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Consultația ${index + 1} - ${formatDateTime(record.visitDate).dateOnly}`, margin, yPos);
+      yPos += 7;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Medic: ${record.doctorName}`, margin + 5, yPos);
+      yPos += 6;
+      
+      if (record.chiefComplaint) {
+        const complaintHeight = addText(`Motiv: ${record.chiefComplaint}`, margin + 5, yPos, contentWidth - 10);
+        yPos += complaintHeight + 2;
+      }
+      
+      if (record.assessment) {
+        const assessmentHeight = addText(`Evaluare: ${record.assessment}`, margin + 5, yPos, contentWidth - 10);
+        yPos += assessmentHeight + 2;
+      }
+      
+      if (record.diagnoses && record.diagnoses.length > 0) {
+        doc.text("Diagnosticuri:", margin + 5, yPos);
+        yPos += 6;
+        record.diagnoses.forEach((diag) => {
+          const statusText = diag.status === "active" ? "Activ" : diag.status === "resolved" ? "Rezolvat" : diag.status === "chronic" ? "Cronic" : "Istoric";
+          doc.text(`  - ${diag.diagnosisName} (${statusText})`, margin + 10, yPos);
+          yPos += 6;
+          checkPageBreak(6);
+        });
+      }
+      
+      if (record.prescriptions && record.prescriptions.length > 0) {
+        doc.text("Medicamente prescrise:", margin + 5, yPos);
+        yPos += 6;
+        record.prescriptions.forEach((presc) => {
+          doc.text(`  - ${presc.medicationName} (${presc.dosage}, ${presc.frequency})`, margin + 10, yPos);
+          yPos += 6;
+          checkPageBreak(6);
+        });
+      }
+      
+      yPos += 5;
+    });
+    yPos += 5;
+    checkPageBreak();
+  }
+
+  // ========== SECȚIUNEA 7: REZULTATE ANALIZE ==========
+  if (data.labResults && data.labResults.length > 0) {
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("7. REZULTATE ANALIZE", margin, yPos);
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    // Grupează analizele după dată
+    const groupedByDate = new Map<string, typeof data.labResults>();
+    data.labResults.forEach((lab) => {
+      const dateKey = formatDateTime(lab.performedDate).dateOnly;
+      if (!groupedByDate.has(dateKey)) {
+        groupedByDate.set(dateKey, []);
+      }
+      groupedByDate.get(dateKey)!.push(lab);
+    });
+    
+    groupedByDate.forEach((labs, date) => {
+      checkPageBreak(15);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Data: ${date}`, margin, yPos);
+      yPos += 7;
+      doc.setFont("helvetica", "normal");
+      
+      labs.forEach((lab) => {
+        checkPageBreak(10);
+        doc.text(`• ${lab.testName}`, margin + 5, yPos);
+        yPos += 6;
+        if (lab.resultValue) {
+          doc.text(`  Valoare: ${lab.resultValue}${lab.unit ? ` ${lab.unit}` : ""}`, margin + 10, yPos);
+          yPos += 6;
+        }
+        if (lab.referenceRange) {
+          doc.text(`  Interval referință: ${lab.referenceRange}`, margin + 10, yPos);
+          yPos += 6;
+        }
+        yPos += 2;
+      });
+      yPos += 5;
+    });
+    yPos += 5;
+    checkPageBreak();
+  }
+
+  // ========== SECȚIUNEA 8: PROGRAMĂRI ==========
+  if (data.appointments && data.appointments.length > 0) {
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("8. ISTORIC PROGRAMĂRI", margin, yPos);
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    // Sortează după dată (cele mai recente primele)
+    const sortedAppointments = [...data.appointments].sort((a, b) => 
+      new Date(b.schedule).getTime() - new Date(a.schedule).getTime()
+    );
+    
+    sortedAppointments.slice(0, 20).forEach((apt) => {
+      checkPageBreak(8);
+      const statusText = apt.status === "scheduled" ? "Confirmată" : apt.status === "pending" ? "În așteptare" : "Anulată";
+      const reasonText = apt.reason ? ` - ${apt.reason}` : "";
+      doc.text(`• ${formatDateTime(apt.schedule).dateTime} - Dr. ${apt.primaryPhysician} (${statusText})${reasonText}`, margin + 5, yPos);
+      yPos += 6;
+    });
+    
+    if (sortedAppointments.length > 20) {
+      doc.text(`... și încă ${sortedAppointments.length - 20} programări`, margin + 5, yPos);
+      yPos += 6;
+    }
+    yPos += 5;
+    checkPageBreak();
+  }
+
+  // ========== SECȚIUNEA 9: DOCUMENTE MEDICALE ==========
+  if (data.documents && data.documents.length > 0) {
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("9. DOCUMENTE MEDICALE", margin, yPos);
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    data.documents.forEach((docItem) => {
+      checkPageBreak(8);
+      const typeText = docItem.documentType === "analysis" ? "Analiză" : 
+                      docItem.documentType === "image" ? "Imagine" :
+                      docItem.documentType === "report" ? "Raport" :
+                      docItem.documentType === "consent" ? "Consimțământ" :
+                      docItem.documentType === "certificate" ? "Certificat" : "Alt tip";
+      doc.text(`• ${docItem.fileName} (${typeText}) - ${formatDateTime(docItem.uploadedAt).dateOnly}`, margin + 5, yPos);
+      yPos += 6;
+    });
+    yPos += 5;
+  }
+
+  // Footer pe toate paginile
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      `Document generat pe ${formatDateTime(new Date().toISOString()).dateTime} de către eHealth.ro | Pagina ${i} din ${pageCount}`,
+      pageWidth / 2,
+      285,
+      { align: "center" }
+    );
+  }
+
+  return Buffer.from(doc.output("arraybuffer"));
+}

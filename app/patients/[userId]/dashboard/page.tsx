@@ -13,12 +13,13 @@ import { LogoutButton } from "@/components/LogoutButton";
 import { LogoLink } from "@/components/LogoLink";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 import { AnalysisResultDisplay } from "@/components/AnalysisResultDisplay";
+import { AppointmentReviewButton } from "@/components/AppointmentReviewButton";
+import { RescheduleAppointmentButton } from "@/components/RescheduleAppointmentButton";
+import { doctorReviewHelpers } from "@/lib/db-helpers";
 
 const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
-  // Verifică autentificarea
   const session = await requireAuth();
   
-  // Verifică dacă userId-ul din URL se potrivește cu sesiunea
   if (session.$id !== userId) {
     redirect(`/patients/${session.$id}/dashboard`);
   }
@@ -29,6 +30,11 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
 
   if (!user) redirect("/");
   if (!patient) redirect(`/patients/${userId}/register`);
+
+  const patientReviews = doctorReviewHelpers.getByPatientId(patient.$id);
+  const reviewsByAppointment = new Map(
+    patientReviews.map((r) => [r.appointmentId, r])
+  );
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -43,6 +49,12 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
               className="text-14-medium text-dark-600 hover:text-dark-700"
             >
               Istoric Medical
+            </Link>
+            <Link
+              href={`/patients/${userId}/calendar`}
+              className="text-14-medium text-dark-600 hover:text-dark-700"
+            >
+              Calendar
             </Link>
             <Link
               href={`/patients/${userId}/new-appointment`}
@@ -70,10 +82,26 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
       <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-8">
         {/* Welcome Section */}
         <section className="mb-8">
-          <h1 className="header mb-2">Bun venit, {patient.name}! 👋</h1>
-          <p className="text-dark-600">
-            Aici poți vedea toate informațiile despre contul tău, programările tale și istoricul medical.
-          </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="header mb-2">Bun venit, {patient.name}! 👋</h1>
+              <p className="text-dark-600">
+                Aici poți vedea toate informațiile despre contul tău, programările tale și istoricul medical.
+              </p>
+            </div>
+            <a
+              href={`/api/pdf/patient/${patient.$id}`}
+              download
+              className="inline-flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-4 py-2 text-14-medium text-green-700 hover:bg-green-100 transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Descarcă dosar PDF
+            </a>
+          </div>
         </section>
 
         {/* Stats Cards */}
@@ -304,6 +332,13 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                                 })()}
                               </div>
                             )}
+
+                            {appointment.status !== "cancelled" && (
+                              <RescheduleAppointmentButton
+                                appointment={appointment}
+                                userId={userId}
+                              />
+                            )}
                           </div>
                           
                           <StatusBadge status={appointment.status} />
@@ -412,7 +447,6 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                                       );
                                     }
                                   } catch {
-                                    // Dacă nu este JSON, afișează ca text simplu
                                     return (
                                       <p className="text-14-regular text-dark-700 whitespace-pre-wrap">
                                         {appointment.analysisResults}
@@ -421,6 +455,14 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                                   }
                                 })()}
                               </div>
+                            )}
+
+                            {appointment.status === "scheduled" && (
+                              <AppointmentReviewButton
+                                appointmentId={appointment.$id}
+                                doctorName={appointment.primaryPhysician}
+                                existingReview={reviewsByAppointment.get(appointment.$id) || null}
+                              />
                             )}
                           </div>
                           
