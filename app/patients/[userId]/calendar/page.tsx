@@ -102,6 +102,12 @@ const CalendarPage = async ({ params: { userId } }: SearchParamProps) => {
               Istoric Medical
             </Link>
             <Link
+              href={`/patients/${userId}/profile`}
+              className="text-14-medium text-dark-600 hover:text-dark-700"
+            >
+              Profil Medical
+            </Link>
+            <Link
               href={`/patients/${userId}/new-appointment`}
               className="text-14-medium text-green-500 hover:text-green-600"
             >

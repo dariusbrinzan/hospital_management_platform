@@ -287,6 +287,24 @@ export const patientHelpers = {
       updatedAt: patient.updatedAt,
     }));
   },
+
+  update: (id: string, data: Record<string, any>) => {
+    const now = new Date().toISOString();
+    const fields = Object.keys(data);
+    const setClause = fields.map((f) => `${f} = ?`).join(", ");
+    const values = fields.map((f) => {
+      const v = data[f];
+      if (v instanceof Date) return v.toISOString();
+      if (v === undefined) return null;
+      return v;
+    });
+
+    db.prepare(`
+      UPDATE patients SET ${setClause}, updatedAt = ? WHERE id = ?
+    `).run(...values, now, id);
+
+    return patientHelpers.getById(id);
+  },
 };
 
 // Appointments helpers
@@ -2041,6 +2059,28 @@ export const allergyHelpers = {
       createdAt: parseDate(a.createdAt),
       updatedAt: parseDate(a.updatedAt),
     }));
+  },
+
+  update: (id: string, data: Record<string, any>) => {
+    const now = new Date().toISOString();
+    const fields = Object.keys(data);
+    const setClause = fields.map((f) => `${f} = ?`).join(", ");
+    const values = fields.map((f) => {
+      const v = data[f];
+      if (v instanceof Date) return v.toISOString();
+      if (v === undefined) return null;
+      return v;
+    });
+
+    db.prepare(`
+      UPDATE allergies_adverse_reactions SET ${setClause}, updatedAt = ? WHERE id = ?
+    `).run(...values, now, id);
+
+    return allergyHelpers.getById(id);
+  },
+
+  delete: (id: string) => {
+    db.prepare("DELETE FROM allergies_adverse_reactions WHERE id = ?").run(id);
   },
 };
 
