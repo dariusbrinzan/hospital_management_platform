@@ -189,6 +189,89 @@ async function buildDynamicReply(
       return reply;
     }
 
+    case "patient_info": {
+      const p = patient as any;
+      let reply = "Datele tale personale:\n\n";
+      if (p.name) reply += `Nume: ${p.name}\n`;
+      if (p.email) reply += `Email: ${p.email}\n`;
+      if (p.phone) reply += `Telefon: ${p.phone}\n`;
+      if (p.address) reply += `Adresă: ${p.address}\n`;
+      if (p.birthDate) {
+        const birthDate = formatDateTime(p.birthDate).dateOnly;
+        reply += `Data nașterii: ${birthDate}\n`;
+      }
+      if (p.gender) reply += `Gen: ${p.gender}\n`;
+      if (p.bloodType) reply += `Grup sanguin: ${p.bloodType}\n`;
+      if (p.height) reply += `Înălțime: ${p.height} cm\n`;
+      if (p.weight) reply += `Greutate: ${p.weight} kg\n`;
+      if (p.occupation) reply += `Ocupație: ${p.occupation}\n`;
+      if (p.smokingStatus) reply += `Fumător: ${p.smokingStatus}\n`;
+      if (p.alcoholConsumption) reply += `Consum alcool: ${p.alcoholConsumption}\n`;
+      if (p.exerciseFrequency) reply += `Frecvență exerciții: ${p.exerciseFrequency}\n`;
+      reply += `\nPentru actualizări, mergi în Profil Medical.`;
+      return reply;
+    }
+
+    case "insurance_info": {
+      const p = patient as any;
+      if (!p.insuranceProvider && !p.insurancePolicyNumber) {
+        return "Nu ai informații despre asigurare înregistrate. Poți să le adaugi din Profil Medical.";
+      }
+
+      let reply = "Informații asigurare medicală:\n\n";
+      if (p.insuranceProvider) reply += `Asigurator: ${p.insuranceProvider}\n`;
+      if (p.insurancePolicyNumber) reply += `Număr poliță: ${p.insurancePolicyNumber}\n`;
+      reply += `\nPentru actualizări, mergi în Profil Medical.`;
+      return reply;
+    }
+
+    case "emergency_contact": {
+      const p = patient as any;
+      if (!p.emergencyContactName && !p.emergencyContactNumber) {
+        return "Nu ai contact de urgență înregistrat. Poți să-l adaugi din Profil Medical.";
+      }
+
+      let reply = "Contact de urgență:\n\n";
+      if (p.emergencyContactName) reply += `Nume: ${p.emergencyContactName}\n`;
+      if (p.emergencyContactNumber) reply += `Telefon: ${p.emergencyContactNumber}\n`;
+      reply += `\nPentru actualizări, mergi în Profil Medical.`;
+      return reply;
+    }
+
+    case "family_history": {
+      const p = patient as any;
+      if (!p.familyMedicalHistory) {
+        return "Nu ai istoric medical familial înregistrat. Poți să-l adaugi din Profil Medical.";
+      }
+
+      let reply = "Istoric medical familial:\n\n";
+      reply += p.familyMedicalHistory;
+      reply += `\n\nPentru actualizări, mergi în Profil Medical.`;
+      return reply;
+    }
+
+    case "past_appointments": {
+      const appointments = await getPatientAppointments(userId);
+      const past = (appointments?.past || [])
+        .filter((apt: any) => apt.status !== "cancelled")
+        .sort((a: any, b: any) => new Date(b.schedule).getTime() - new Date(a.schedule).getTime())
+        .slice(0, 5);
+
+      if (past.length === 0) {
+        return "Nu ai programări trecute înregistrate.";
+      }
+
+      let reply = `Programări trecute (ultimele ${past.length}):\n\n`;
+      past.forEach((apt: any, idx: number) => {
+        const dateTime = formatDateTime(apt.schedule).dateTime;
+        reply += `${idx + 1}. ${dateTime} - Dr. ${apt.primaryPhysician}`;
+        if (apt.reason) reply += ` (${apt.reason})`;
+        reply += `\n`;
+      });
+      reply += `\nVezi toate programările în Dashboard sau Istoric Medical.`;
+      return reply;
+    }
+
     default:
       return "";
   }
