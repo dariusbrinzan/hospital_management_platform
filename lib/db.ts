@@ -505,6 +505,110 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_icu_treatments_patientId ON icu_treatments(icuPatientId);
   CREATE INDEX IF NOT EXISTS idx_icu_equipment_patientId ON icu_equipment(icuPatientId);
 
+  -- Tabele pentru Spitalizări Normale (non-ATI)
+  CREATE TABLE IF NOT EXISTS hospital_rooms (
+    id TEXT PRIMARY KEY,
+    roomNumber TEXT NOT NULL UNIQUE, -- ex: "101", "2A", "301"
+    floor INTEGER NOT NULL DEFAULT 1,
+    department TEXT NOT NULL, -- 'cardiology', 'surgery', 'pediatrics', 'orthopedics', 'neurology', 'general'
+    roomType TEXT NOT NULL DEFAULT 'standard', -- 'standard', 'private', 'semi_private', 'isolation'
+    maxCapacity INTEGER NOT NULL DEFAULT 2,
+    currentOccupancy INTEGER NOT NULL DEFAULT 0,
+    isAvailable INTEGER NOT NULL DEFAULT 1,
+    equipment TEXT, -- JSON cu echipamente disponibile
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS hospital_admissions (
+    id TEXT PRIMARY KEY,
+    patientId TEXT,
+    appointmentId TEXT, -- Opțional: dacă internarea vine din programare
+    patientName TEXT NOT NULL,
+    patientPhone TEXT,
+    patientAge TEXT,
+    patientGender TEXT,
+    roomId TEXT NOT NULL,
+    bedNumber INTEGER NOT NULL,
+    admissionDate TEXT NOT NULL DEFAULT (datetime('now')),
+    dischargeDate TEXT,
+    admissionType TEXT NOT NULL DEFAULT 'elective', -- 'elective', 'urgent', 'emergency', 'transfer'
+    admissionReason TEXT NOT NULL, -- Motivația internării
+    diagnosis TEXT,
+    admittingDoctor TEXT NOT NULL, -- Numele medicului care internă
+    assignedDoctor TEXT, -- Medicul responsabil pentru tratament
+    department TEXT NOT NULL, -- Secția unde este internat
+    insuranceProvider TEXT,
+    insurancePolicyNumber TEXT,
+    expectedLengthOfStay INTEGER, -- Zile estimate
+    status TEXT NOT NULL DEFAULT 'admitted', -- 'admitted', 'stable', 'improving', 'ready_for_discharge', 'discharged'
+    dischargeInstructions TEXT,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id),
+    FOREIGN KEY (appointmentId) REFERENCES appointments(id),
+    FOREIGN KEY (roomId) REFERENCES hospital_rooms(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS hospital_vital_signs (
+    id TEXT PRIMARY KEY,
+    admissionId TEXT NOT NULL,
+    recordedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    bloodPressureSystolic INTEGER,
+    bloodPressureDiastolic INTEGER,
+    pulse INTEGER,
+    temperature REAL,
+    oxygenSaturation INTEGER,
+    respiratoryRate INTEGER,
+    glucoseLevel REAL,
+    weight REAL,
+    notes TEXT,
+    recordedBy TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (admissionId) REFERENCES hospital_admissions(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS hospital_treatments (
+    id TEXT PRIMARY KEY,
+    admissionId TEXT NOT NULL,
+    medicationName TEXT NOT NULL,
+    dosage TEXT NOT NULL,
+    frequency TEXT NOT NULL,
+    route TEXT, -- 'iv', 'oral', 'injection', 'topical'
+    startTime TEXT NOT NULL DEFAULT (datetime('now')),
+    endTime TEXT,
+    administeredBy TEXT,
+    notes TEXT,
+    status TEXT NOT NULL DEFAULT 'active', -- 'active', 'completed', 'discontinued'
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (admissionId) REFERENCES hospital_admissions(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS hospital_procedures (
+    id TEXT PRIMARY KEY,
+    admissionId TEXT NOT NULL,
+    procedureName TEXT NOT NULL,
+    procedureDate TEXT NOT NULL,
+    performedBy TEXT NOT NULL,
+    procedureType TEXT, -- 'diagnostic', 'therapeutic', 'surgical', 'other'
+    outcome TEXT,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (admissionId) REFERENCES hospital_admissions(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_hospital_rooms_department ON hospital_rooms(department);
+  CREATE INDEX IF NOT EXISTS idx_hospital_rooms_roomNumber ON hospital_rooms(roomNumber);
+  CREATE INDEX IF NOT EXISTS idx_hospital_admissions_patientId ON hospital_admissions(patientId);
+  CREATE INDEX IF NOT EXISTS idx_hospital_admissions_roomId ON hospital_admissions(roomId);
+  CREATE INDEX IF NOT EXISTS idx_hospital_admissions_status ON hospital_admissions(status);
+  CREATE INDEX IF NOT EXISTS idx_hospital_admissions_department ON hospital_admissions(department);
+  CREATE INDEX IF NOT EXISTS idx_hospital_vital_signs_admissionId ON hospital_vital_signs(admissionId);
+  CREATE INDEX IF NOT EXISTS idx_hospital_treatments_admissionId ON hospital_treatments(admissionId);
+  CREATE INDEX IF NOT EXISTS idx_hospital_procedures_admissionId ON hospital_procedures(admissionId);
+
   -- Tabele pentru Istoric Medical Complet
   CREATE TABLE IF NOT EXISTS medical_records (
     id TEXT PRIMARY KEY,
@@ -871,6 +975,35 @@ try {
 } catch (error) {
   // Tabelul nu există încă sau eroare la inițializare
   console.log("ICU rooms initialization:", error);
+}
+
+// Inițializare săli spitalizare normale (pe secții)
+try {
+  const hospitalRoomsExist = db.prepare("SELECT COUNT(*) as count FROM hospital_rooms").get() as { count: number };
+  if (hospitalRoomsExist.count === 0) {
+    const departments = ['cardiology', 'surgery', 'pediatrics', 'orthopedics', 'neurology', 'general'];
+    const roomTypes = ['standard', 'private', 'semi_private'];
+    const rooms: string[] = [];
+    
+    departments.forEach((dept, deptIdx) => {
+      const floor = Math.floor(deptIdx / 2) + 1;
+      [1, 2, 3].forEach((roomNum) => {
+        const roomId = randomUUID();
+        const roomType = roomTypes[roomNum % 3];
+        const capacity = roomType === 'private' ? 1 : roomType === 'semi_private' ? 2 : 3;
+        rooms.push(`('${roomId}', '${dept.charAt(0).toUpperCase() + dept.slice(1)}-${roomNum}', ${floor}, '${dept}', '${roomType}', ${capacity}, 0, 1)`);
+      });
+    });
+    
+    if (rooms.length > 0) {
+      db.exec(`
+        INSERT INTO hospital_rooms (id, roomNumber, floor, department, roomType, maxCapacity, currentOccupancy, isAvailable) VALUES
+        ${rooms.join(',\n        ')};
+      `);
+    }
+  }
+} catch (error) {
+  console.log("Hospital rooms initialization:", error);
 }
 
 export default db;

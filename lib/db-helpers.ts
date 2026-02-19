@@ -2648,6 +2648,552 @@ export const icuHelpers = {
   },
 };
 
+// Hospital Room & Admission Helpers (Spitalizări Normale)
+export const hospitalRoomHelpers = {
+  getAllRooms: (department?: string) => {
+    let query = "SELECT * FROM hospital_rooms";
+    const params: any[] = [];
+    
+    if (department) {
+      query += " WHERE department = ?";
+      params.push(department);
+    }
+    
+    query += " ORDER BY floor ASC, roomNumber ASC";
+    
+    const rooms = db.prepare(query).all(...params) as any[];
+    return rooms.map((r) => ({
+      $id: r.id,
+      roomNumber: r.roomNumber,
+      floor: r.floor,
+      department: r.department,
+      roomType: r.roomType,
+      maxCapacity: r.maxCapacity,
+      currentOccupancy: r.currentOccupancy,
+      isAvailable: r.isAvailable === 1,
+      equipment: r.equipment ? JSON.parse(r.equipment) : null,
+      notes: r.notes,
+      createdAt: parseDate(r.createdAt),
+      updatedAt: parseDate(r.updatedAt),
+    }));
+  },
+
+  getRoomById: (roomId: string) => {
+    const r = db.prepare("SELECT * FROM hospital_rooms WHERE id = ?").get(roomId) as any;
+    if (!r) return null;
+    return {
+      $id: r.id,
+      roomNumber: r.roomNumber,
+      floor: r.floor,
+      department: r.department,
+      roomType: r.roomType,
+      maxCapacity: r.maxCapacity,
+      currentOccupancy: r.currentOccupancy,
+      isAvailable: r.isAvailable === 1,
+      equipment: r.equipment ? JSON.parse(r.equipment) : null,
+      notes: r.notes,
+      createdAt: parseDate(r.createdAt),
+      updatedAt: parseDate(r.updatedAt),
+    };
+  },
+
+  findAvailableRoom: (department: string, roomType?: string) => {
+    let query = `
+      SELECT * FROM hospital_rooms 
+      WHERE department = ? AND isAvailable = 1 AND currentOccupancy < maxCapacity
+    `;
+    const params: any[] = [department];
+    
+    if (roomType) {
+      query += " AND roomType = ?";
+      params.push(roomType);
+    }
+    
+    query += " ORDER BY currentOccupancy ASC, roomNumber ASC LIMIT 1";
+    
+    const room = db.prepare(query).get(...params) as any;
+    
+    if (!room) return null;
+    
+    return {
+      $id: room.id,
+      roomNumber: room.roomNumber,
+      floor: room.floor,
+      department: room.department,
+      roomType: room.roomType,
+      maxCapacity: room.maxCapacity,
+      currentOccupancy: room.currentOccupancy,
+      isAvailable: room.isAvailable === 1,
+      equipment: room.equipment ? JSON.parse(room.equipment) : null,
+      notes: room.notes,
+      createdAt: parseDate(room.createdAt),
+      updatedAt: parseDate(room.updatedAt),
+    };
+  },
+
+  findAvailableBed: (roomId: string) => {
+    const room = hospitalRoomHelpers.getRoomById(roomId);
+    if (!room || room.currentOccupancy >= room.maxCapacity) return null;
+
+    // Găsește paturile ocupate în această sală
+    const occupiedBeds = db.prepare(`
+      SELECT bedNumber FROM hospital_admissions 
+      WHERE roomId = ? AND dischargeDate IS NULL
+    `).all(roomId) as Array<{ bedNumber: number }>;
+    
+    const occupiedBedNumbers = new Set(occupiedBeds.map((b) => b.bedNumber));
+    
+    // Găsește primul pat liber
+    for (let i = 1; i <= room.maxCapacity; i++) {
+      if (!occupiedBedNumbers.has(i)) {
+        return i;
+      }
+    }
+    
+    return null;
+  },
+
+  updateRoomOccupancy: (roomId: string, delta: number) => {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE hospital_rooms 
+      SET currentOccupancy = currentOccupancy + ?, updatedAt = ?
+      WHERE id = ?
+    `).run(delta, now, roomId);
+  },
+};
+
+export const hospitalAdmissionHelpers = {
+  admitPatient: (params: {
+    patientId?: string | null;
+    appointmentId?: string | null;
+    patientName: string;
+    patientPhone?: string;
+    patientAge?: string;
+    patientGender?: string;
+    department: string;
+    roomType?: string;
+    admissionReason: string;
+    diagnosis?: string;
+    admittingDoctor: string;
+    assignedDoctor?: string;
+    insuranceProvider?: string;
+    insurancePolicyNumber?: string;
+    expectedLengthOfStay?: number;
+    notes?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    // Găsește o sală disponibilă
+    const availableRoom = hospitalRoomHelpers.findAvailableRoom(
+      params.department,
+      params.roomType
+    );
+
+    if (!availableRoom) {
+      throw new Error(`Nu există săli disponibile în secția ${params.department}`);
+    }
+
+    // Găsește un pat liber
+    const bedNumber = hospitalRoomHelpers.findAvailableBed(availableRoom.$id);
+    if (!bedNumber) {
+      throw new Error("Nu există paturi disponibile în sala selectată");
+    }
+
+    // Creează internarea
+    db.prepare(`
+      INSERT INTO hospital_admissions (
+        id, patientId, appointmentId, patientName, patientPhone, patientAge, patientGender,
+        roomId, bedNumber, admissionDate, admissionType, admissionReason, diagnosis,
+        admittingDoctor, assignedDoctor, department, insuranceProvider, insurancePolicyNumber,
+        expectedLengthOfStay, status, notes, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'elective', ?, ?, ?, ?, ?, ?, ?, ?, 'admitted', ?, ?, ?)
+    `).run(
+      id,
+      params.patientId || null,
+      params.appointmentId || null,
+      params.patientName,
+      params.patientPhone || null,
+      params.patientAge || null,
+      params.patientGender || null,
+      availableRoom.$id,
+      bedNumber,
+      now,
+      params.admissionReason,
+      params.diagnosis || null,
+      params.admittingDoctor,
+      params.assignedDoctor || null,
+      params.department,
+      params.insuranceProvider || null,
+      params.insurancePolicyNumber || null,
+      params.expectedLengthOfStay || null,
+      params.notes || null,
+      now,
+      now
+    );
+
+    // Actualizează ocuparea sălii
+    hospitalRoomHelpers.updateRoomOccupancy(availableRoom.$id, 1);
+
+    return hospitalAdmissionHelpers.getAdmissionById(id);
+  },
+
+  getAllAdmissions: (department?: string, status?: string) => {
+    let query = `
+      SELECT 
+        a.*,
+        r.roomNumber,
+        r.floor,
+        r.department as roomDepartment,
+        pat.id as patient_id,
+        pat.name as patient_name
+      FROM hospital_admissions a
+      LEFT JOIN hospital_rooms r ON a.roomId = r.id
+      LEFT JOIN patients pat ON a.patientId = pat.id
+      WHERE a.dischargeDate IS NULL
+    `;
+    const params: any[] = [];
+
+    if (department) {
+      query += " AND a.department = ?";
+      params.push(department);
+    }
+
+    if (status) {
+      query += " AND a.status = ?";
+      params.push(status);
+    }
+
+    query += " ORDER BY a.admissionDate DESC";
+
+    const admissions = db.prepare(query).all(...params) as any[];
+
+    return admissions.map((a) => ({
+      $id: a.id,
+      patientId: a.patientId,
+      appointmentId: a.appointmentId,
+      patientName: a.patientName || a.patient_name,
+      patientPhone: a.patientPhone,
+      patientAge: a.patientAge,
+      patientGender: a.patientGender,
+      roomId: a.roomId,
+      bedNumber: a.bedNumber,
+      admissionDate: parseDate(a.admissionDate),
+      dischargeDate: a.dischargeDate ? parseDate(a.dischargeDate) : null,
+      admissionType: a.admissionType,
+      admissionReason: a.admissionReason,
+      diagnosis: a.diagnosis,
+      admittingDoctor: a.admittingDoctor,
+      assignedDoctor: a.assignedDoctor,
+      department: a.department,
+      insuranceProvider: a.insuranceProvider,
+      insurancePolicyNumber: a.insurancePolicyNumber,
+      expectedLengthOfStay: a.expectedLengthOfStay,
+      status: a.status,
+      dischargeInstructions: a.dischargeInstructions,
+      notes: a.notes,
+      createdAt: parseDate(a.createdAt),
+      updatedAt: parseDate(a.updatedAt),
+      room: {
+        $id: a.roomId,
+        roomNumber: a.roomNumber,
+        floor: a.floor,
+        department: a.roomDepartment,
+      },
+    }));
+  },
+
+  getAdmissionById: (id: string) => {
+    const a = db.prepare(`
+      SELECT 
+        a.*,
+        r.roomNumber,
+        r.floor,
+        r.department as roomDepartment,
+        pat.id as patient_id,
+        pat.name as patient_name
+      FROM hospital_admissions a
+      LEFT JOIN hospital_rooms r ON a.roomId = r.id
+      LEFT JOIN patients pat ON a.patientId = pat.id
+      WHERE a.id = ?
+    `).get(id) as any;
+
+    if (!a) return null;
+
+    return {
+      $id: a.id,
+      patientId: a.patientId,
+      appointmentId: a.appointmentId,
+      patientName: a.patientName || a.patient_name,
+      patientPhone: a.patientPhone,
+      patientAge: a.patientAge,
+      patientGender: a.patientGender,
+      roomId: a.roomId,
+      bedNumber: a.bedNumber,
+      admissionDate: parseDate(a.admissionDate),
+      dischargeDate: a.dischargeDate ? parseDate(a.dischargeDate) : null,
+      admissionType: a.admissionType,
+      admissionReason: a.admissionReason,
+      diagnosis: a.diagnosis,
+      admittingDoctor: a.admittingDoctor,
+      assignedDoctor: a.assignedDoctor,
+      department: a.department,
+      insuranceProvider: a.insuranceProvider,
+      insurancePolicyNumber: a.insurancePolicyNumber,
+      expectedLengthOfStay: a.expectedLengthOfStay,
+      status: a.status,
+      dischargeInstructions: a.dischargeInstructions,
+      notes: a.notes,
+      createdAt: parseDate(a.createdAt),
+      updatedAt: parseDate(a.updatedAt),
+      room: {
+        $id: a.roomId,
+        roomNumber: a.roomNumber,
+        floor: a.floor,
+        department: a.roomDepartment,
+      },
+    };
+  },
+
+  updateAdmission: (id: string, data: Record<string, any>) => {
+    const now = new Date().toISOString();
+    const fields = Object.keys(data);
+    const setClause = fields.map((f) => `${f} = ?`).join(", ");
+    const values = fields.map((f) => {
+      const v = data[f];
+      if (v instanceof Date) return v.toISOString();
+      if (v === undefined) return null;
+      return v;
+    });
+
+    db.prepare(`
+      UPDATE hospital_admissions SET ${setClause}, updatedAt = ? WHERE id = ?
+    `).run(...values, now, id);
+
+    return hospitalAdmissionHelpers.getAdmissionById(id);
+  },
+
+  dischargePatient: (id: string, dischargeInstructions?: string) => {
+    const admission = hospitalAdmissionHelpers.getAdmissionById(id);
+    if (!admission) throw new Error("Internarea nu a fost găsită");
+
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      UPDATE hospital_admissions 
+      SET dischargeDate = ?, status = 'discharged', dischargeInstructions = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(now, dischargeInstructions || null, now, id);
+
+    // Actualizează ocuparea sălii
+    hospitalRoomHelpers.updateRoomOccupancy(admission.roomId, -1);
+
+    return hospitalAdmissionHelpers.getAdmissionById(id);
+  },
+
+  addVitalSigns: (admissionId: string, vitalSigns: {
+    bloodPressureSystolic?: number;
+    bloodPressureDiastolic?: number;
+    pulse?: number;
+    temperature?: number;
+    oxygenSaturation?: number;
+    respiratoryRate?: number;
+    glucoseLevel?: number;
+    weight?: number;
+    notes?: string;
+    recordedBy?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO hospital_vital_signs (
+        id, admissionId, recordedAt, bloodPressureSystolic, bloodPressureDiastolic,
+        pulse, temperature, oxygenSaturation, respiratoryRate, glucoseLevel, weight,
+        notes, recordedBy, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      admissionId,
+      now,
+      vitalSigns.bloodPressureSystolic || null,
+      vitalSigns.bloodPressureDiastolic || null,
+      vitalSigns.pulse || null,
+      vitalSigns.temperature || null,
+      vitalSigns.oxygenSaturation || null,
+      vitalSigns.respiratoryRate || null,
+      vitalSigns.glucoseLevel || null,
+      vitalSigns.weight || null,
+      vitalSigns.notes || null,
+      vitalSigns.recordedBy || null,
+      now
+    );
+
+    return {
+      $id: id,
+      admissionId,
+      recordedAt: parseDate(now),
+      ...vitalSigns,
+      createdAt: parseDate(now),
+    };
+  },
+
+  getVitalSigns: (admissionId: string) => {
+    const signs = db.prepare(`
+      SELECT * FROM hospital_vital_signs 
+      WHERE admissionId = ? 
+      ORDER BY recordedAt DESC
+    `).all(admissionId) as any[];
+
+    return signs.map((s) => ({
+      $id: s.id,
+      admissionId: s.admissionId,
+      recordedAt: parseDate(s.recordedAt),
+      bloodPressureSystolic: s.bloodPressureSystolic,
+      bloodPressureDiastolic: s.bloodPressureDiastolic,
+      pulse: s.pulse,
+      temperature: s.temperature,
+      oxygenSaturation: s.oxygenSaturation,
+      respiratoryRate: s.respiratoryRate,
+      glucoseLevel: s.glucoseLevel,
+      weight: s.weight,
+      notes: s.notes,
+      recordedBy: s.recordedBy,
+      createdAt: parseDate(s.createdAt),
+    }));
+  },
+
+  addTreatment: (admissionId: string, treatment: {
+    medicationName: string;
+    dosage: string;
+    frequency: string;
+    route?: string;
+    administeredBy?: string;
+    notes?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO hospital_treatments (
+        id, admissionId, medicationName, dosage, frequency, route,
+        startTime, administeredBy, notes, status, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)
+    `).run(
+      id,
+      admissionId,
+      treatment.medicationName,
+      treatment.dosage,
+      treatment.frequency,
+      treatment.route || null,
+      now,
+      treatment.administeredBy || null,
+      treatment.notes || null,
+      now
+    );
+
+    return {
+      $id: id,
+      admissionId,
+      medicationName: treatment.medicationName,
+      dosage: treatment.dosage,
+      frequency: treatment.frequency,
+      route: treatment.route,
+      startTime: parseDate(now),
+      endTime: null,
+      administeredBy: treatment.administeredBy,
+      notes: treatment.notes,
+      status: "active",
+      createdAt: parseDate(now),
+    };
+  },
+
+  getTreatments: (admissionId: string) => {
+    const treatments = db.prepare(`
+      SELECT * FROM hospital_treatments 
+      WHERE admissionId = ? 
+      ORDER BY startTime DESC
+    `).all(admissionId) as any[];
+
+    return treatments.map((t) => ({
+      $id: t.id,
+      admissionId: t.admissionId,
+      medicationName: t.medicationName,
+      dosage: t.dosage,
+      frequency: t.frequency,
+      route: t.route,
+      startTime: parseDate(t.startTime),
+      endTime: t.endTime ? parseDate(t.endTime) : null,
+      administeredBy: t.administeredBy,
+      notes: t.notes,
+      status: t.status,
+      createdAt: parseDate(t.createdAt),
+    }));
+  },
+
+  addProcedure: (admissionId: string, procedure: {
+    procedureName: string;
+    procedureDate: Date | string;
+    performedBy: string;
+    procedureType?: string;
+    outcome?: string;
+    notes?: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO hospital_procedures (
+        id, admissionId, procedureName, procedureDate, performedBy,
+        procedureType, outcome, notes, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      admissionId,
+      procedure.procedureName,
+      formatDate(procedure.procedureDate),
+      procedure.performedBy,
+      procedure.procedureType || null,
+      procedure.outcome || null,
+      procedure.notes || null,
+      now
+    );
+
+    return {
+      $id: id,
+      admissionId,
+      procedureName: procedure.procedureName,
+      procedureDate: parseDate(formatDate(procedure.procedureDate)),
+      performedBy: procedure.performedBy,
+      procedureType: procedure.procedureType,
+      outcome: procedure.outcome,
+      notes: procedure.notes,
+      createdAt: parseDate(now),
+    };
+  },
+
+  getProcedures: (admissionId: string) => {
+    const procedures = db.prepare(`
+      SELECT * FROM hospital_procedures 
+      WHERE admissionId = ? 
+      ORDER BY procedureDate DESC
+    `).all(admissionId) as any[];
+
+    return procedures.map((p) => ({
+      $id: p.id,
+      admissionId: p.admissionId,
+      procedureName: p.procedureName,
+      procedureDate: parseDate(p.procedureDate),
+      performedBy: p.performedBy,
+      procedureType: p.procedureType,
+      outcome: p.outcome,
+      notes: p.notes,
+      createdAt: parseDate(p.createdAt),
+    }));
+  },
+};
+
 // Ambulance Helpers
 export const ambulanceHelpers = {
   getAll: () => {

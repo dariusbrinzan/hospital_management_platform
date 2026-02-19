@@ -480,3 +480,90 @@ declare interface DocumentAccessLog {
   ipAddress?: string | null;
   userAgent?: string | null;
 }
+
+// ICU Types
+declare interface ICURoom {
+  $id: string;
+  roomNumber: number;
+  maxCapacity: number;
+  currentOccupancy: number;
+  isAvailable: boolean;
+  equipment?: any;
+  notes?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+declare interface ICUPatient {
+  $id: string;
+  emergencyCaseId?: string | null;
+  patientId?: string | null;
+  patientName?: string | null;
+  patientPhone?: string | null;
+  patientAge?: string | null;
+  patientGender?: string | null;
+  roomId: string;
+  bedNumber: number;
+  admissionDate: Date | string;
+  dischargeDate?: Date | string | null;
+  status: "critical" | "stable" | "improving" | "deteriorating";
+  assignedDoctorId?: string | null;
+  diagnosis?: string | null;
+  notes?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  room?: {
+    $id: string;
+    roomNumber: number;
+  };
+}
+
+// Hospital Room & Admission Types (Spitalizări Normale)
+declare interface HospitalRoom {
+  $id: string;
+  roomNumber: string;
+  floor: number;
+  department: string;
+  roomType: "standard" | "private" | "semi_private" | "isolation";
+  maxCapacity: number;
+  currentOccupancy: number;
+  isAvailable: boolean;
+  equipment?: any;
+  notes?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+declare interface HospitalAdmission {
+  $id: string;
+  patientId?: string | null;
+  appointmentId?: string | null;
+  patientName: string;
+  patientPhone?: string | null;
+  patientAge?: string | null;
+  patientGender?: string | null;
+  roomId: string;
+  bedNumber: number;
+  admissionDate: Date | string;
+  dischargeDate?: Date | string | null;
+  admissionType: "elective" | "urgent" | "emergency" | "transfer";
+  admissionReason: string;
+  diagnosis?: string | null;
+  admittingDoctor: string;
+  assignedDoctor?: string | null;
+  department: string;
+  insuranceProvider?: string | null;
+  insurancePolicyNumber?: string | null;
+  expectedLengthOfStay?: number | null;
+  status: "admitted" | "stable" | "improving" | "ready_for_discharge" | "discharged";
+  dischargeInstructions?: string | null;
+  notes?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  room?: {
+    $id: string;
+    roomNumber: string;
+    floor: number;
+    department: string;
+  };
+}

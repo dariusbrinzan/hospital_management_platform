@@ -29,7 +29,7 @@
 @layer utilities {
   /* ===== UTILITIES */
   .sidebar {
-    @apply remove-scrollbar w-full max-w-72 flex-col overflow-auto bg-black-800 px-7 py-10;
+    @apply remove-scrollbar w-full max-w-72 flex-col overflow-auto bg-dark-700 px-7 py-10;
   }
 
   .left-sidebar {
@@ -45,7 +45,7 @@
   }
 
   .bg-image {
-    @apply bg-black-900 bg-light-rays bg-cover bg-no-repeat;
+    @apply bg-dark-700 bg-light-rays bg-cover bg-no-repeat;
   }
 
   .header {
