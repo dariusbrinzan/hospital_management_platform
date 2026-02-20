@@ -1,12 +1,13 @@
 "use client";
 
-import { AmbulanceMission } from "@/types";
 import { formatDateTime } from "@/lib/utils";
 import { Button } from "./ui/button";
 import Link from "next/link";
 
+type MissionWithPartialAmbulance = Omit<AmbulanceMission, "ambulance"> & { ambulance?: Partial<Ambulance> | null };
+
 interface MissionCardProps {
-  mission: AmbulanceMission;
+  mission: MissionWithPartialAmbulance;
 }
 
 const statusColors: Record<string, { bg: string; text: string; border: string }> = {

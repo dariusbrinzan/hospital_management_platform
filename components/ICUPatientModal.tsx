@@ -1,11 +1,38 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ICUPatient, ICUVitalSigns, ICUTreatment } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { AddVitalSignsForm } from "./forms/AddVitalSignsForm";
 import { AddTreatmentForm } from "./forms/AddTreatmentForm";
+
+interface ICUVitalSignsRecord {
+  $id: string;
+  recordedAt: string;
+  recordedBy?: string;
+  bloodPressureSystolic?: number;
+  bloodPressureDiastolic?: number;
+  pulse?: number;
+  temperature?: number;
+  oxygenSaturation?: number;
+  respiratoryRate?: number;
+  glucoseLevel?: number;
+  consciousnessLevel?: string;
+  notes?: string;
+}
+
+interface ICUTreatmentRecord {
+  $id: string;
+  medicationName: string;
+  dosage: string;
+  frequency: string;
+  route?: string;
+  status?: string;
+  startTime?: string;
+  endTime?: string;
+  administeredBy?: string;
+  notes?: string;
+}
 
 interface ICUPatientModalProps {
   patient: ICUPatient;
@@ -14,8 +41,8 @@ interface ICUPatientModalProps {
 
 export const ICUPatientModal = ({ patient, onClose }: ICUPatientModalProps) => {
   const [activeTab, setActiveTab] = useState<"overview" | "vitals" | "treatments">("overview");
-  const [vitalSigns, setVitalSigns] = useState<ICUVitalSigns[]>([]);
-  const [treatments, setTreatments] = useState<ICUTreatment[]>([]);
+  const [vitalSigns, setVitalSigns] = useState<ICUVitalSignsRecord[]>([]);
+  const [treatments, setTreatments] = useState<ICUTreatmentRecord[]>([]);
   const [showVitalSignsForm, setShowVitalSignsForm] = useState(false);
   const [showTreatmentForm, setShowTreatmentForm] = useState(false);
   const [patientStatus, setPatientStatus] = useState(patient.status);
@@ -321,7 +348,7 @@ export const ICUPatientModal = ({ patient, onClose }: ICUPatientModalProps) => {
                       </span>
                     </div>
                     <div className="text-xs text-dark-500">
-                      Început: {new Date(t.startTime).toLocaleString("ro-RO")}
+                      Început: {t.startTime ? new Date(t.startTime).toLocaleString("ro-RO") : "—"}
                       {t.endTime && ` • Sfârșit: ${new Date(t.endTime).toLocaleString("ro-RO")}`}
                       {t.administeredBy && ` • De: ${t.administeredBy}`}
                     </div>

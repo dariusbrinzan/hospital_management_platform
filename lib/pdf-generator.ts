@@ -587,7 +587,7 @@ export function generateAnalysisPDF(data: AnalysisPDFData): Buffer {
   doc.setFontSize(10);
   doc.text(`Nume: ${data.patient.name}`, 20, yPos);
   yPos += 6;
-  doc.text(`Data nașterii: ${formatDateTime(data.patient.birthDate).date}`, 20, yPos);
+  doc.text(`Data nașterii: ${formatDateTime(data.patient.birthDate).dateOnly}`, 20, yPos);
   yPos += 6;
   doc.text(`Gen: ${data.patient.gender}`, 20, yPos);
   yPos += 6;
@@ -608,7 +608,7 @@ export function generateAnalysisPDF(data: AnalysisPDFData): Buffer {
   yPos += 7;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text(formatDateTime(data.date).date, 20, yPos);
+  doc.text(formatDateTime(data.date).dateOnly, 20, yPos);
   yPos += 6;
   if (data.appointmentId) {
     doc.text(`Programare: #${data.appointmentId.slice(-6)}`, 20, yPos);
@@ -1082,5 +1082,201 @@ export function generateFullMedicalRecordPDF(data: FullMedicalRecordPDFData): Bu
     );
   }
 
+  return Buffer.from(doc.output("arraybuffer"));
+}
+
+// ========== RAPOARTE (dashboard) ==========
+export interface ReportsPDFData {
+  period: string;
+  generatedAt: string;
+  appointmentsByDay: Array<{ date: string; count: number }>;
+  appointmentsByDoctor: Array<{ name: string; count: number }>;
+  emergenciesByDay: Array<{ date: string; count: number }>;
+  imagingByDay: Array<{ date: string; count: number }>;
+}
+
+export function generateReportsPDF(data: ReportsPDFData): Buffer {
+  const doc = new jsPDF();
+  let yPos = 20;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+
+  const checkPageBreak = (required: number = 15) => {
+    if (yPos + required > 270) {
+      doc.addPage();
+      yPos = 20;
+    }
+  };
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("RAPOARTE - Panou Administrator", pageWidth / 2, yPos, { align: "center" });
+  yPos += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Perioadă: ultimele ${data.period} zile | Generat: ${data.generatedAt}`, pageWidth / 2, yPos, { align: "center" });
+  yPos += 15;
+
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("1. Programări pe zile", margin, yPos);
+  yPos += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  data.appointmentsByDay.slice(0, 25).forEach((r) => {
+    checkPageBreak(6);
+    doc.text(`${r.date}: ${r.count} programări`, margin + 5, yPos);
+    yPos += 6;
+  });
+  if (data.appointmentsByDay.length > 25) {
+    doc.text(`... și încă ${data.appointmentsByDay.length - 25} zile`, margin + 5, yPos);
+    yPos += 6;
+  }
+  yPos += 5;
+  checkPageBreak();
+
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("2. Ocupare medici (nr. programări)", margin, yPos);
+  yPos += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  data.appointmentsByDoctor.forEach((r) => {
+    checkPageBreak(6);
+    doc.text(`${r.name}: ${r.count}`, margin + 5, yPos);
+    yPos += 6;
+  });
+  yPos += 5;
+  checkPageBreak();
+
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("3. Urgențe pe zile", margin, yPos);
+  yPos += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  data.emergenciesByDay.slice(0, 25).forEach((r) => {
+    checkPageBreak(6);
+    doc.text(`${r.date}: ${r.count} cazuri`, margin + 5, yPos);
+    yPos += 6;
+  });
+  if (data.emergenciesByDay.length > 25) {
+    doc.text(`... și încă ${data.emergenciesByDay.length - 25} zile`, margin + 5, yPos);
+    yPos += 6;
+  }
+  yPos += 5;
+  checkPageBreak();
+
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("4. Investigații imagistice pe zile", margin, yPos);
+  yPos += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  data.imagingByDay.slice(0, 25).forEach((r) => {
+    checkPageBreak(6);
+    doc.text(`${r.date}: ${r.count} investigații`, margin + 5, yPos);
+    yPos += 6;
+  });
+  if (data.imagingByDay.length > 25) {
+    doc.text(`... și încă ${data.imagingByDay.length - 25} zile`, margin + 5, yPos);
+    yPos += 6;
+  }
+
+  return Buffer.from(doc.output("arraybuffer"));
+}
+
+// ========== SCRISOARE MEDICALĂ ==========
+export interface MedicalLetterPDFData {
+  patient: { name: string; birthDate?: string; identificationNumber?: string };
+  doctor: { name: string; specialty?: string };
+  date: string;
+  title: string;
+  body: string;
+}
+
+export function generateMedicalLetterPDF(data: MedicalLetterPDFData): Buffer {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  const contentWidth = pageWidth - 2 * margin;
+  let yPos = 20;
+
+  const addWrapped = (text: string, fontSize: number = 10) => {
+    doc.setFontSize(fontSize);
+    doc.setFont("helvetica", "normal");
+    const lines = doc.splitTextToSize(text, contentWidth);
+    doc.text(lines, margin, yPos);
+    yPos += lines.length * (fontSize * 0.4 + 2);
+  };
+
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text(data.title, pageWidth / 2, yPos, { align: "center" });
+  yPos += 12;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Data: ${formatDateTime(data.date).dateOnly}`, margin, yPos);
+  yPos += 6;
+  doc.text(`Pacient: ${data.patient.name}`, margin, yPos);
+  yPos += 6;
+  if (data.patient.birthDate) {
+    doc.text(`Data nașterii: ${formatDateTime(data.patient.birthDate).dateOnly}`, margin, yPos);
+    yPos += 6;
+  }
+  if (data.patient.identificationNumber) {
+    doc.text(`CNP: ${data.patient.identificationNumber}`, margin, yPos);
+    yPos += 6;
+  }
+  doc.text(`Medic: ${data.doctor.name}${data.doctor.specialty ? ` (${data.doctor.specialty})` : ""}`, margin, yPos);
+  yPos += 12;
+
+  addWrapped(data.body);
+  return Buffer.from(doc.output("arraybuffer"));
+}
+
+// ========== LISTĂ PROGRAMĂRI (export) ==========
+export interface AppointmentsListPDFData {
+  title: string;
+  generatedAt: string;
+  appointments: Array<{
+    schedule: Date | string;
+    primaryPhysician: string;
+    reason?: string;
+    status: string;
+    patientName?: string;
+  }>;
+}
+
+export function generateAppointmentsListPDF(data: AppointmentsListPDFData): Buffer {
+  const doc = new jsPDF();
+  const margin = 20;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let yPos = 20;
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text(data.title, pageWidth / 2, yPos, { align: "center" });
+  yPos += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Generat: ${data.generatedAt}`, pageWidth / 2, yPos, { align: "center" });
+  yPos += 15;
+
+  data.appointments.slice(0, 50).forEach((apt, i) => {
+    if (yPos > 260) {
+      doc.addPage();
+      yPos = 20;
+    }
+    const statusRo = apt.status === "scheduled" ? "Confirmată" : apt.status === "pending" ? "În așteptare" : "Anulată";
+    const line = `${i + 1}. ${formatDateTime(apt.schedule).dateTime} - Dr. ${apt.primaryPhysician} (${statusRo})${apt.patientName ? ` - ${apt.patientName}` : ""}${apt.reason ? ` - ${apt.reason}` : ""}`;
+    const lines = doc.splitTextToSize(line, pageWidth - 2 * margin);
+    doc.text(lines, margin, yPos);
+    yPos += lines.length * 6 + 2;
+  });
+  if (data.appointments.length > 50) {
+    doc.text(`... și încă ${data.appointments.length - 50} programări`, margin, yPos);
+  }
   return Buffer.from(doc.output("arraybuffer"));
 }

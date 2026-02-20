@@ -22,8 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Găsește medic disponibil și alocă-l automat
     const availableDoctors = doctorsOnDutyHelpers.getAvailableDoctors();
-    if (availableDoctors.length > 0) {
-      // Alocă primul medic disponibil (cel mai puțin ocupat)
+    if (availableDoctors.length > 0 && emergencyCase) {
       const assignedDoctor = availableDoctors[0];
       emergencyHelpers.assignDoctor(emergencyCase.$id, assignedDoctor.doctorName);
 
@@ -37,6 +36,9 @@ export async function POST(request: NextRequest) {
       // });
     }
 
+    if (!emergencyCase) {
+      return NextResponse.json({ error: "Failed to create emergency case" }, { status: 500 });
+    }
     return NextResponse.json({ id: emergencyCase.$id, ...emergencyCase });
   } catch (error: any) {
     console.error("Error creating emergency case:", error);

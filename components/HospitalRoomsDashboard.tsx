@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { HospitalRoom, HospitalAdmission } from "@/types";
 import { HospitalRoomCard } from "./HospitalRoomCard";
 import { HospitalAdmissionModal } from "./HospitalAdmissionModal";
 

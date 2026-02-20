@@ -32,7 +32,7 @@ export const DoctorFilter = ({
   // Obține toate specializările unice
   const specialties = useMemo(() => {
     const uniqueSpecialties = Array.from(
-      new Set(doctors.map((d) => d.specialty).filter(Boolean))
+      new Set(doctors.map((d) => d.specialty).filter((s): s is string => Boolean(s)))
     ).sort();
     return uniqueSpecialties;
   }, [doctors]);

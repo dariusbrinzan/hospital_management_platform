@@ -5,12 +5,10 @@ import { Button } from "./ui/button";
 import { AmbulanceCard } from "./AmbulanceCard";
 import { MissionCard } from "./MissionCard";
 import { NewMissionModal } from "./NewMissionModal";
-import { Ambulance, AmbulanceMission } from "@/types";
-
 interface DispatcherDashboardProps {
   ambulances: Ambulance[];
-  activeMissions: AmbulanceMission[];
-  allMissions: AmbulanceMission[];
+  activeMissions: (Omit<AmbulanceMission, "ambulance"> & { ambulance?: Partial<Ambulance> | null })[];
+  allMissions: (Omit<AmbulanceMission, "ambulance"> & { ambulance?: Partial<Ambulance> | null })[];
 }
 
 export const DispatcherDashboard = ({

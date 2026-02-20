@@ -1,6 +1,5 @@
 "use client";
 
-import { MedicalDocument } from "@/types";
 import { Button } from "./ui/button";
 import {
   Dialog,

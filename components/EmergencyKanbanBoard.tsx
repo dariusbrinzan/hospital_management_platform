@@ -1,6 +1,5 @@
 "use client";
 
-import { EmergencyCase, EmergencyState } from "@/types";
 import { EmergencyCaseCard } from "./EmergencyCaseCard";
 
 interface EmergencyKanbanBoardProps {

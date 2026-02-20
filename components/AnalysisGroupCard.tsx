@@ -53,7 +53,7 @@ export const AnalysisGroupCard = ({ analysisGroup, patientInfo }: AnalysisGroupC
         </div>
         <div className="flex flex-col items-end gap-2">
           <span className="text-12-regular text-dark-500">
-            {formatDateTime(analysisGroup.date).date}
+            {formatDateTime(analysisGroup.date).dateOnly}
           </span>
           <Button
             onClick={() => {

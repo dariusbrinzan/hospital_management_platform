@@ -1,6 +1,5 @@
 "use client";
 
-import { HospitalRoom, HospitalAdmission } from "@/types";
 import { formatDateTime } from "@/lib/utils";
 
 interface HospitalRoomCardProps {

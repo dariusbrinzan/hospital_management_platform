@@ -63,6 +63,9 @@ const RegisterForm = ({ user }: { user: User | null }) => {
     }
 
     try {
+      if (!user) {
+        return;
+      }
       const patient = {
         userId: user.$id,
         name: values.name,

@@ -4,13 +4,13 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { MedicationStockCard } from "./MedicationStockCard";
 import { RestockModal } from "./RestockModal";
-import { MedicationStock } from "@/types";
+type MedicationStockWithPartialMed = Omit<MedicationStock, "medication"> & { medication?: Partial<Medication> | null };
 
 interface MedicationStockDashboardProps {
-  allStocks: MedicationStock[];
-  lowStock: MedicationStock[];
-  emergencyStocks: MedicationStock[];
-  icuStocks: MedicationStock[];
+  allStocks: MedicationStockWithPartialMed[];
+  lowStock: MedicationStockWithPartialMed[];
+  emergencyStocks: MedicationStockWithPartialMed[];
+  icuStocks: MedicationStockWithPartialMed[];
 }
 
 export const MedicationStockDashboard = ({
@@ -21,7 +21,7 @@ export const MedicationStockDashboard = ({
 }: MedicationStockDashboardProps) => {
   const [selectedView, setSelectedView] = useState<"all" | "emergency" | "icu" | "low">("all");
   const [showRestockModal, setShowRestockModal] = useState(false);
-  const [selectedStock, setSelectedStock] = useState<MedicationStock | null>(null);
+  const [selectedStock, setSelectedStock] = useState<MedicationStockWithPartialMed | null>(null);
 
   const getStocksForView = () => {
     switch (selectedView) {

@@ -8,6 +8,7 @@ import { getPatientAppointments } from "./appointment.actions";
 export type NotificationType =
   | "appointment_confirmed"
   | "appointment_cancelled"
+  | "appointment_rescheduled"
   | "analysis_results_ready"
   | "appointment_reminder"
   | "appointment_created"

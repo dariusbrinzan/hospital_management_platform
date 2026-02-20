@@ -1043,6 +1043,18 @@ export const imagingStudyHelpers = {
     `).run(status, resultNotes ?? null, now, id);
     return imagingStudyHelpers.getById(id);
   },
+
+  /** Număr de investigații per zi într-un interval (pentru rapoarte). */
+  getCountByDayInRange: (startIso: string, endIso: string) => {
+    const rows = db.prepare(`
+      SELECT date(scheduledAt) as day, COUNT(*) as count
+      FROM imaging_studies
+      WHERE scheduledAt >= ? AND scheduledAt <= ? AND status != 'cancelled'
+      GROUP BY date(scheduledAt)
+      ORDER BY day
+    `).all(startIso, endIso) as { day: string; count: number }[];
+    return rows.map((r) => ({ date: r.day, count: r.count }));
+  },
 };
 
 // Emergency helpers
@@ -1646,6 +1658,23 @@ export const medicalRecordHelpers = {
       labResults,
       procedures,
     };
+  },
+
+  /** Returnează ultimul medical record al pacientului sau creează unul minimal pentru import analize */
+  getOrCreateForLabImport: (patientId: string, appointmentId?: string | null) => {
+    const existing = db.prepare(`
+      SELECT id FROM medical_records WHERE patientId = ? ORDER BY visitDate DESC LIMIT 1
+    `).get(patientId) as { id: string } | undefined;
+    if (existing) return existing.id;
+    const record = medicalRecordHelpers.create({
+      patientId,
+      appointmentId: appointmentId || undefined,
+      doctorName: "Laborator",
+      recordType: "lab_result",
+      visitDate: new Date(),
+    });
+    if (!record) throw new Error("Failed to create medical record for lab import");
+    return record.$id;
   },
 
   getByAppointmentId: (appointmentId: string) => {

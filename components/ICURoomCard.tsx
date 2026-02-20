@@ -1,6 +1,5 @@
 "use client";
 
-import { ICURoom, ICUPatient } from "@/types";
 import { Button } from "./ui/button";
 
 interface ICURoomCardProps {

@@ -115,8 +115,9 @@ export async function POST(request: NextRequest) {
       uploadedBy,
     });
 
-    // Log acces
-    medicalDocumentHelpers.logAccess(document.$id, uploadedBy, "view");
+    if (document) {
+      medicalDocumentHelpers.logAccess(document.$id, uploadedBy, "view");
+    }
 
     return NextResponse.json(document);
   } catch (error: any) {

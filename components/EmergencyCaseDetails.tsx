@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { EmergencyCase } from "@/types";
 import { Doctors } from "@/constants";
 import Image from "next/image";
 import { Button } from "./ui/button";

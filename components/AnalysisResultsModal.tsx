@@ -66,7 +66,7 @@ export const AnalysisResultsModal = ({
     
     const age = calculateAge(appointment.patient.birthDate);
     const gender = appointment.patient.gender as "Bărbat" | "Femeie";
-    const weight = appointment.patient.weight || undefined;
+    const weight = (appointment.patient as any).weight || undefined;
 
     return { age, gender, weight };
   }, [appointment.patient]);

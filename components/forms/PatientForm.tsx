@@ -40,6 +40,7 @@ export const PatientForm = () => {
       const user = {
         name: values.name,
         email: values.email,
+        phone: (values as { phone?: string }).phone ?? "",
         password: values.password,
       };
 

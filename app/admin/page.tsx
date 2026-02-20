@@ -33,12 +33,13 @@ const AdminPage = async ({ searchParams }: SearchParamProps) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
+        {/* Header - bară simetrică, navigare uniformă */}
         <header className="sticky top-0 z-20 bg-white border-b border-dark-200 shadow-sm">
-          <div className="px-4 sm:px-6 py-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Link href="/" className="cursor-pointer flex-shrink-0">
+          <div className="flex h-14 min-h-14 items-center px-4 sm:px-6">
+            <div className="flex min-w-0 flex-1 items-center justify-between gap-4 lg:gap-8">
+              {/* Branding: logo + titlu */}
+              <div className="flex flex-shrink-0 items-center gap-3">
+                <Link href="/" className="cursor-pointer" aria-label="Acasă">
                   <Image
                     src="/assets/icons/logo-full.svg"
                     height={32}
@@ -47,52 +48,53 @@ const AdminPage = async ({ searchParams }: SearchParamProps) => {
                     className="h-8 w-fit"
                   />
                 </Link>
-                <span className="hidden lg:block text-14-regular text-dark-500">
+                <span className="hidden border-l border-dark-200 pl-3 text-sm font-medium text-dark-500 lg:block">
                   Panou Administrator
                 </span>
               </div>
 
-              {/* Action Buttons - Centrate și simetrice */}
-              <nav className="flex items-center gap-2 flex-wrap">
+              {/* Navigare: același stil pentru toate link-urile, aliniere uniformă */}
+              <nav
+                className="flex flex-shrink-0 items-center gap-1.5 overflow-x-auto py-1 scrollbar-none md:gap-2"
+                aria-label="Navigare panou"
+              >
                 <Link
                   href="/admin/emergency"
-                  className="shad-primary-btn px-3 py-2 rounded-lg text-12-medium hover:bg-green-600 transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                  className="admin-nav-link admin-nav-link--primary"
                 >
-                  <span>🚨</span>
-                  <span className="hidden sm:inline">Primiri Urgente</span>
+                  <span className="admin-nav-icon" aria-hidden>🚨</span>
+                  <span className="hidden sm:inline">Urgente</span>
                   <span className="sm:hidden">Urgente</span>
                 </Link>
-                <Link
-                  href="/admin/medications"
-                  className="shad-primary-btn px-3 py-2 rounded-lg text-12-medium hover:bg-blue-600 transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                >
-                  <span>💊</span>
-                  <span className="hidden sm:inline">Stocuri Medicamente</span>
-                  <span className="sm:hidden">Medicamente</span>
+                <Link href="/admin/medications" className="admin-nav-link">
+                  <span className="admin-nav-icon" aria-hidden>💊</span>
+                  <span className="hidden sm:inline">Medicamente</span>
+                  <span className="sm:hidden">Medic.</span>
                 </Link>
-                <Link
-                  href="/admin/patients"
-                  className="shad-primary-btn px-3 py-2 rounded-lg text-12-medium hover:bg-purple-600 transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                >
-                  <span>👥</span>
-                  <span className="hidden sm:inline">Căutare Pacienți</span>
+                <Link href="/admin/patients" className="admin-nav-link">
+                  <span className="admin-nav-icon" aria-hidden>👥</span>
+                  <span className="hidden sm:inline">Pacienți</span>
                   <span className="sm:hidden">Pacienți</span>
                 </Link>
-                <Link
-                  href="/admin/hospitalizations"
-                  className="shad-primary-btn px-3 py-2 rounded-lg text-12-medium hover:bg-indigo-600 transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                >
-                  <span>🏥</span>
+                <Link href="/admin/hospitalizations" className="admin-nav-link">
+                  <span className="admin-nav-icon" aria-hidden>🏥</span>
                   <span className="hidden sm:inline">Spitalizări</span>
-                  <span className="sm:hidden">Spitalizări</span>
+                  <span className="sm:hidden">Spit.</span>
                 </Link>
-                <Link
-                  href="/admin/imaging"
-                  className="shad-primary-btn px-3 py-2 rounded-lg text-12-medium hover:bg-teal-600 transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                >
-                  <span>🩻</span>
-                  <span className="hidden sm:inline">Investigații imagistice</span>
-                  <span className="sm:hidden">Imagistică</span>
+                <Link href="/admin/imaging" className="admin-nav-link">
+                  <span className="admin-nav-icon" aria-hidden>🩻</span>
+                  <span className="hidden sm:inline">Imagistică</span>
+                  <span className="sm:hidden">Imag.</span>
+                </Link>
+                <Link href="/admin/lab-import" className="admin-nav-link">
+                  <span className="admin-nav-icon" aria-hidden>📋</span>
+                  <span className="hidden sm:inline">Import analize</span>
+                  <span className="sm:hidden">Import</span>
+                </Link>
+                <Link href="/admin/reports" className="admin-nav-link">
+                  <span className="admin-nav-icon" aria-hidden>📊</span>
+                  <span className="hidden sm:inline">Rapoarte</span>
+                  <span className="sm:hidden">Rapoarte</span>
                 </Link>
               </nav>
             </div>

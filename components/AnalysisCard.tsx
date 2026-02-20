@@ -38,7 +38,7 @@ export const AnalysisCard = ({ analysis, patientInfo }: AnalysisCardProps) => {
           )}
         </div>
         <span className="text-12-regular text-dark-500">
-          {formatDateTime(analysis.performedDate).date}
+          {formatDateTime(analysis.performedDate).dateOnly}
         </span>
       </div>
 

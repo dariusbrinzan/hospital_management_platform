@@ -211,6 +211,24 @@
     @apply border border-dark-300 cursor-pointer bg-white text-dark-700 hover:bg-dark-50 !important;
   }
 
+  /* =====  ADMIN HEADER NAV - simetric, același stil pentru toate link-urile */
+  .admin-nav-link {
+    @apply inline-flex h-9 min-w-[2.25rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-dark-600 transition-colors hover:bg-gray-100 hover:text-dark-700 focus-visible:outline focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2;
+  }
+  .admin-nav-link--primary {
+    @apply bg-green-500 text-white hover:bg-green-600 hover:text-white focus-visible:ring-green-500;
+  }
+  .admin-nav-icon {
+    @apply flex-shrink-0 text-base leading-none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   .shad-input-label {
     @apply text-14-medium text-dark-700 !important;
   }

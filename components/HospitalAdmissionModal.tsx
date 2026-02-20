@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { HospitalAdmission } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { formatDateTime } from "@/lib/utils";

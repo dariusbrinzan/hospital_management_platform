@@ -1,11 +1,12 @@
 "use client";
 
-import { MedicationStock } from "@/types";
 import { Button } from "./ui/button";
 import { formatDateTime } from "@/lib/utils";
 
+type MedicationStockWithPartialMed = Omit<MedicationStock, "medication"> & { medication?: Partial<Medication> | null };
+
 interface MedicationStockCardProps {
-  stock: MedicationStock;
+  stock: MedicationStockWithPartialMed;
   onRestock: () => void;
 }
 
@@ -99,7 +100,7 @@ export const MedicationStockCard = ({ stock, onRestock }: MedicationStockCardPro
       {/* Ultima reaprovizionare */}
       {stock.lastRestockedDate && (
         <div className="mb-4 text-12-regular text-dark-500">
-          <p>Ultima reaprovizionare: {formatDateTime(stock.lastRestockedDate).date}</p>
+          <p>Ultima reaprovizionare: {formatDateTime(stock.lastRestockedDate).dateOnly}</p>
           {stock.lastRestockedQuantity && (
             <p>Cantitate: +{stock.lastRestockedQuantity} {stock.medication?.unit || ""}</p>
           )}

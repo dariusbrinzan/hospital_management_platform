@@ -2,7 +2,6 @@
 
 import { formatDateTime } from "@/lib/utils";
 import Image from "next/image";
-import { Doctor } from "@/types";
 import { AnalysisResultDisplay } from "./AnalysisResultDisplay";
 import { Button } from "./ui/button";
 import { Download } from "lucide-react";

@@ -116,7 +116,7 @@ export const MedicalHistoryTimeline = ({
                   {/* Event Content */}
                   <div className="flex-1 pb-8">
                     {event.type === "record" ? (
-                      <MedicalRecordCard record={event} doctor={doctor} patientInfo={patientInfo} />
+                      <MedicalRecordCard record={event} doctor={doctor ?? undefined} patientInfo={patientInfo} />
                     ) : event.type === "allergy" ? (
                       <div className="rounded-lg border border-red-200 bg-red-50 p-6 shadow-sm">
                         <div className="flex items-start justify-between">
@@ -134,7 +134,7 @@ export const MedicalHistoryTimeline = ({
                             )}
                           </div>
                           <span className="text-12-regular text-dark-500">
-                            {formatDateTime(event.date).date}
+                            {formatDateTime(event.date).dateOnly}
                           </span>
                         </div>
                       </div>
@@ -151,12 +151,12 @@ export const MedicalHistoryTimeline = ({
                             </p>
                             {event.nextDoseDate && (
                               <p className="text-14-regular text-blue-600 mt-2">
-                                Următoarea doză: {formatDateTime(event.nextDoseDate).date}
+                                Următoarea doză: {formatDateTime(event.nextDoseDate).dateOnly}
                               </p>
                             )}
                           </div>
                           <span className="text-12-regular text-dark-500">
-                            {formatDateTime(event.date).date}
+                            {formatDateTime(event.date).dateOnly}
                           </span>
                         </div>
                       </div>

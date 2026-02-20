@@ -22,8 +22,6 @@ import {
   FormLabel,
   FormMessage,
 } from "./ui/form";
-import { Ambulance } from "@/types";
-
 interface NewMissionModalProps {
   ambulances: Ambulance[];
   onClose: () => void;

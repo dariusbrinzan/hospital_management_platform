@@ -3,18 +3,20 @@
 import { patientHelpers, userHelpers } from "../db-helpers";
 import { parseStringify } from "../utils";
 
-// CREATE USER
-export const createUser = async (user: CreateUserParams) => {
+// CREATE USER (accepts CreateUserParams + password for registration)
+export const createUser = async (user: CreateUserParams & { password: string }) => {
   try {
-    // Verifică dacă utilizatorul există deja
     const existingUser = userHelpers.getByEmail(user.email);
     if (existingUser) {
       const parsed = parseStringify(existingUser);
       return parsed;
     }
 
-    // Creează utilizator nou
-    const newUser = await userHelpers.create(user);
+    const newUser = await userHelpers.create({
+      name: user.name,
+      email: user.email,
+      password: user.password,
+    });
     const parsed = parseStringify(newUser);
     
     if (!parsed || !parsed.$id) {

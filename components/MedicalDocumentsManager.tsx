@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import { MedicalDocument } from "@/types";
 import { formatDateTime } from "@/lib/utils";
 import { DocumentUploadModal } from "./DocumentUploadModal";
 import { DocumentViewerModal } from "./DocumentViewerModal";
@@ -91,16 +90,16 @@ export const MedicalDocumentsManager = ({
     }
   };
 
-  const handleDownload = async (document: MedicalDocument) => {
+  const handleDownload = async (doc: MedicalDocument) => {
     try {
-      const response = await fetch(`/api/documents/${document.$id}/download`);
+      const response = await fetch(`/api/documents/${doc.$id}/download`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
+        const a = window.document.createElement("a");
         a.href = url;
-        a.download = document.originalFileName;
-        document.body.appendChild(a);
+        a.download = doc.originalFileName;
+        window.document.body.appendChild(a);
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
@@ -229,7 +228,7 @@ export const MedicalDocumentsManager = ({
               )}
 
               <div className="text-11-regular text-dark-500 mb-3">
-                <p>Uploadat: {formatDateTime(document.uploadedAt).date}</p>
+                <p>Uploadat: {formatDateTime(document.uploadedAt).dateOnly}</p>
                 <p>De: {document.uploadedBy}</p>
                 <p>Dimensiune: {formatFileSize(document.fileSize)}</p>
               </div>

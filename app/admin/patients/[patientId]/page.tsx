@@ -9,6 +9,7 @@ import { calculateAge } from "@/lib/analysis-reference-ranges";
 import { Doctors } from "@/constants";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LogoLink } from "@/components/LogoLink";
+import { MedicalLetterButton } from "@/components/MedicalLetterButton";
 import { AnalysisResultDisplay } from "@/components/AnalysisResultDisplay";
 import { MedicalDocumentsManager } from "@/components/MedicalDocumentsManager";
 import {
@@ -83,6 +84,11 @@ const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) =
           >
             🩻 Programează investigație imagistică
           </Link>
+          <MedicalLetterButton
+            patientId={patientId}
+            patientName={patient.name}
+            defaultDoctorName={doctor?.name}
+          />
         </div>
       </header>
 

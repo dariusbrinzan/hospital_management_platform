@@ -22,10 +22,8 @@ import {
   FormLabel,
   FormMessage,
 } from "./ui/form";
-import { MedicationStock } from "@/types";
-
 interface RestockModalProps {
-  stock: MedicationStock;
+  stock: Omit<MedicationStock, "medication"> & { medication?: Partial<Medication> | null };
   onClose: () => void;
   onSuccess: () => void;
 }

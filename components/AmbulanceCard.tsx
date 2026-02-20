@@ -1,6 +1,5 @@
 "use client";
 
-import { Ambulance } from "@/types";
 import { formatDateTime } from "@/lib/utils";
 
 interface AmbulanceCardProps {
@@ -79,7 +78,7 @@ export const AmbulanceCard = ({ ambulance }: AmbulanceCardProps) => {
       {ambulance.nextMaintenanceDate && (
         <div>
           <p className="text-12-regular text-dark-500">
-            Următoarea întreținere: {formatDateTime(ambulance.nextMaintenanceDate).date}
+            Următoarea întreținere: {formatDateTime(ambulance.nextMaintenanceDate).dateOnly}
           </p>
         </div>
       )}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { ICURoom, ICUPatient } from "@/types";
 import { ICURoomCard } from "./ICURoomCard";
 import { ICUPatientModal } from "./ICUPatientModal";
 
