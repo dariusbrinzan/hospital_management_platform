@@ -16,6 +16,7 @@ type PatientOption = { $id: string; name: string };
 
 export function ImagingBookingForm({
   modalities: initialModalities,
+  initialPatient,
   onSuccess,
 }: {
   modalities: Modality[];
@@ -85,7 +86,11 @@ export function ImagingBookingForm({
     }
     setSubmitting(true);
     try {
-      const scheduledAt = new Date(`${date}T${selectedSlot}`).toISOString();
+      // selectedSlot de la server e deja ISO (ex. 2025-02-20T08:00:00.000Z); nu concatena cu date
+      const scheduledAt =
+        /^\d{4}-\d{2}-\d{2}T/.test(selectedSlot)
+          ? new Date(selectedSlot).toISOString()
+          : new Date(`${date}T${selectedSlot}:00`).toISOString();
       await createImagingStudy({
         patientId: selectedPatient.$id,
         modalityId,
