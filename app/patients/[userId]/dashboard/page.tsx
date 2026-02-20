@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getPatient, getUser } from "@/lib/actions/patient.actions";
 import { getPatientAppointments } from "@/lib/actions/appointment.actions";
 import { requireAuth } from "@/lib/actions/auth.actions";
+import { ensureAppointmentReminders24h } from "@/lib/actions/notification.actions";
 import { formatDateTime } from "@/lib/utils";
 import { calculateAge } from "@/lib/analysis-reference-ranges";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -23,6 +24,8 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
   if (session.$id !== userId) {
     redirect(`/patients/${session.$id}/dashboard`);
   }
+
+  await ensureAppointmentReminders24h(userId);
 
   const user = await getUser(userId);
   const patient = await getPatient(userId);
