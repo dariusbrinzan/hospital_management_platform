@@ -86,6 +86,14 @@ const AdminPage = async ({ searchParams }: SearchParamProps) => {
                   <span className="hidden sm:inline">Spitalizări</span>
                   <span className="sm:hidden">Spitalizări</span>
                 </Link>
+                <Link
+                  href="/admin/imaging"
+                  className="shad-primary-btn px-3 py-2 rounded-lg text-12-medium hover:bg-teal-600 transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <span>🩻</span>
+                  <span className="hidden sm:inline">Investigații imagistice</span>
+                  <span className="sm:hidden">Imagistică</span>
+                </Link>
               </nav>
             </div>
           </div>

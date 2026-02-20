@@ -77,6 +77,12 @@ const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) =
           >
             Dashboard
           </Link>
+          <Link
+            href={`/admin/imaging?patientId=${patientId}`}
+            className="text-14-medium text-teal-600 hover:text-teal-700"
+          >
+            🩻 Programează investigație imagistică
+          </Link>
         </div>
       </header>
 

@@ -847,6 +847,204 @@ export const waitlistHelpers = {
   },
 };
 
+// Imaging modalities helpers
+export const imagingModalityHelpers = {
+  getAll: () => {
+    const rows = db.prepare(`
+      SELECT * FROM imaging_modalities WHERE isActive = 1 ORDER BY name
+    `).all() as any[];
+    return rows.map((r) => ({
+      $id: r.id,
+      name: r.name,
+      slotDurationMinutes: r.slotDurationMinutes,
+      description: r.description,
+      isActive: r.isActive === 1,
+      createdAt: parseDate(r.createdAt),
+      updatedAt: parseDate(r.updatedAt),
+    }));
+  },
+
+  getById: (id: string) => {
+    const r = db.prepare("SELECT * FROM imaging_modalities WHERE id = ?").get(id) as any;
+    if (!r) return null;
+    return {
+      $id: r.id,
+      name: r.name,
+      slotDurationMinutes: r.slotDurationMinutes,
+      description: r.description,
+      isActive: r.isActive === 1,
+      createdAt: parseDate(r.createdAt),
+      updatedAt: parseDate(r.updatedAt),
+    };
+  },
+};
+
+// Imaging studies helpers (programări investigații imagistice)
+export const imagingStudyHelpers = {
+  create: (study: {
+    patientId: string;
+    modalityId: string;
+    scheduledAt: Date | string;
+    status?: string;
+    sourceType?: string;
+    sourceId?: string | null;
+    orderedBy?: string | null;
+    reason?: string | null;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    const status = study.status || "scheduled";
+    const sourceType = study.sourceType || "direct";
+    db.prepare(`
+      INSERT INTO imaging_studies (id, patientId, modalityId, scheduledAt, status, sourceType, sourceId, orderedBy, reason, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      study.patientId,
+      study.modalityId,
+      formatDate(study.scheduledAt),
+      status,
+      sourceType,
+      study.sourceId || null,
+      study.orderedBy || null,
+      study.reason || null,
+      now,
+      now
+    );
+    return imagingStudyHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const s = db.prepare(`
+      SELECT s.*, p.name as patient_name, m.name as modality_name
+      FROM imaging_studies s
+      LEFT JOIN patients p ON s.patientId = p.id
+      LEFT JOIN imaging_modalities m ON s.modalityId = m.id
+      WHERE s.id = ?
+    `).get(id) as any;
+    if (!s) return null;
+    return {
+      $id: s.id,
+      patientId: s.patientId,
+      modalityId: s.modalityId,
+      scheduledAt: parseDate(s.scheduledAt),
+      status: s.status,
+      sourceType: s.sourceType,
+      sourceId: s.sourceId,
+      orderedBy: s.orderedBy,
+      reason: s.reason,
+      resultNotes: s.resultNotes,
+      createdAt: parseDate(s.createdAt),
+      updatedAt: parseDate(s.updatedAt),
+      patientName: s.patient_name,
+      modalityName: s.modality_name,
+    };
+  },
+
+  getByModalityAndDate: (modalityId: string, dateStr: string) => {
+    const start = `${dateStr}T00:00:00.000Z`;
+    const end = `${dateStr}T23:59:59.999Z`;
+    const rows = db.prepare(`
+      SELECT s.*, p.name as patient_name
+      FROM imaging_studies s
+      LEFT JOIN patients p ON s.patientId = p.id
+      WHERE s.modalityId = ? AND s.scheduledAt >= ? AND s.scheduledAt <= ? AND s.status != 'cancelled'
+      ORDER BY s.scheduledAt
+    `).all(modalityId, start, end) as any[];
+    return rows.map((s) => ({
+      $id: s.id,
+      patientId: s.patientId,
+      modalityId: s.modalityId,
+      scheduledAt: parseDate(s.scheduledAt),
+      status: s.status,
+      sourceType: s.sourceType,
+      sourceId: s.sourceId,
+      orderedBy: s.orderedBy,
+      reason: s.reason,
+      patientName: s.patient_name,
+    }));
+  },
+
+  getByPatientId: (patientId: string) => {
+    const rows = db.prepare(`
+      SELECT s.*, m.name as modality_name
+      FROM imaging_studies s
+      LEFT JOIN imaging_modalities m ON s.modalityId = m.id
+      WHERE s.patientId = ? ORDER BY s.scheduledAt DESC
+    `).all(patientId) as any[];
+    return rows.map((s) => ({
+      $id: s.id,
+      patientId: s.patientId,
+      modalityId: s.modalityId,
+      scheduledAt: parseDate(s.scheduledAt),
+      status: s.status,
+      sourceType: s.sourceType,
+      sourceId: s.sourceId,
+      orderedBy: s.orderedBy,
+      reason: s.reason,
+      modalityName: s.modality_name,
+    }));
+  },
+
+  getBySource: (sourceType: string, sourceId: string) => {
+    const rows = db.prepare(`
+      SELECT s.*, p.name as patient_name, m.name as modality_name
+      FROM imaging_studies s
+      LEFT JOIN patients p ON s.patientId = p.id
+      LEFT JOIN imaging_modalities m ON s.modalityId = m.id
+      WHERE s.sourceType = ? AND s.sourceId = ?
+      ORDER BY s.scheduledAt
+    `).all(sourceType, sourceId) as any[];
+    return rows.map((s) => ({
+      $id: s.id,
+      patientId: s.patientId,
+      modalityId: s.modalityId,
+      scheduledAt: parseDate(s.scheduledAt),
+      status: s.status,
+      sourceType: s.sourceType,
+      sourceId: s.sourceId,
+      orderedBy: s.orderedBy,
+      reason: s.reason,
+      patientName: s.patient_name,
+      modalityName: s.modality_name,
+    }));
+  },
+
+  getAllUpcoming: (limit = 50) => {
+    const now = new Date().toISOString();
+    const rows = db.prepare(`
+      SELECT s.*, p.name as patient_name, m.name as modality_name
+      FROM imaging_studies s
+      LEFT JOIN patients p ON s.patientId = p.id
+      LEFT JOIN imaging_modalities m ON s.modalityId = m.id
+      WHERE s.scheduledAt >= ? AND s.status != 'cancelled'
+      ORDER BY s.scheduledAt ASC
+      LIMIT ?
+    `).all(now, limit) as any[];
+    return rows.map((s) => ({
+      $id: s.id,
+      patientId: s.patientId,
+      modalityId: s.modalityId,
+      scheduledAt: parseDate(s.scheduledAt),
+      status: s.status,
+      sourceType: s.sourceType,
+      sourceId: s.sourceId,
+      orderedBy: s.orderedBy,
+      reason: s.reason,
+      patientName: s.patient_name,
+      modalityName: s.modality_name,
+    }));
+  },
+
+  updateStatus: (id: string, status: string, resultNotes?: string | null) => {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE imaging_studies SET status = ?, resultNotes = ?, updatedAt = ? WHERE id = ?
+    `).run(status, resultNotes ?? null, now, id);
+    return imagingStudyHelpers.getById(id);
+  },
+};
+
 // Emergency helpers
 export const emergencyHelpers = {
   create: (emergencyCase: {

@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { EmergencyCase } from "@/types";
@@ -12,14 +10,16 @@ import { TriageForm } from "./forms/TriageForm";
 import { ConsentForm } from "./forms/ConsentForm";
 import { CarePlanForm } from "./forms/CarePlanForm";
 import { DischargeForm } from "./forms/DischargeForm";
+import { EmergencyImagingSection } from "./EmergencyImagingSection";
 
 type EmergencyState = "arrival" | "triage" | "consent" | "admission" | "treatment" | "icu" | "discharge";
 
 interface EmergencyCaseDetailsProps {
   emergencyCase: EmergencyCase;
+  imagingStudies?: any[];
 }
 
-export const EmergencyCaseDetails = ({ emergencyCase }: EmergencyCaseDetailsProps) => {
+export const EmergencyCaseDetails = ({ emergencyCase, imagingStudies = [] }: EmergencyCaseDetailsProps) => {
   const router = useRouter();
   const [activeForm, setActiveForm] = useState<EmergencyState | null>(null);
   const doctor = emergencyCase.assignedDoctorId
@@ -308,6 +308,14 @@ export const EmergencyCaseDetails = ({ emergencyCase }: EmergencyCaseDetailsProp
           )}
         </div>
       </div>
+
+      {/* Investigații imagistice (flux urgență) */}
+      <EmergencyImagingSection
+        caseId={emergencyCase.$id}
+        patientId={(emergencyCase as any).patientId ?? emergencyCase.patient?.$id}
+        patientName={emergencyCase.patient?.name || (emergencyCase as any).patientName}
+        initialStudies={imagingStudies}
+      />
 
       {/* Formulare pentru fiecare etapă */}
       {activeForm === "triage" && (

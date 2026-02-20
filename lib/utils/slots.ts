@@ -2,30 +2,33 @@ import { Doctors } from "@/constants";
 
 /**
  * Generează slot-uri pentru o zi specifică
- * Medici lucrează luni-vineri, 10:00-20:00
+ * Medici lucrează luni-vineri, 10:00-20:00; imagistica poate folosi 8-18
  * @param date - Data pentru care se generează slot-urile
  * @param intervalMinutes - Intervalul între slot-uri (15 sau 30 minute). Default: 30
+ * @param startHour - Ora de start (0-23). Default: 10
+ * @param endHour - Ora de sfârșit (exclusiv, 0-24). Default: 20
  */
-export const generateTimeSlots = (date: Date, intervalMinutes: number = 30): Date[] => {
+export const generateTimeSlots = (
+  date: Date,
+  intervalMinutes: number = 30,
+  startHour: number = 10,
+  endHour: number = 20
+): Date[] => {
   const slots: Date[] = [];
   const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 5 = Friday, 6 = Saturday
-  
+
   // Verifică dacă este zi lucrătoare (luni-vineri)
   if (dayOfWeek === 0 || dayOfWeek === 6) {
-    return []; // Nu sunt slot-uri în weekend
+    return [];
   }
 
   const year = date.getFullYear();
   const month = date.getMonth();
   const day = date.getDate();
 
-  // Generează slot-uri de la 10:00 la 20:00 (exclusiv)
-  // Pentru 30 minute: ultimul slot începe la 19:30
-  // Pentru 15 minute: ultimul slot începe la 19:45
-  for (let hour = 10; hour < 20; hour++) {
+  for (let hour = startHour; hour < endHour; hour++) {
     for (let minute = 0; minute < 60; minute += intervalMinutes) {
-      // Nu adăugăm slot-uri care depășesc 20:00
-      if (hour === 19 && minute + intervalMinutes > 60) {
+      if (hour === endHour - 1 && minute + intervalMinutes > 60) {
         break;
       }
       const slot = new Date(year, month, day, hour, minute, 0);

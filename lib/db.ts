@@ -314,6 +314,40 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_emergency_state_transitions_caseId ON emergency_state_transitions(emergencyCaseId);
   CREATE INDEX IF NOT EXISTS idx_emergency_documents_caseId ON emergency_documents(emergencyCaseId);
 
+  -- Investigații imagistice (disponibilități + programări, integrate cu programări și urgențe)
+  CREATE TABLE IF NOT EXISTS imaging_modalities (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    slotDurationMinutes INTEGER NOT NULL DEFAULT 30,
+    description TEXT,
+    isActive INTEGER NOT NULL DEFAULT 1,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_imaging_modalities_active ON imaging_modalities(isActive);
+
+  CREATE TABLE IF NOT EXISTS imaging_studies (
+    id TEXT PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    modalityId TEXT NOT NULL,
+    scheduledAt TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'scheduled',
+    sourceType TEXT NOT NULL DEFAULT 'direct',
+    sourceId TEXT,
+    orderedBy TEXT,
+    reason TEXT,
+    resultNotes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id),
+    FOREIGN KEY (modalityId) REFERENCES imaging_modalities(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_imaging_studies_patientId ON imaging_studies(patientId);
+  CREATE INDEX IF NOT EXISTS idx_imaging_studies_modalityId ON imaging_studies(modalityId);
+  CREATE INDEX IF NOT EXISTS idx_imaging_studies_scheduledAt ON imaging_studies(scheduledAt);
+  CREATE INDEX IF NOT EXISTS idx_imaging_studies_status ON imaging_studies(status);
+  CREATE INDEX IF NOT EXISTS idx_imaging_studies_source ON imaging_studies(sourceType, sourceId);
+
   -- Tabele pentru sistemul de Dispecerat Ambulanțe
   CREATE TABLE IF NOT EXISTS ambulances (
     id TEXT PRIMARY KEY,
@@ -938,6 +972,29 @@ try {
   }
 } catch (error) {
   console.error("Error initializing medications:", error);
+}
+
+// Inițializare modalități imagistice
+try {
+  const imagingCount = db.prepare("SELECT COUNT(*) as count FROM imaging_modalities").get() as { count: number };
+  if (imagingCount.count === 0) {
+    const modalities = [
+      { id: "img-rmn", name: "RMN", slotDurationMinutes: 45, description: "Rezonanță magnetică nucleară" },
+      { id: "img-ct", name: "CT", slotDurationMinutes: 30, description: "Tomografie computerizată" },
+      { id: "img-eco", name: "Ecografie", slotDurationMinutes: 20, description: "Ecografie medicală" },
+      { id: "img-rad", name: "Radiologie", slotDurationMinutes: 15, description: "Radiografie / radioscopie" },
+      { id: "img-mamo", name: "Mamografie", slotDurationMinutes: 25, description: "Mamografie" },
+    ];
+    const now = new Date().toISOString();
+    modalities.forEach((m) => {
+      db.prepare(`
+        INSERT INTO imaging_modalities (id, name, slotDurationMinutes, description, isActive, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, 1, ?, ?)
+      `).run(m.id, m.name, m.slotDurationMinutes, m.description || null, now, now);
+    });
+  }
+} catch (error) {
+  console.error("Error initializing imaging modalities:", error);
 }
 
 // Inițializare ambulanțe (6 ambulanțe)

@@ -1,10 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { emergencyHelpers } from "@/lib/db-helpers";
+import { getStudiesForEmergencyCase } from "@/lib/actions/imaging.actions";
 import { EmergencyCaseDetails } from "@/components/EmergencyCaseDetails";
 
 const EmergencyCasePage = async ({ params: { caseId } }: SearchParamProps) => {
-  const emergencyCase = await emergencyHelpers.getById(caseId);
+  const [emergencyCase, imagingStudies] = await Promise.all([
+    emergencyHelpers.getById(caseId),
+    getStudiesForEmergencyCase(caseId),
+  ]);
 
   if (!emergencyCase) {
     return (
@@ -58,7 +62,10 @@ const EmergencyCasePage = async ({ params: { caseId } }: SearchParamProps) => {
       </header>
 
       <main className="admin-main">
-        <EmergencyCaseDetails emergencyCase={emergencyCase} />
+        <EmergencyCaseDetails
+          emergencyCase={emergencyCase}
+          imagingStudies={imagingStudies}
+        />
       </main>
     </div>
   );
