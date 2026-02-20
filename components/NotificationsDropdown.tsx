@@ -92,6 +92,8 @@ export const NotificationsDropdown = ({ userId }: { userId: string }) => {
         return "/assets/icons/clock.svg";
       case "consultation_added":
         return "/assets/icons/file-text.svg";
+      case "slot_available_assigned":
+        return "/assets/icons/check-circle.svg";
       default:
         return "/assets/icons/bell.svg";
     }
@@ -111,6 +113,8 @@ export const NotificationsDropdown = ({ userId }: { userId: string }) => {
         return "text-gray-600";
       case "consultation_added":
         return "text-purple-600";
+      case "slot_available_assigned":
+        return "text-green-600";
       default:
         return "text-dark-600";
     }
@@ -211,20 +215,16 @@ export const NotificationsDropdown = ({ userId }: { userId: string }) => {
           </div>
         )}
 
-        {notifications.length > 0 && (
-          <>
-            <DropdownMenuSeparator />
-            <div className="p-2">
-              <Link
-                href={`/patients/${userId}/dashboard`}
-                className="block text-center text-14-medium text-green-500 hover:text-green-600 py-2"
-                onClick={() => setOpen(false)}
-              >
-                Vezi toate notificările
-              </Link>
-            </div>
-          </>
-        )}
+        <DropdownMenuSeparator />
+        <div className="p-2">
+          <Link
+            href={`/patients/${userId}/notifications`}
+            className="block text-center text-14-medium text-green-500 hover:text-green-600 py-2"
+            onClick={() => setOpen(false)}
+          >
+            Vezi toate notificările
+          </Link>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

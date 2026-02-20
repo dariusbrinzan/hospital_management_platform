@@ -228,6 +228,23 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_notifications_isRead ON notifications(isRead);
   CREATE INDEX IF NOT EXISTS idx_notifications_createdAt ON notifications(createdAt);
 
+  CREATE TABLE IF NOT EXISTS appointment_waitlist (
+    id TEXT PRIMARY KEY,
+    userId TEXT NOT NULL,
+    patientId TEXT NOT NULL,
+    primaryPhysician TEXT NOT NULL,
+    requestedSlotAt TEXT NOT NULL,
+    reason TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    assignedAppointmentId TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (userId) REFERENCES users(id),
+    FOREIGN KEY (patientId) REFERENCES patients(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_waitlist_userId ON appointment_waitlist(userId);
+  CREATE INDEX IF NOT EXISTS idx_waitlist_physician_slot ON appointment_waitlist(primaryPhysician, requestedSlotAt);
+  CREATE INDEX IF NOT EXISTS idx_waitlist_status ON appointment_waitlist(status);
+
   -- Tabele pentru sistemul de Primiri Urgente
   CREATE TABLE IF NOT EXISTS emergency_cases (
     id TEXT PRIMARY KEY,

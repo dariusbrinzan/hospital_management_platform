@@ -629,6 +629,8 @@ export const AppointmentForm = ({
                               setSelectedSlot(slot);
                               form.setValue("schedule", slot);
                             }}
+                            userId={type === "create" ? userId : undefined}
+                            patientId={type === "create" ? patientId : undefined}
                           />
                         </FormControl>
                         <FormMessage />

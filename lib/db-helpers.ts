@@ -761,6 +761,92 @@ export const notificationHelpers = {
   },
 };
 
+// Waitlist helpers (listă de așteptare pentru sloturi)
+export const waitlistHelpers = {
+  create: (entry: {
+    userId: string;
+    patientId: string;
+    primaryPhysician: string;
+    requestedSlotAt: string;
+    reason?: string | null;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO appointment_waitlist (id, userId, patientId, primaryPhysician, requestedSlotAt, reason, status, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)
+    `).run(id, entry.userId, entry.patientId, entry.primaryPhysician, entry.requestedSlotAt, entry.reason || null, now);
+    return {
+      $id: id,
+      userId: entry.userId,
+      patientId: entry.patientId,
+      primaryPhysician: entry.primaryPhysician,
+      requestedSlotAt: entry.requestedSlotAt,
+      reason: entry.reason || null,
+      status: "pending",
+      assignedAppointmentId: null,
+      createdAt: parseDate(now),
+    };
+  },
+
+  getByPhysicianAndSlot: (primaryPhysician: string, requestedSlotAt: string) => {
+    const rows = db.prepare(`
+      SELECT * FROM appointment_waitlist
+      WHERE primaryPhysician = ? AND requestedSlotAt = ? AND status = 'pending'
+      ORDER BY createdAt ASC
+    `).all(primaryPhysician, requestedSlotAt) as any[];
+    return rows.map((r) => ({
+      $id: r.id,
+      userId: r.userId,
+      patientId: r.patientId,
+      primaryPhysician: r.primaryPhysician,
+      requestedSlotAt: r.requestedSlotAt,
+      reason: r.reason,
+      status: r.status,
+      assignedAppointmentId: r.assignedAppointmentId,
+      createdAt: parseDate(r.createdAt),
+    }));
+  },
+
+  markAssigned: (id: string, appointmentId: string) => {
+    db.prepare(`UPDATE appointment_waitlist SET status = 'assigned', assignedAppointmentId = ? WHERE id = ?`).run(appointmentId, id);
+    return waitlistHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const r = db.prepare("SELECT * FROM appointment_waitlist WHERE id = ?").get(id) as any;
+    if (!r) return null;
+    return {
+      $id: r.id,
+      userId: r.userId,
+      patientId: r.patientId,
+      primaryPhysician: r.primaryPhysician,
+      requestedSlotAt: r.requestedSlotAt,
+      reason: r.reason,
+      status: r.status,
+      assignedAppointmentId: r.assignedAppointmentId,
+      createdAt: parseDate(r.createdAt),
+    };
+  },
+
+  getByUserId: (userId: string) => {
+    const rows = db.prepare(`
+      SELECT * FROM appointment_waitlist WHERE userId = ? ORDER BY createdAt DESC
+    `).all(userId) as any[];
+    return rows.map((r) => ({
+      $id: r.id,
+      userId: r.userId,
+      patientId: r.patientId,
+      primaryPhysician: r.primaryPhysician,
+      requestedSlotAt: r.requestedSlotAt,
+      reason: r.reason,
+      status: r.status,
+      assignedAppointmentId: r.assignedAppointmentId,
+      createdAt: parseDate(r.createdAt),
+    }));
+  },
+};
+
 // Emergency helpers
 export const emergencyHelpers = {
   create: (emergencyCase: {

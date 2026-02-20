@@ -8,6 +8,7 @@ import { appointmentHelpers } from "../db-helpers";
 import { formatDateTime, parseStringify } from "../utils";
 import { createNotification } from "./notification.actions";
 import { getAvailableSlots } from "./slots.actions";
+import { processWaitlistForSlot } from "./waitlist.actions";
 
 // CREATE APPOINTMENT
 export const createAppointment = async (
@@ -136,6 +137,10 @@ export const updateAppointment = async ({
         message: `Programarea dvs. pentru ${formatDateTime(appointment.schedule!, timeZone).dateTime} cu Dr. ${appointment.primaryPhysician} a fost anulată.${appointment.cancellationReason ? ` Motiv: ${appointment.cancellationReason}` : ""}`,
         appointmentId: appointmentId,
       });
+      await processWaitlistForSlot(
+        appointment.primaryPhysician,
+        new Date(appointment.schedule!)
+      );
     }
 
     revalidatePath("/admin");
