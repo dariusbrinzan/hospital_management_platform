@@ -91,13 +91,13 @@ export function HospitalMap() {
 
   const doorIndicator = (room: Room) => {
     const ds = room.doorSide || "bottom";
-    const dw = Math.min(room.w * 0.3, 18);
-    const dh = 4;
+    const dw = Math.min(Math.max(room.w * 0.28, 14), 22);
+    const dh = 5;
     let dx = 0, dy = 0, rw = dw, rh = dh;
     if (ds === "bottom") { dx = room.x + (room.w - dw) / 2; dy = room.y + room.h - 2; }
     else if (ds === "top") { dx = room.x + (room.w - dw) / 2; dy = room.y - 2; }
-    else if (ds === "left") { dx = room.x - 2; dy = room.y + (room.h - dw) / 2; rw = dh; rh = dw; }
-    else { dx = room.x + room.w - 2; dy = room.y + (room.h - dw) / 2; rw = dh; rh = dw; }
+    else if (ds === "left") { dx = room.x - 1; dy = room.y + (room.h - dw) / 2; rw = dh; rh = dw; }
+    else { dx = room.x + room.w - 1; dy = room.y + (room.h - dw) / 2; rw = dh; rh = dw; }
     return { dx, dy, rw, rh };
   };
 
@@ -186,8 +186,8 @@ export function HospitalMap() {
             </defs>
             <rect width={BW} height={BH} fill="url(#grid)" />
 
-            {/* Building outline */}
-            <rect x="20" y="40" width={BW - 40} height={BH - 70} fill="none" stroke="#374151" strokeWidth="3" rx="4" />
+            {/* Building outline — dreptunghi */}
+            <rect x="22" y="28" width={BW - 44} height={BH - 56} fill="none" stroke="#374151" strokeWidth="2.5" rx="5" />
 
             {/* Corridors */}
             {plan.corridors.map((c, i) => (
