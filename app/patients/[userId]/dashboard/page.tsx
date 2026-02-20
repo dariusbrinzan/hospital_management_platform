@@ -8,6 +8,7 @@ import { requireAuth } from "@/lib/actions/auth.actions";
 import { ensureAppointmentReminders24h } from "@/lib/actions/notification.actions";
 import { formatDateTime } from "@/lib/utils";
 import { calculateAge } from "@/lib/analysis-reference-ranges";
+import { getRoomByDoctor } from "@/lib/hospital-map";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Doctors } from "@/constants";
 import { LogoutButton } from "@/components/LogoutButton";
@@ -254,7 +255,8 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                     const doctor = Doctors.find(
                       (doc) => doc.name === appointment.primaryPhysician
                     );
-                    
+                    const appointmentRoom = getRoomByDoctor(appointment.primaryPhysician);
+
                     return (
                       <div
                         key={appointment.$id}
@@ -348,12 +350,30 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                               </div>
                             )}
 
-                            {appointment.status !== "cancelled" && (
-                              <RescheduleAppointmentButton
-                                appointment={appointment}
-                                userId={userId}
-                              />
-                            )}
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              {appointment.status !== "cancelled" && (
+                                <RescheduleAppointmentButton
+                                  appointment={appointment}
+                                  userId={userId}
+                                />
+                              )}
+                              <Link
+                                href={
+                                  appointmentRoom
+                                    ? `/patients/${userId}/hospital-map?floor=${appointmentRoom.floor}&roomId=${encodeURIComponent(appointmentRoom.id)}`
+                                    : `/patients/${userId}/hospital-map?search=${encodeURIComponent(appointment.primaryPhysician)}`
+                                }
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-14-medium text-green-700 hover:bg-green-100 transition-colors"
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                                  <circle cx="12" cy="10" r="3" />
+                                </svg>
+                                {appointmentRoom
+                                  ? `Vezi pe hartă — Cabinet ${appointmentRoom.roomNumber}, Etaj ${appointmentRoom.floor}`
+                                  : "Vezi pe hartă"}
+                              </Link>
+                            </div>
                           </div>
                           
                           <StatusBadge status={appointment.status} />

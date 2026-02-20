@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   HOSPITAL_FLOORS,
   BUILDING_DIMENSIONS,
   searchRooms,
+  getAllRooms,
   type Room,
   type RoomCategory,
   type FloorPlan,
@@ -68,12 +69,44 @@ const CAT_LABEL: Record<RoomCategory, string> = {
   office: "Birou",
 };
 
-export function HospitalMap() {
-  const [floor, setFloor] = useState(0);
+type HospitalMapProps = {
+  /** Etaj la care să se deschidă harta (ex. din link programare). */
+  initialFloor?: number;
+  /** Id-ul camerei de evidențiat (ex. cabinet programare). */
+  highlightRoomId?: string;
+  /** Căutare precompletată (ex. nume doctor din programare). */
+  initialSearch?: string;
+};
+
+export function HospitalMap({ initialFloor, highlightRoomId, initialSearch }: HospitalMapProps) {
+  const [floor, setFloor] = useState(initialFloor ?? 0);
   const [selected, setSelected] = useState<Room | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialSearch ?? "");
+  const [fromAppointment, setFromAppointment] = useState<Room | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    if (highlightRoomId == null || highlightRoomId === "") return;
+    const room = getAllRooms().find((r) => r.id === highlightRoomId) ?? null;
+    if (room) {
+      setFloor(room.floor);
+      setSelected(room);
+      setFromAppointment(room);
+    }
+  }, [highlightRoomId]);
+
+  useEffect(() => {
+    if (initialFloor != null && Number.isInteger(initialFloor)) {
+      setFloor(initialFloor);
+    }
+  }, [initialFloor]);
+
+  useEffect(() => {
+    if (initialSearch != null && initialSearch !== "") {
+      setQuery(initialSearch);
+    }
+  }, [initialSearch]);
 
   const plan = HOSPITAL_FLOORS.find((f) => f.number === floor) || HOSPITAL_FLOORS[0];
   const { w: BW, h: BH } = BUILDING_DIMENSIONS;
@@ -103,6 +136,27 @@ export function HospitalMap() {
 
   return (
     <div className="space-y-4">
+      {/* Banner programare: cabinet și etaj */}
+      {fromAppointment && (
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+          <p className="text-sm text-green-800">
+            <span className="font-semibold">Programare:</span> cabinet{" "}
+            <span className="font-mono font-semibold">{fromAppointment.roomNumber}</span>
+            {fromAppointment.doctor && <> — {fromAppointment.doctor}</>}, Etaj {fromAppointment.floor}.
+          </p>
+          <button
+            type="button"
+            onClick={() => setFromAppointment(null)}
+            className="flex-shrink-0 rounded-lg p-1.5 text-green-600 hover:bg-green-100"
+            aria-label="Închide"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Căutare globală */}
       <div className="relative rounded-xl border border-dark-200 bg-white p-4 shadow-sm">
         <label className="mb-1.5 block text-sm font-medium text-dark-700">

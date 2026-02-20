@@ -270,3 +270,20 @@ export function searchRooms(query: string): Room[] {
       room.description.toLowerCase().includes(q)
   );
 }
+
+/** Normalizează numele doctorului pentru potrivire (fără "Dr.", trim, lowercase). */
+function normalizeDoctorName(name: string): string {
+  return name.replace(/^Dr\.?\s*/i, "").trim().toLowerCase();
+}
+
+/** Găsește cabinetul unde lucrează un doctor (potrivire după nume). Folosit pentru programări. */
+export function getRoomByDoctor(doctorName: string): Room | null {
+  if (!doctorName?.trim()) return null;
+  const raw = doctorName.trim().toLowerCase();
+  const withoutTitle = normalizeDoctorName(doctorName);
+  return getAllRooms().find((room) => {
+    if (!room.doctor) return false;
+    const d = room.doctor.trim().toLowerCase();
+    return d.includes(raw) || d.includes(withoutTitle) || raw.includes(normalizeDoctorName(room.doctor));
+  }) ?? null;
+}

@@ -7,12 +7,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 
-const HospitalMapPage = async ({ params: { userId } }: SearchParamProps) => {
+const HospitalMapPage = async ({
+  params: { userId },
+  searchParams,
+}: SearchParamProps & { searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined> }) => {
   const session = await requireAuth();
 
   if (session.$id !== userId) {
     redirect(`/patients/${session.$id}/hospital-map`);
   }
+
+  const raw = searchParams ?? {};
+  const resolved = typeof (raw as Promise<unknown>).then === "function" ? await (raw as Promise<Record<string, string | string[] | undefined>>) : (raw as Record<string, string | string[] | undefined>);
+  const floorParam = resolved?.floor != null ? Number(resolved.floor) : undefined;
+  const roomIdParam = typeof resolved?.roomId === "string" ? resolved.roomId : undefined;
+  const searchParam = typeof resolved?.search === "string" ? resolved.search : undefined;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -76,7 +85,11 @@ const HospitalMapPage = async ({ params: { userId } }: SearchParamProps) => {
               Explorați planul clădirii, căutați cabinete sau doctori și apăsați pe fiecare cameră pentru detalii.
             </p>
           </div>
-          <HospitalMap />
+          <HospitalMap
+            initialFloor={Number.isInteger(floorParam) ? floorParam : undefined}
+            highlightRoomId={roomIdParam}
+            initialSearch={searchParam}
+          />
         </div>
       </main>
     </div>
