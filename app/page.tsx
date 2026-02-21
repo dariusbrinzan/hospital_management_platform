@@ -3,15 +3,18 @@ import Link from "next/link";
 
 import { LoginForm } from "@/components/forms/LoginForm";
 import { PasskeyModal } from "@/components/PasskeyModal";
+import { DoctorCodeModalWrapper } from "@/components/DoctorCodeModalWrapper";
 import { LogoLink } from "@/components/LogoLink";
 import { Button } from "@/components/ui/button";
 
 const Home = async ({ searchParams }: SearchParamProps) => {
   const isAdmin = searchParams?.admin === "true";
+  const isDoctor = searchParams?.doctor === "true";
 
   return (
     <div className="flex h-screen max-h-screen">
       {isAdmin && <PasskeyModal />}
+      {isDoctor && <DoctorCodeModalWrapper />}
 
       <section className="remove-scrollbar container my-auto">
         <div className="sub-container max-w-[496px]">
@@ -30,13 +33,18 @@ const Home = async ({ searchParams }: SearchParamProps) => {
             </Button>
           </div>
 
-          <div className="text-14-regular mt-20 flex justify-between">
-            <p className="justify-items-end text-dark-500 xl:text-left">
+          <div className="text-14-regular mt-20 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+            <p className="text-dark-500 xl:text-left">
               © 2026 eHealth.ro
             </p>
-            <Link href="/?admin=true" className="text-green-500 hover:text-green-600">
-              Administrator
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link href="/?doctor=true" className="text-green-500 hover:text-green-600">
+                Medic
+              </Link>
+              <Link href="/?admin=true" className="text-green-500 hover:text-green-600">
+                Administrator
+              </Link>
+            </div>
           </div>
         </div>
       </section>

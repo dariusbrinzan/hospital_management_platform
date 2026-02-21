@@ -888,6 +888,14 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_doctor_reviews_appointmentId ON doctor_reviews(appointmentId);
   CREATE INDEX IF NOT EXISTS idx_doctor_reviews_patientId ON doctor_reviews(patientId);
   CREATE INDEX IF NOT EXISTS idx_doctor_reviews_doctorName ON doctor_reviews(doctorName);
+
+  -- Coduri de acces 4 cifre pentru medici (login fără email/parolă)
+  CREATE TABLE IF NOT EXISTS doctor_access_codes (
+    code TEXT PRIMARY KEY CHECK(length(code) = 4 AND code GLOB '[0-9][0-9][0-9][0-9]'),
+    doctor_name TEXT NOT NULL,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_doctor_access_codes_doctor_name ON doctor_access_codes(doctor_name);
 `);
 
 // Inițializare medicamente și stocuri

@@ -1,10 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getDoctorSession } from "@/lib/actions/auth.actions";
 import { hospitalRoomHelpers, hospitalAdmissionHelpers } from "@/lib/db-helpers";
 import { HospitalRoomsDashboard } from "@/components/HospitalRoomsDashboard";
 import { AdmissionForm } from "@/components/forms/AdmissionForm";
 
 const HospitalizationsPage = async ({ searchParams }: SearchParamProps) => {
+  if (await getDoctorSession()) redirect("/admin");
   const showForm = searchParams?.new === "true";
   
   const allRooms = hospitalRoomHelpers.getAllRooms();

@@ -1,10 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { emergencyHelpers, doctorsOnDutyHelpers } from "@/lib/db-helpers";
+import { getDoctorSession } from "@/lib/actions/auth.actions";
 import { EmergencyKanbanBoard } from "@/components/EmergencyKanbanBoard";
 
 const EmergencyPage = async () => {
+  if (await getDoctorSession()) redirect("/admin");
   const emergencyCases = await emergencyHelpers.getAll();
   
   // Verifică și generează rotație automată dacă e necesar (la 12 ore)

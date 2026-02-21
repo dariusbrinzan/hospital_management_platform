@@ -1,10 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getDoctorSession } from "@/lib/actions/auth.actions";
 import { ReportsDashboard } from "@/components/ReportsDashboard";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminReportsPage() {
+export default async function AdminReportsPage() {
+  if (await getDoctorSession()) redirect("/admin");
   return (
     <div className="mx-auto flex max-w-6xl flex-col space-y-8">
       <header className="admin-header">

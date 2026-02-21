@@ -761,6 +761,27 @@ export const notificationHelpers = {
   },
 };
 
+// Coduri de acces 4 cifre pentru medici (login în panou fără email/parolă)
+export const doctorAccessCodesHelpers = {
+  getByCode: (code: string): { code: string; doctor_name: string } | null => {
+    const normalized = String(code).trim().replace(/\D/g, "");
+    if (normalized.length !== 4) return null;
+    const row = db.prepare("SELECT code, doctor_name FROM doctor_access_codes WHERE code = ?").get(normalized) as { code: string; doctor_name: string } | undefined;
+    return row ?? null;
+  },
+
+  seedIfEmpty: () => {
+    const count = db.prepare("SELECT COUNT(*) as c FROM doctor_access_codes").get() as { c: number };
+    if (count.c > 0) return;
+    const { Doctors } = require("@/constants");
+    const now = new Date().toISOString();
+    Doctors.forEach((d: { name: string }, i: number) => {
+      const code = String(1001 + i).padStart(4, "0");
+      db.prepare("INSERT OR IGNORE INTO doctor_access_codes (code, doctor_name, createdAt) VALUES (?, ?, ?)").run(code, d.name, now);
+    });
+  },
+};
+
 // Waitlist helpers (listă de așteptare pentru sloturi)
 export const waitlistHelpers = {
   create: (entry: {

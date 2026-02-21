@@ -3,8 +3,10 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { userHelpers, patientHelpers } from "../db-helpers";
+import { userHelpers, patientHelpers, doctorAccessCodesHelpers } from "../db-helpers";
 import { parseStringify } from "../utils";
+
+const DOCTOR_SESSION_COOKIE = "doctor_session";
 
 // LOGIN PATIENT
 export const loginPatient = async (email: string, password: string) => {
@@ -111,4 +113,48 @@ export const requireAuth = async () => {
   }
   
   return session;
+};
+
+// ─── LOGIN MEDIC (cod 4 cifre) ─────────────────────────────────────────────
+
+export const loginDoctor = async (code: string) => {
+  try {
+    doctorAccessCodesHelpers.seedIfEmpty();
+    const row = doctorAccessCodesHelpers.getByCode(code);
+    if (!row) {
+      return { error: "Cod invalid. Introduceți codul de 4 cifre alocat." };
+    }
+    const cookieStore = await cookies();
+    cookieStore.set(DOCTOR_SESSION_COOKIE, row.doctor_name, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 8, // 8 ore
+    });
+    return { success: true, doctorName: row.doctor_name };
+  } catch (error) {
+    console.error("Doctor login error:", error);
+    return { error: "A apărut o eroare la autentificare." };
+  }
+};
+
+export const getDoctorSession = async (): Promise<string | null> => {
+  try {
+    const cookieStore = await cookies();
+    const doctorName = cookieStore.get(DOCTOR_SESSION_COOKIE)?.value;
+    return doctorName ?? null;
+  } catch {
+    return null;
+  }
+};
+
+export const logoutDoctor = async () => {
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete(DOCTOR_SESSION_COOKIE);
+    return { success: true };
+  } catch (error) {
+    console.error("Doctor logout error:", error);
+    return { error: "A apărut o eroare la deconectare." };
+  }
 };

@@ -1,9 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getDoctorSession } from "@/lib/actions/auth.actions";
 import { medicationStockHelpers } from "@/lib/db-helpers";
 import { MedicationStockDashboard } from "@/components/MedicationStockDashboard";
 
 const MedicationsPage = async () => {
+  if (await getDoctorSession()) redirect("/admin");
   const allStocks = medicationStockHelpers.getAll();
   const lowStock = medicationStockHelpers.getLowStock();
   const emergencyStocks = medicationStockHelpers.getAll("emergency_department");

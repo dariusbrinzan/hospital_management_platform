@@ -20,9 +20,11 @@ interface Doctor {
 interface AdminSidebarProps {
   doctors: Doctor[];
   selectedDoctor: string;
+  isDoctorView?: boolean;
+  doctorName?: string;
 }
 
-export const AdminSidebar = ({ doctors, selectedDoctor }: AdminSidebarProps) => {
+export const AdminSidebar = ({ doctors, selectedDoctor, isDoctorView, doctorName }: AdminSidebarProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedSpecialty = searchParams.get("specialty") || "";
@@ -101,8 +103,17 @@ export const AdminSidebar = ({ doctors, selectedDoctor }: AdminSidebarProps) => 
         </div>
 
         <div>
-          <h2 className="text-16-semibold text-dark-900 mb-4 hidden lg:block">Filtre</h2>
+          <h2 className="text-16-semibold text-dark-900 mb-4 hidden lg:block">
+            {isDoctorView ? "Cont medic" : "Filtre"}
+          </h2>
         
+        {isDoctorView && doctorName ? (
+          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+            <p className="text-12-semibold text-green-800 mb-1">Conectat ca</p>
+            <p className="text-14-semibold text-green-900">{doctorName}</p>
+            <p className="text-12-regular text-green-700 mt-2">Vedeți doar programările și datele dvs.</p>
+          </div>
+        ) : (
         <div className="space-y-4">
           <div>
             <label className="block text-12-semibold text-dark-600 mb-2">
@@ -187,10 +198,11 @@ export const AdminSidebar = ({ doctors, selectedDoctor }: AdminSidebarProps) => 
             </Select>
           </div>
         </div>
+        )}
       </div>
 
-      {/* Info box */}
-      {selectedSpecialty && selectedSpecialty !== "all" && (
+      {/* Info box (doar pentru admin) */}
+      {!isDoctorView && selectedSpecialty && selectedSpecialty !== "all" && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-12-semibold text-green-800 mb-1">Specializare activă</p>
           <p className="text-14-semibold text-green-900">{selectedSpecialty}</p>
@@ -204,7 +216,8 @@ export const AdminSidebar = ({ doctors, selectedDoctor }: AdminSidebarProps) => 
       )}
       </aside>
 
-      {/* Mobile menu button */}
+      {/* Mobile menu button (ascuns pentru medic) */}
+      {!isDoctorView && (
       <button
         onClick={() => setIsMobileOpen(true)}
         className="lg:hidden fixed bottom-4 right-4 z-30 bg-green-500 text-white p-3 rounded-full shadow-lg hover:bg-green-600 transition-colors"
@@ -214,6 +227,7 @@ export const AdminSidebar = ({ doctors, selectedDoctor }: AdminSidebarProps) => 
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
         </svg>
       </button>
+      )}
     </>
   );
 };
