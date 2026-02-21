@@ -262,19 +262,31 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                         key={appointment.$id}
                         className="rounded-lg border border-dark-200 p-4"
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="mb-2 flex items-center gap-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <Link
+                              href={
+                                appointmentRoom
+                                  ? `/patients/${userId}/hospital-map?floor=${appointmentRoom.floor}&roomId=${encodeURIComponent(appointmentRoom.id)}`
+                                  : `/patients/${userId}/hospital-map?search=${encodeURIComponent(appointment.primaryPhysician)}`
+                              }
+                              className="mb-3 flex items-center gap-3 rounded-lg p-2 -ml-2 transition-colors hover:bg-gray-50 focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                              title={
+                                appointmentRoom
+                                  ? `Cabinet ${appointmentRoom.roomNumber}, Etaj ${appointmentRoom.floor} — click pentru locație pe hartă`
+                                  : "Deschide harta spitalului"
+                              }
+                            >
                               {doctor && (
                                 <Image
                                   src={doctor.image}
-                                  alt="doctor"
+                                  alt=""
                                   width={40}
                                   height={40}
-                                  className="size-10 rounded-full border border-dark-200"
+                                  className="size-10 flex-shrink-0 rounded-full border border-dark-200"
                                 />
                               )}
-                              <div>
+                              <div className="min-w-0">
                                 <p className="text-16-semibold text-dark-700">
                                   {appointment.primaryPhysician}
                                 </p>
@@ -286,8 +298,13 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                                 <p className="text-14-regular text-dark-500">
                                   {formatDateTime(appointment.schedule).dateTime}
                                 </p>
+                                <span className="mt-1 inline-block text-xs text-dark-400">
+                                  {appointmentRoom
+                                    ? `Cabinet ${appointmentRoom.roomNumber}, Etaj ${appointmentRoom.floor} · click pentru hartă`
+                                    : "Click pentru hartă"}
+                                </span>
                               </div>
-                            </div>
+                            </Link>
                             
                             {appointment.reason && (
                               <p className="text-14-regular text-dark-600 mb-1">
@@ -350,7 +367,7 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                               </div>
                             )}
 
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-dark-100 pt-3">
                               {appointment.status !== "cancelled" && (
                                 <RescheduleAppointmentButton
                                   appointment={appointment}
@@ -363,20 +380,22 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                                     ? `/patients/${userId}/hospital-map?floor=${appointmentRoom.floor}&roomId=${encodeURIComponent(appointmentRoom.id)}`
                                     : `/patients/${userId}/hospital-map?search=${encodeURIComponent(appointment.primaryPhysician)}`
                                 }
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-14-medium text-green-700 hover:bg-green-100 transition-colors"
+                                className="inline-flex h-10 min-w-[2.5rem] items-center justify-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 text-14-medium text-green-700 transition-colors hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                               >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                                   <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
                                   <circle cx="12" cy="10" r="3" />
                                 </svg>
-                                {appointmentRoom
-                                  ? `Vezi pe hartă — Cabinet ${appointmentRoom.roomNumber}, Etaj ${appointmentRoom.floor}`
-                                  : "Vezi pe hartă"}
+                                <span>
+                                  {appointmentRoom
+                                    ? `Cabinet ${appointmentRoom.roomNumber}, Etaj ${appointmentRoom.floor}`
+                                    : "Vezi pe hartă"}
+                                </span>
                               </Link>
                             </div>
                           </div>
                           
-                          <StatusBadge status={appointment.status} />
+                          <div className="flex-shrink-0"><StatusBadge status={appointment.status} /></div>
                         </div>
                       </div>
                     );
@@ -399,25 +418,38 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                     const doctor = Doctors.find(
                       (doc) => doc.name === appointment.primaryPhysician
                     );
-                    
+                    const appointmentRoom = getRoomByDoctor(appointment.primaryPhysician);
+
                     return (
                       <div
                         key={appointment.$id}
                         className="rounded-lg border border-dark-200 p-4"
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="mb-2 flex items-center gap-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <Link
+                              href={
+                                appointmentRoom
+                                  ? `/patients/${userId}/hospital-map?floor=${appointmentRoom.floor}&roomId=${encodeURIComponent(appointmentRoom.id)}`
+                                  : `/patients/${userId}/hospital-map?search=${encodeURIComponent(appointment.primaryPhysician)}`
+                              }
+                              className="mb-3 flex items-center gap-3 rounded-lg p-2 -ml-2 transition-colors hover:bg-gray-50 focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                              title={
+                                appointmentRoom
+                                  ? `Cabinet ${appointmentRoom.roomNumber}, Etaj ${appointmentRoom.floor}`
+                                  : "Deschide harta spitalului"
+                              }
+                            >
                               {doctor && (
                                 <Image
                                   src={doctor.image}
-                                  alt="doctor"
+                                  alt=""
                                   width={40}
                                   height={40}
-                                  className="size-10 rounded-full border border-dark-200"
+                                  className="size-10 flex-shrink-0 rounded-full border border-dark-200"
                                 />
                               )}
-                              <div>
+                              <div className="min-w-0">
                                 <p className="text-16-semibold text-dark-700">
                                   {appointment.primaryPhysician}
                                 </p>
@@ -429,8 +461,11 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                                 <p className="text-14-regular text-dark-500">
                                   {formatDateTime(appointment.schedule).dateTime}
                                 </p>
+                                <span className="mt-1 inline-block text-xs text-dark-400">
+                                  {appointmentRoom ? `Cabinet ${appointmentRoom.roomNumber}, Etaj ${appointmentRoom.floor} · click pentru hartă` : "Click pentru hartă"}
+                                </span>
                               </div>
-                            </div>
+                            </Link>
                             
                             {appointment.reason && (
                               <p className="text-14-regular text-dark-600 mb-1">
@@ -492,16 +527,32 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                               </div>
                             )}
 
-                            {appointment.status === "scheduled" && (
-                              <AppointmentReviewButton
-                                appointmentId={appointment.$id}
-                                doctorName={appointment.primaryPhysician}
-                                existingReview={reviewsByAppointment.get(appointment.$id) || null}
-                              />
-                            )}
+                            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-dark-100 pt-3">
+                              {appointment.status === "scheduled" && (
+                                <AppointmentReviewButton
+                                  appointmentId={appointment.$id}
+                                  doctorName={appointment.primaryPhysician}
+                                  existingReview={reviewsByAppointment.get(appointment.$id) || null}
+                                />
+                              )}
+                              <Link
+                                href={
+                                  appointmentRoom
+                                    ? `/patients/${userId}/hospital-map?floor=${appointmentRoom.floor}&roomId=${encodeURIComponent(appointmentRoom.id)}`
+                                    : `/patients/${userId}/hospital-map?search=${encodeURIComponent(appointment.primaryPhysician)}`
+                                }
+                                className="inline-flex h-10 min-w-[2.5rem] items-center justify-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 text-14-medium text-green-700 transition-colors hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                                  <circle cx="12" cy="10" r="3" />
+                                </svg>
+                                <span>{appointmentRoom ? `Cabinet ${appointmentRoom.roomNumber}, Etaj ${appointmentRoom.floor}` : "Vezi pe hartă"}</span>
+                              </Link>
+                            </div>
                           </div>
                           
-                          <StatusBadge status={appointment.status} />
+                          <div className="flex-shrink-0"><StatusBadge status={appointment.status} /></div>
                         </div>
                       </div>
                     );
