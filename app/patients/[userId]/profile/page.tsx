@@ -9,6 +9,7 @@ import { calculateAge } from "@/lib/analysis-reference-ranges";
 import { LogoutButton } from "@/components/LogoutButton";
 import { LogoLink } from "@/components/LogoLink";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { MedicalProfileEditor } from "@/components/profile/MedicalProfileEditor";
 import { AllergyManager } from "@/components/profile/AllergyManager";
 import { LifestyleEditor } from "@/components/profile/LifestyleEditor";
@@ -65,6 +66,7 @@ const ProfilePage = async ({ params: { userId } }: SearchParamProps) => {
               Programare nouă
             </Link>
             <NotificationsDropdown userId={userId} />
+            <ThemeToggle />
             <div className="flex items-center gap-2">
               <Image
                 src="/assets/icons/user.svg"

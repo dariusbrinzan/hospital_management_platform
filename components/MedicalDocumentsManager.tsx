@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "./ui/button";
 import { formatDateTime } from "@/lib/utils";
 import { DocumentUploadModal } from "./DocumentUploadModal";
 import { DocumentViewerModal } from "./DocumentViewerModal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Input } from "./ui/input";
+
+const DOCS_PAGE_SIZE = 10;
 
 interface MedicalDocumentsManagerProps {
   patientId: string;
@@ -45,10 +47,13 @@ export const MedicalDocumentsManager = ({
   const [showViewer, setShowViewer] = useState(false);
   const [filterType, setFilterType] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     loadDocuments();
-  }, [patientId, appointmentId]);
+  }, [patientId, appointmentId, filterType]);
 
   const loadDocuments = async () => {
     setIsLoading(true);
@@ -130,17 +135,37 @@ export const MedicalDocumentsManager = ({
     return "📎";
   };
 
-  const filteredDocuments = documents.filter((doc) => {
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        doc.originalFileName.toLowerCase().includes(query) ||
-        doc.description?.toLowerCase().includes(query) ||
-        doc.tags?.some((tag) => tag.toLowerCase().includes(query))
-      );
+  const filteredDocuments = useMemo(() => {
+    let list = documents.filter((doc) => {
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          doc.originalFileName.toLowerCase().includes(query) ||
+          doc.description?.toLowerCase().includes(query) ||
+          doc.tags?.some((tag) => tag.toLowerCase().includes(query))
+        );
+      }
+      return true;
+    });
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      from.setHours(0, 0, 0, 0);
+      list = list.filter((doc) => new Date(doc.uploadedAt) >= from);
     }
-    return true;
-  });
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      list = list.filter((doc) => new Date(doc.uploadedAt) <= to);
+    }
+    return list;
+  }, [documents, searchQuery, dateFrom, dateTo]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredDocuments.length / DOCS_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedDocuments = useMemo(() => {
+    const start = (currentPage - 1) * DOCS_PAGE_SIZE;
+    return filteredDocuments.slice(start, start + DOCS_PAGE_SIZE);
+  }, [filteredDocuments, currentPage]);
 
   return (
     <div className="space-y-4">
@@ -153,28 +178,51 @@ export const MedicalDocumentsManager = ({
         )}
       </div>
 
-      {/* Filtre */}
-      <div className="flex gap-4 items-center">
-        <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filtrează după tip" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toate</SelectItem>
-            {Object.entries(documentTypeLabels).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
+      {/* Filtre: tip, dată, căutare */}
+      <div className="flex flex-wrap gap-4 items-end rounded-lg border border-dark-200 bg-white p-4">
+        <div className="flex flex-col gap-1">
+          <label className="text-12-regular text-dark-500">Tip</label>
+          <Select value={filterType} onValueChange={(v) => { setFilterType(v); setPage(1); }}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Tip" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toate</SelectItem>
+              {Object.entries(documentTypeLabels).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-12-regular text-dark-500">Upload de la</label>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+            className="w-40"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-12-regular text-dark-500">Upload până la</label>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+            className="w-40"
+          />
+        </div>
         <Input
           placeholder="Caută documente..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 max-w-md"
+          onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+          className="flex-1 min-w-[180px] max-w-md"
         />
+        <span className="text-14-regular text-dark-500">
+          {filteredDocuments.length} documente
+        </span>
       </div>
 
       {/* Lista documente */}
@@ -187,8 +235,9 @@ export const MedicalDocumentsManager = ({
           </p>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredDocuments.map((document) => (
+          {paginatedDocuments.map((document) => (
             <div
               key={document.$id}
               className="rounded-lg border border-dark-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
@@ -261,6 +310,31 @@ export const MedicalDocumentsManager = ({
             </div>
           ))}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-4">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+              className="rounded-lg border border-dark-200 bg-white px-4 py-2 text-14-medium text-dark-700 hover:bg-dark-50 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              Înapoi
+            </button>
+            <span className="text-14-regular text-dark-600">
+              Pagina {currentPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              className="rounded-lg border border-dark-200 bg-white px-4 py-2 text-14-medium text-dark-700 hover:bg-dark-50 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              Înainte
+            </button>
+          </div>
+        )}
+        </>
       )}
 
       {showUploadModal && (

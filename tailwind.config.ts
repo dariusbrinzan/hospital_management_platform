@@ -55,6 +55,7 @@ const config = {
           500: "#6B7280", // Gri
           600: "#4B5563", // Gri închis
           700: "#374151", // Gri foarte închis
+          800: "#1f2937", // Fundal dark mode
         },
       },
       fontFamily: {

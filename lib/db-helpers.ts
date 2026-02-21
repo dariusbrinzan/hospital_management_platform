@@ -580,6 +580,7 @@ export const appointmentHelpers = {
       reason: apt.reason,
       note: apt.note,
       cancellationReason: apt.cancellationReason,
+      analysisResults: apt.analysisResults ?? null,
       createdAt: parseDate(apt.createdAt),
       updatedAt: parseDate(apt.updatedAt),
       patient: {

@@ -68,6 +68,7 @@ interface ConsultationPDFData {
   };
 }
 
+/** Date pentru raport PDF de analize medicale (layout profesional, conform practicilor laboratoarelor acreditate) */
 interface AnalysisPDFData {
   patient: PatientInfo;
   analyses: Array<{
@@ -78,9 +79,13 @@ interface AnalysisPDFData {
     referenceRange?: string;
     notes?: string;
     performedDate: Date | string;
+    /** normal | high | low | critical – pentru flag în raport (H/L/*) */
+    status?: string;
   }>;
   appointmentId?: string;
   date: Date | string;
+  /** Medic solicitant / medic curant */
+  physicianName?: string;
 }
 
 // Colors as RGB arrays
@@ -568,131 +573,254 @@ export function generateConsultationPDF(data: ConsultationPDFData): Buffer {
   return Buffer.from(doc.output("arraybuffer"));
 }
 
+/** Returnează flag pentru valoare anormală: H = high, L = low, * = critical */
+function getAbnormalFlag(status?: string): string {
+  if (!status) return "";
+  const s = String(status).toLowerCase();
+  if (s === "critical") return "*";
+  if (s === "high" || s === "above") return "H";
+  if (s === "low" || s === "below") return "L";
+  return "";
+}
+
+/** Dată/ora formatată pentru PDF (ro, scurt) */
+function formatDateForPDF(d: Date | string): string {
+  const date = new Date(d);
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const year = date.getFullYear();
+  const h = date.getHours();
+  const m = date.getMinutes();
+  const time = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+  return `${day}.${month}.${year}, ${time}`;
+}
+
+/** Nume medic fără dublura "Dr." */
+function formatPhysicianName(name?: string): string {
+  if (!name) return "";
+  const t = name.trim();
+  if (t.toLowerCase().startsWith("dr.") || t.toLowerCase().startsWith("dr ")) return t;
+  return `Dr. ${t}`;
+}
+
+/** Inlocuieste diacriticele românesti cu ASCII pentru fonturile standard jsPDF (Helvetica nu suporta UTF-8). */
+function pdfAscii(s: string): string {
+  if (!s) return s;
+  const map: Record<string, string> = {
+    ă: "a", â: "a", î: "i", ș: "s", ț: "t",
+    Ă: "A", Â: "A", Î: "I", Ș: "S", Ț: "T",
+  };
+  return String(s).replace(/[ăâîșțĂÂÎȘȚ]/g, (c) => map[c] ?? c);
+}
+
 export function generateAnalysisPDF(data: AnalysisPDFData): Buffer {
   const doc = new jsPDF();
-  let yPos = 20;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const M = 18;
+  const W = pageWidth - 2 * M;
+  const col1 = M + 2;           // Denumire
+  const col2 = M + 75;          // Rezultat
+  const col3 = M + 95;         // UM
+  const col4 = M + 115;        // Interval referinta
+  let y = 20;
 
-  // Header
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text("Raport Analize Medicale", 105, yPos, { align: "center" });
-  yPos += 15;
+  const age = data.patient.birthDate
+    ? Math.floor((Date.now() - new Date(data.patient.birthDate).getTime()) / (365.25 * 24 * 3600 * 1000))
+    : null;
+  const dateStr = formatDateForPDF(data.date);
+  const physician = formatPhysicianName(data.physicianName);
+  const genderShort = data.patient.gender === "Femeie" ? "F" : /barbat/i.test(String(data.patient.gender)) ? "M" : "F";
 
-  // Informații pacient
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.text("Informații Pacient", 20, yPos);
-  yPos += 7;
-  doc.setFont("helvetica", "normal");
+  const t = (s: string) => pdfAscii(s);
+  const setGray = (v: number) => doc.setTextColor(v, v, v);
+
+  const needPage = (need: number) => {
+    if (y + need > pageHeight - 20) {
+      doc.addPage();
+      y = 20;
+      drawHeader();
+    }
+  };
+
+  function drawHeader() {
+    doc.setFillColor(0, 102, 102);
+    doc.rect(0, 0, pageWidth, 12, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(255, 255, 255);
+    doc.text("eHealth.ro - Laborator de Analize Medicale", pageWidth / 2, 8, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(220, 220, 220);
+    doc.text("Str. Sanatati nr. 1, Bucuresti  |  Tel: 021 000 0000", pageWidth / 2, 11.5, { align: "center" });
+    doc.setTextColor(0, 0, 0);
+  }
+
+  drawHeader();
+  y = 18;
+
+  // Bloc pacient
+  doc.setFontSize(8);
+  setGray(90);
+  doc.text("Nume:", M, y);
+  doc.text("Trimitator:", M + 90, y);
+  y += 5;
   doc.setFontSize(10);
-  doc.text(`Nume: ${data.patient.name}`, 20, yPos);
-  yPos += 6;
-  doc.text(`Data nașterii: ${formatDateTime(data.patient.birthDate).dateOnly}`, 20, yPos);
-  yPos += 6;
-  doc.text(`Gen: ${data.patient.gender}`, 20, yPos);
-  yPos += 6;
-  if (data.patient.phone) {
-    doc.text(`Telefon: ${data.patient.phone}`, 20, yPos);
-    yPos += 6;
-  }
-  if (data.patient.email) {
-    doc.text(`Email: ${data.patient.email}`, 20, yPos);
-    yPos += 6;
-  }
-  yPos += 5;
-
-  // Data analizelor
-  doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("Data Analizelor", 20, yPos);
-  yPos += 7;
+  doc.setTextColor(0, 0, 0);
+  doc.text(t(data.patient.name), col1 + 14, y - 5);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(formatDateTime(data.date).dateOnly, 20, yPos);
-  yPos += 6;
-  if (data.appointmentId) {
-    doc.text(`Programare: #${data.appointmentId.slice(-6)}`, 20, yPos);
-    yPos += 6;
-  }
-  yPos += 5;
+  doc.setFontSize(9);
+  setGray(40);
+  doc.text(t(physician || "-"), M + 102, y - 5);
+  doc.setFontSize(8);
+  setGray(80);
+  doc.text(`Varsta: ${age ?? "-"} ani   Sex: ${genderShort}`, M, y + 1);
+  doc.text(`Data - ora recoltare: ${dateStr}`, M + 90, y + 1);
+  y += 6;
+  if (data.patient.phone) doc.text(`Telefon: ${data.patient.phone}`, M, y + 1);
+  if (data.appointmentId) doc.text(`Cod programare: ${data.appointmentId.slice(-8)}`, M + 90, y + 1);
+  y += 10;
 
-  // Rezultate analize
-  doc.setFontSize(12);
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.2);
+  doc.line(M, y, M + W, y);
+  y += 6;
+
+  doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text("Rezultate Analize", 20, yPos);
-  yPos += 10;
+  doc.setTextColor(0, 0, 0);
+  doc.text("Buletin de analize medicale", pageWidth / 2, y + 4, { align: "center" });
+  y += 10;
+  doc.line(M, y, M + W, y);
+  y += 6;
+
+  // Header tabel
+  doc.setFillColor(240, 240, 240);
+  doc.rect(M, y, W, 8, "F");
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  setGray(50);
+  doc.text("Denumire", col1, y + 5.5);
+  doc.text("Rezultat", col2, y + 5.5);
+  doc.text("UM", col3, y + 5.5);
+  doc.text("Interval referinta", col4, y + 5.5);
+  y += 9;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  setGray(100);
+  doc.text("Rezultatele analizelor trebuie interpretate de catre medicul dumneavoastra curant in context clinic.", M + 2, y + 3);
+  y += 8;
 
   const analysesWithResults = data.analyses.filter((a) => a.resultValue);
   const analysesPending = data.analyses.filter((a) => !a.resultValue);
 
-  if (analysesWithResults.length > 0) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    analysesWithResults.forEach((analysis, index) => {
-      // Verifică dacă trebuie să adăugăm o pagină nouă
-      if (yPos > 250) {
-        doc.addPage();
-        yPos = 20;
+  const grouped = new Map<string, typeof analysesWithResults>();
+  analysesWithResults.forEach((a) => {
+    const cat = a.testCategory || "ANALIZE";
+    if (!grouped.has(cat)) grouped.set(cat, []);
+    grouped.get(cat)!.push(a);
+  });
+
+  grouped.forEach((items, category) => {
+    needPage(14);
+    doc.setFillColor(232, 232, 232);
+    doc.rect(M, y, W, 6, "F");
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    setGray(40);
+    doc.text(t(category.toUpperCase()), col1, y + 4);
+    y += 7;
+
+    items.forEach((a) => {
+      needPage(8);
+      const flag = getAbnormalFlag(a.status);
+      const isAbnormal = !!flag;
+      const resultStr = String(a.resultValue ?? "-");
+      const unitStr = (a.unit || "").trim() || "-";
+      const refStr = a.referenceRange || "-";
+      const testName = t(a.testName || "-");
+
+      if (isAbnormal) {
+        doc.setFillColor(255, 235, 235);
+        doc.rect(M, y - 2, W, 7, "F");
       }
 
-      doc.setFont("helvetica", "bold");
-      doc.text(`${index + 1}. ${analysis.testName}`, 20, yPos);
-      yPos += 6;
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", isAbnormal ? "bold" : "normal");
+      const maxW1 = col2 - col1 - 4;
+      const lines = doc.splitTextToSize(testName, maxW1);
+      for (let i = 0; i < lines.length; i++) {
+        doc.text(lines[i], col1, y + (i * 4));
+      }
+      if (isAbnormal) doc.setTextColor(180, 0, 0);
+      doc.text(resultStr, col2, y + 4);
       doc.setFont("helvetica", "normal");
-      if (analysis.testCategory) {
-        doc.text(`Categorie: ${analysis.testCategory}`, 20, yPos);
-        yPos += 6;
-      }
-      doc.text(`Valoare: ${analysis.resultValue}${analysis.unit ? ` ${analysis.unit}` : ""}`, 20, yPos);
-      yPos += 6;
-      if (analysis.referenceRange) {
-        doc.text(`Interval de referință: ${analysis.referenceRange}`, 20, yPos);
-        yPos += 6;
-      }
-      if (analysis.notes) {
-        const notesLines = doc.splitTextToSize(`Observații: ${analysis.notes}`, 170);
-        doc.text(notesLines, 20, yPos);
-        yPos += notesLines.length * 6;
-      }
-      yPos += 5;
+      setGray(60);
+      doc.setFontSize(8);
+      doc.text(t(unitStr), col3, y + 4);
+      doc.text(t(refStr), col4, y + 4);
+
+      const rowH = Math.max(6, lines.length * 4) + 2;
+      y += rowH;
     });
-  }
+    y += 4;
+  });
 
   if (analysesPending.length > 0) {
-    // Verifică dacă trebuie să adăugăm o pagină nouă
-    if (yPos > 250) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    doc.setFontSize(12);
+    needPage(12);
     doc.setFont("helvetica", "bold");
-    doc.text("Analize în procesare:", 20, yPos);
-    yPos += 7;
+    doc.setFontSize(9);
+    setGray(40);
+    doc.text("ANALIZE IN PROCESARE", col1, y + 4);
+    y += 8;
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    analysesPending.forEach((analysis) => {
-      doc.text(`• ${analysis.testName}${analysis.testCategory ? ` (${analysis.testCategory})` : ""}`, 20, yPos);
-      yPos += 6;
-      if (yPos > 250) {
-        doc.addPage();
-        yPos = 20;
-      }
+    doc.setFontSize(9);
+    setGray(60);
+    analysesPending.forEach((a) => {
+      doc.text("- " + t(a.testName || "") + (a.testCategory ? " (" + t(a.testCategory) + ")" : ""), col1, y + 3);
+      y += 6;
+    });
+    y += 4;
+  }
+
+  const notesItems = analysesWithResults.filter((a) => a.notes);
+  if (notesItems.length > 0) {
+    needPage(10);
+    doc.setDrawColor(200, 200, 200);
+    doc.line(M, y, M + W, y);
+    y += 6;
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "italic");
+    setGray(90);
+    notesItems.forEach((a) => {
+      const txt = `Observatii (${t(a.testName || "")}): ${t(a.notes || "")}`;
+      const noteLines = doc.splitTextToSize(txt, W - 6);
+      noteLines.forEach((line: string) => {
+        doc.text(line, M + 4, y + 3);
+        y += 3.5;
+      });
+      y += 2;
     });
   }
 
-  // Footer
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
+  const totalPages = doc.getNumberOfPages();
+  const now = formatDateForPDF(new Date());
+  for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setFontSize(8);
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.2);
+    doc.line(M, pageHeight - 14, M + W, pageHeight - 14);
+    doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(
-      `Document generat pe ${formatDateTime(new Date().toISOString()).dateTime} de către eHealth.ro`,
-      105,
-      285,
-      { align: "center" }
-    );
+    setGray(110);
+    doc.text(`Pagina ${i} din ${totalPages}`, M, pageHeight - 8);
+    doc.text(`Eliberat la ${now}`, M + W, pageHeight - 8, { align: "right" });
+    doc.setFontSize(6);
+    setGray(130);
+    doc.text("Raport generat electronic de eHealth.ro. Rezultatele trebuie interpretate de medicul curant.", pageWidth / 2, pageHeight - 4, { align: "center" });
   }
 
   return Buffer.from(doc.output("arraybuffer"));

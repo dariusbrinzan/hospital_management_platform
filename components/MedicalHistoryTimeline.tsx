@@ -17,6 +17,8 @@ interface MedicalHistoryTimelineProps {
     gender: "Bărbat" | "Femeie";
     weight?: number;
   };
+  /** Când este setat, se afișează doar aceste evenimente (pentru filtre/paginare) */
+  events?: any[];
 }
 
 export const MedicalHistoryTimeline = ({
@@ -26,9 +28,10 @@ export const MedicalHistoryTimeline = ({
   familyHistory,
   analysisGroups = [],
   patientInfo,
+  events: eventsOverride,
 }: MedicalHistoryTimelineProps) => {
-  // Combină toate evenimentele și sortează după dată
-  const allEvents: any[] = [
+  // Combină toate evenimentele și sortează după dată (folosit când nu există eventsOverride)
+  const computedEvents: any[] = [
     ...medicalRecords.map((r) => ({ ...r, type: "record", date: r.visitDate })),
     ...allergies.map((a) => ({ ...a, type: "allergy", date: a.firstOccurrenceDate || a.createdAt })),
     ...vaccinations.map((v) => ({ ...v, type: "vaccination", date: v.administrationDate })),
@@ -38,6 +41,8 @@ export const MedicalHistoryTimeline = ({
     const dateB = new Date(b.date).getTime();
     return dateB - dateA; // Sortare descendentă (cel mai recent primul)
   });
+
+  const allEvents = eventsOverride ?? computedEvents;
 
   const getEventIcon = (type: string) => {
     switch (type) {

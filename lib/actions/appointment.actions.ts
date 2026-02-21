@@ -224,6 +224,65 @@ export const updateAnalysisResults = async (
   }
 };
 
+// CANCEL APPOINTMENT (for patients – self-service)
+export const cancelAppointmentByPatient = async (
+  appointmentId: string,
+  userId: string,
+  cancellationReason: string
+) => {
+  try {
+    const appointment = appointmentHelpers.getById(appointmentId);
+
+    if (!appointment) {
+      return { error: "Programarea nu a fost găsită" };
+    }
+
+    if (appointment.userId !== userId) {
+      return { error: "Nu ai permisiunea să anulezi această programare" };
+    }
+
+    if (appointment.status === "cancelled") {
+      return { error: "Programarea este deja anulată" };
+    }
+
+    const updatedAppointment = appointmentHelpers.update(appointmentId, {
+      status: "cancelled",
+      cancellationReason: cancellationReason.trim() || "Anulat de pacient",
+    });
+
+    if (!updatedAppointment) {
+      return { error: "Eroare la anularea programării" };
+    }
+
+    await createNotification({
+      userId,
+      type: "appointment_cancelled",
+      title: "Programare anulată",
+      message: `Programarea pentru ${formatDateTime(appointment.schedule!).dateTime} cu Dr. ${appointment.primaryPhysician} a fost anulată.${cancellationReason.trim() ? ` Motiv: ${cancellationReason.trim()}` : ""}`,
+      appointmentId,
+    });
+
+    await processWaitlistForSlot(
+      appointment.primaryPhysician,
+      new Date(appointment.schedule)
+    );
+
+    await sendSMSNotification(
+      userId,
+      `Salutări de la eHealth.ro. Programarea dvs. pentru ${formatDateTime(appointment.schedule!).dateTime} a fost anulată. Motiv: ${cancellationReason.trim() || "Anulat de pacient"}.`
+    );
+
+    revalidatePath(`/patients/${userId}/dashboard`);
+    revalidatePath(`/patients/${userId}/calendar`);
+    revalidatePath("/admin");
+
+    return parseStringify({ success: true, appointment: updatedAppointment });
+  } catch (error) {
+    console.error("Error cancelling appointment:", error);
+    return { error: "A apărut o eroare la anulare" };
+  }
+};
+
 // RESCHEDULE APPOINTMENT (for patients)
 export const rescheduleAppointment = async (
   appointmentId: string,

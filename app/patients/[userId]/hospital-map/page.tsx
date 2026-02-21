@@ -6,6 +6,7 @@ import { LogoutButton } from "@/components/LogoutButton";
 import Image from "next/image";
 import Link from "next/link";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const HospitalMapPage = async ({
   params: { userId },
@@ -62,6 +63,7 @@ const HospitalMapPage = async ({
               Programare nouă
             </Link>
             <NotificationsDropdown userId={userId} />
+            <ThemeToggle />
             <div className="flex items-center gap-2">
               <Image
                 src="/assets/icons/user.svg"

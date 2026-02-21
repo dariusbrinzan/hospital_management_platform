@@ -17,6 +17,9 @@ import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 import { AnalysisResultDisplay } from "@/components/AnalysisResultDisplay";
 import { AppointmentReviewButton } from "@/components/AppointmentReviewButton";
 import { RescheduleAppointmentButton } from "@/components/RescheduleAppointmentButton";
+import { CancelAppointmentButton } from "@/components/CancelAppointmentButton";
+import { PastAppointmentsList } from "@/components/PastAppointmentsList";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { doctorReviewHelpers } from "@/lib/db-helpers";
 
 const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
@@ -79,6 +82,7 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
               Programare nouă
             </Link>
             <NotificationsDropdown userId={userId} />
+            <ThemeToggle />
             <div className="flex items-center gap-2">
               <Image
                 src="/assets/icons/user.svg"
@@ -369,10 +373,16 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
 
                             <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-dark-100 pt-3">
                               {appointment.status !== "cancelled" && (
-                                <RescheduleAppointmentButton
-                                  appointment={appointment}
-                                  userId={userId}
-                                />
+                                <>
+                                  <RescheduleAppointmentButton
+                                    appointment={appointment}
+                                    userId={userId}
+                                  />
+                                  <CancelAppointmentButton
+                                    appointment={appointment}
+                                    userId={userId}
+                                  />
+                                </>
                               )}
                               <Link
                                 href={
@@ -404,161 +414,14 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
               )}
             </div>
 
-            {/* Past Appointments */}
+            {/* Past Appointments - cu filtre și paginare */}
             <div className="rounded-lg border border-dark-200 bg-white p-6">
               <h2 className="sub-header mb-4">Istoric Programări</h2>
-              
-              {appointments.past.length === 0 ? (
-                <p className="text-14-regular text-dark-500">
-                  Nu ai programări trecute.
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {appointments.past.slice(0, 5).map((appointment: any) => {
-                    const doctor = Doctors.find(
-                      (doc) => doc.name === appointment.primaryPhysician
-                    );
-                    const appointmentRoom = getRoomByDoctor(appointment.primaryPhysician);
-
-                    return (
-                      <div
-                        key={appointment.$id}
-                        className="rounded-lg border border-dark-200 p-4"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <Link
-                              href={
-                                appointmentRoom
-                                  ? `/patients/${userId}/hospital-map?floor=${appointmentRoom.floor}&roomId=${encodeURIComponent(appointmentRoom.id)}`
-                                  : `/patients/${userId}/hospital-map?search=${encodeURIComponent(appointment.primaryPhysician)}`
-                              }
-                              className="mb-3 flex items-center gap-3 rounded-lg p-2 -ml-2 transition-colors hover:bg-gray-50 focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                              title={
-                                appointmentRoom
-                                  ? `Cabinet ${appointmentRoom.roomNumber}, Etaj ${appointmentRoom.floor}`
-                                  : "Deschide harta spitalului"
-                              }
-                            >
-                              {doctor && (
-                                <Image
-                                  src={doctor.image}
-                                  alt=""
-                                  width={40}
-                                  height={40}
-                                  className="size-10 flex-shrink-0 rounded-full border border-dark-200"
-                                />
-                              )}
-                              <div className="min-w-0">
-                                <p className="text-16-semibold text-dark-700">
-                                  {appointment.primaryPhysician}
-                                </p>
-                                {doctor?.specialty && (
-                                  <p className="text-14-medium text-green-500">
-                                    {doctor.specialty}
-                                  </p>
-                                )}
-                                <p className="text-14-regular text-dark-500">
-                                  {formatDateTime(appointment.schedule).dateTime}
-                                </p>
-                                <span className="mt-1 inline-block text-xs text-dark-400">
-                                  {appointmentRoom ? `Cabinet ${appointmentRoom.roomNumber}, Etaj ${appointmentRoom.floor} · click pentru hartă` : "Click pentru hartă"}
-                                </span>
-                              </div>
-                            </Link>
-                            
-                            {appointment.reason && (
-                              <p className="text-14-regular text-dark-600 mb-1">
-                                <span className="font-medium">Motiv:</span> {appointment.reason}
-                              </p>
-                            )}
-                            
-                            {appointment.cancellationReason && (
-                              <p className="text-14-regular text-red-600 mb-1">
-                                <span className="font-medium">Motiv anulare:</span> {appointment.cancellationReason}
-                              </p>
-                            )}
-                            
-                            {appointment.analysisResults && (
-                              <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3">
-                                <p className="text-14-semibold text-green-700 mb-3">
-                                  Rezultate Analize:
-                                </p>
-                                {(() => {
-                                  try {
-                                    const results = JSON.parse(appointment.analysisResults);
-                                    if (Array.isArray(results) && results.length > 0) {
-                                      return (
-                                        <div className="space-y-3">
-                                          {results.map((result: any, index: number) => (
-                                            <div key={index} className="border-b border-green-200 pb-3 last:border-0 last:pb-0">
-                                              <p className="text-14-semibold text-dark-700 mb-1">
-                                                {result.testName}
-                                              </p>
-                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-14-regular text-dark-600">
-                                                <p>
-                                                  <span className="font-medium">Valoare:</span> {result.value}
-                                                  {result.unit && ` ${result.unit}`}
-                                                </p>
-                                                {result.referenceRange && (
-                                                  <p>
-                                                    <span className="font-medium">Referință:</span> {result.referenceRange}
-                                                  </p>
-                                                )}
-                                              </div>
-                                              {result.notes && (
-                                                <p className="text-14-regular text-dark-600 mt-1">
-                                                  <span className="font-medium">Observații:</span> {result.notes}
-                                                </p>
-                                              )}
-                                            </div>
-                                          ))}
-                                        </div>
-                                      );
-                                    }
-                                  } catch {
-                                    return (
-                                      <p className="text-14-regular text-dark-700 whitespace-pre-wrap">
-                                        {appointment.analysisResults}
-                                      </p>
-                                    );
-                                  }
-                                })()}
-                              </div>
-                            )}
-
-                            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-dark-100 pt-3">
-                              {appointment.status === "scheduled" && (
-                                <AppointmentReviewButton
-                                  appointmentId={appointment.$id}
-                                  doctorName={appointment.primaryPhysician}
-                                  existingReview={reviewsByAppointment.get(appointment.$id) || null}
-                                />
-                              )}
-                              <Link
-                                href={
-                                  appointmentRoom
-                                    ? `/patients/${userId}/hospital-map?floor=${appointmentRoom.floor}&roomId=${encodeURIComponent(appointmentRoom.id)}`
-                                    : `/patients/${userId}/hospital-map?search=${encodeURIComponent(appointment.primaryPhysician)}`
-                                }
-                                className="inline-flex h-10 min-w-[2.5rem] items-center justify-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 text-14-medium text-green-700 transition-colors hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                              >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                                  <circle cx="12" cy="10" r="3" />
-                                </svg>
-                                <span>{appointmentRoom ? `Cabinet ${appointmentRoom.roomNumber}, Etaj ${appointmentRoom.floor}` : "Vezi pe hartă"}</span>
-                              </Link>
-                            </div>
-                          </div>
-                          
-                          <div className="flex-shrink-0"><StatusBadge status={appointment.status} /></div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <PastAppointmentsList
+                past={appointments.past}
+                userId={userId}
+                patientReviews={patientReviews}
+              />
             </div>
           </section>
         </div>

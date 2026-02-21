@@ -7,6 +7,7 @@ import { requireAuth } from "@/lib/actions/auth.actions";
 import { LogoLink } from "@/components/LogoLink";
 import { LogoutButton } from "@/components/LogoutButton";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { MedicalCalendar } from "@/components/MedicalCalendar";
 import { vaccinationHelpers, prescriptionHelpers } from "@/lib/db-helpers";
 import Image from "next/image";
@@ -114,6 +115,7 @@ const CalendarPage = async ({ params: { userId } }: SearchParamProps) => {
               Programare nouă
             </Link>
             <NotificationsDropdown userId={userId} />
+            <ThemeToggle />
             <div className="flex items-center gap-2">
               <Image
                 src="/assets/icons/user.svg"

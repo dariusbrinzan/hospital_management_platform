@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { labResultHelpers, patientHelpers } from "@/lib/db-helpers";
+import { labResultHelpers, patientHelpers, appointmentHelpers } from "@/lib/db-helpers";
 import { generateAnalysisPDF } from "@/lib/pdf-generator";
 import { requireAuth } from "@/lib/actions/auth.actions";
 
@@ -8,63 +8,62 @@ export async function GET(
   { params }: { params: { groupId: string } }
 ) {
   try {
-    // Verifică autentificarea
     const session = await requireAuth();
     if (!session) {
       return NextResponse.json({ error: "Neautorizat" }, { status: 401 });
     }
 
     const { groupId } = params;
-    
-    // Parsează groupId pentru a obține appointmentId sau date
-    // Format: "appointment-{appointmentId}" sau "date-{date}"
-    const [type, id] = groupId.split("-", 2);
-    
+    // UUID-uri conțin "-", deci nu folosim split("-",2): luăm tot după primul "-"
+    const firstDash = groupId.indexOf("-");
+    const type = firstDash === -1 ? groupId : groupId.slice(0, firstDash);
+    const id = firstDash === -1 ? "" : groupId.slice(firstDash + 1);
+
     let analyses: any[] = [];
     let appointmentId: string | undefined;
     let date: Date | string = new Date();
+    let physicianName: string | undefined;
 
-    // Obține informațiile pacientului o singură dată
     const patient = patientHelpers.getByUserId(session.$id);
     if (!patient) {
       return NextResponse.json({ error: "Pacientul nu a fost găsit" }, { status: 404 });
     }
 
     if (type === "appointment" && id) {
-      // Obține analizele pentru o programare specifică
       appointmentId = id;
       const allLabResults = labResultHelpers.getByPatientId(patient.$id);
       analyses = allLabResults.filter((lab: any) => lab.appointmentId === appointmentId);
-      
-      // Obține și analizele din appointments.analysisResults
-      const { appointmentHelpers } = require("@/lib/db-helpers");
+
       const appointment = appointmentHelpers.getById(appointmentId);
-      if (appointment && appointment.analysisResults) {
-        try {
-          const parsedResults = JSON.parse(appointment.analysisResults);
-          if (Array.isArray(parsedResults)) {
-            parsedResults.forEach((result: any) => {
-              analyses.push({
-                testName: result.testName,
-                testCategory: result.testCategory,
-                resultValue: result.value,
-                unit: result.unit,
-                referenceRange: result.referenceRange,
-                notes: result.notes,
-                performedDate: appointment.schedule,
+      if (appointment) {
+        if (appointment.userId !== session.$id) {
+          return NextResponse.json({ error: "Neautorizat" }, { status: 403 });
+        }
+        date = appointment.schedule;
+        physicianName = appointment.primaryPhysician;
+        if (appointment.analysisResults) {
+          try {
+            const parsedResults = JSON.parse(appointment.analysisResults);
+            if (Array.isArray(parsedResults)) {
+              parsedResults.forEach((result: any) => {
+                analyses.push({
+                  testName: result.testName,
+                  testCategory: result.testCategory,
+                  resultValue: result.value,
+                  unit: result.unit,
+                  referenceRange: result.referenceRange,
+                  notes: result.notes,
+                  status: result.status,
+                  performedDate: appointment.schedule,
+                });
               });
-            });
+            }
+          } catch (e) {
+            // ignore
           }
-        } catch (e) {
-          // Ignoră erorile de parsing
         }
       }
-      
-      if (appointment) {
-        date = appointment.schedule;
-      }
     } else if (type === "date" && id) {
-      // Obține analizele pentru o dată specifică
       date = decodeURIComponent(id);
       const allLabResults = labResultHelpers.getByPatientId(patient.$id);
       analyses = allLabResults.filter((lab: any) => {
@@ -80,7 +79,6 @@ export async function GET(
       return NextResponse.json({ error: "Nu există analize pentru acest grup" }, { status: 404 });
     }
 
-    // Generează PDF
     const pdfBuffer = generateAnalysisPDF({
       patient: {
         name: patient.name,
@@ -89,17 +87,19 @@ export async function GET(
         phone: patient.phone,
         email: patient.email,
       },
-      analyses: analyses.map((analysis: any) => ({
-        testName: analysis.testName || analysis.test_name,
-        testCategory: analysis.testCategory || analysis.test_category,
-        resultValue: analysis.resultValue || analysis.result_value,
-        unit: analysis.unit,
-        referenceRange: analysis.referenceRange || analysis.reference_range,
-        notes: analysis.notes,
-        performedDate: analysis.performedDate || analysis.performed_date || date,
+      analyses: analyses.map((a: any) => ({
+        testName: a.testName || a.test_name,
+        testCategory: a.testCategory || a.test_category,
+        resultValue: a.resultValue ?? a.result_value,
+        unit: a.unit,
+        referenceRange: a.referenceRange || a.reference_range,
+        notes: a.notes,
+        status: a.status,
+        performedDate: a.performedDate || a.performed_date || date,
       })),
       appointmentId,
       date,
+      physicianName,
     });
 
     // Returnează PDF-ul

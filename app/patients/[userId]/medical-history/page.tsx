@@ -11,9 +11,10 @@ import { calculateAge } from "@/lib/analysis-reference-ranges";
 import { LogoutButton } from "@/components/LogoutButton";
 import { LogoLink } from "@/components/LogoLink";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
-import { MedicalHistoryTimeline } from "@/components/MedicalHistoryTimeline";
+import { MedicalHistoryWithFilters } from "@/components/MedicalHistoryWithFilters";
 import { MedicalHistorySummary } from "@/components/MedicalHistorySummary";
 import { MedicalDocumentsManager } from "@/components/MedicalDocumentsManager";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
   const session = await requireAuth();
@@ -174,6 +175,7 @@ const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
               Programare nouă
             </Link>
             <NotificationsDropdown userId={userId} />
+            <ThemeToggle />
             <div className="flex items-center gap-2">
               <Image
                 src="/assets/icons/user.svg"
@@ -208,9 +210,9 @@ const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
           analyses={allAnalysisGroups.flatMap((g) => g.analyses)}
         />
 
-        {/* Timeline */}
+        {/* Timeline cu filtre și paginare */}
         <div className="mt-8">
-          <MedicalHistoryTimeline
+          <MedicalHistoryWithFilters
             medicalRecords={medicalRecords}
             allergies={allergies}
             vaccinations={vaccinations}
