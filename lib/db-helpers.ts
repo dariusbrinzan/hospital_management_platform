@@ -943,6 +943,144 @@ export const problemReportsHelpers = {
   },
 };
 
+// Operațiuni zilnice și logistică
+export const consumableRequestsHelpers = {
+  create: (req: { department: string; requestedBy: string; itemsJson: string; priority?: string; notes?: string | null }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO consumable_requests (id, department, requestedBy, itemsJson, priority, status, notes, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?)
+    `).run(id, req.department, req.requestedBy, req.itemsJson, req.priority || "normal", req.notes ?? null, now, now);
+    return { id, createdAt: now };
+  },
+  getAll: (department?: string, status?: string) => {
+    let query = "SELECT * FROM consumable_requests WHERE 1=1";
+    const params: any[] = [];
+    if (department) { query += " AND department = ?"; params.push(department); }
+    if (status) { query += " AND status = ?"; params.push(status); }
+    query += " ORDER BY createdAt DESC";
+    const rows = db.prepare(query).all(...params) as any[];
+    return rows.map((r) => ({
+      id: r.id,
+      department: r.department,
+      requestedBy: r.requestedBy,
+      itemsJson: r.itemsJson,
+      priority: r.priority,
+      status: r.status,
+      notes: r.notes,
+      fulfilledAt: r.fulfilledAt,
+      fulfilledBy: r.fulfilledBy,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
+  },
+  updateStatus: (id: string, status: string, fulfilledBy?: string | null) => {
+    const now = new Date().toISOString();
+    const fulfilledAt = status === "fulfilled" ? now : null;
+    db.prepare(`
+      UPDATE consumable_requests SET status = ?, fulfilledAt = ?, fulfilledBy = ?, updatedAt = ? WHERE id = ?
+    `).run(status, fulfilledAt, fulfilledBy ?? null, now, id);
+    return { updatedAt: now };
+  },
+};
+
+export const equipmentHelpers = {
+  create: (item: { name: string; category: string; locationType: string; locationId?: string | null; serialNumber?: string | null; notes?: string | null }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO equipment (id, name, category, locationType, locationId, serialNumber, status, notes, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, 'available', ?, ?, ?)
+    `).run(id, item.name, item.category, item.locationType, item.locationId ?? null, item.serialNumber ?? null, item.notes ?? null, now, now);
+    return { id, createdAt: now };
+  },
+  getAll: (locationType?: string, status?: string) => {
+    let query = "SELECT * FROM equipment WHERE 1=1";
+    const params: any[] = [];
+    if (locationType) { query += " AND locationType = ?"; params.push(locationType); }
+    if (status) { query += " AND status = ?"; params.push(status); }
+    query += " ORDER BY name ASC";
+    const rows = db.prepare(query).all(...params) as any[];
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      category: r.category,
+      locationType: r.locationType,
+      locationId: r.locationId,
+      serialNumber: r.serialNumber,
+      status: r.status,
+      notes: r.notes,
+      lastMaintenanceAt: r.lastMaintenanceAt,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
+  },
+  updateStatus: (id: string, status: string) => {
+    const now = new Date().toISOString();
+    const lastMaintenanceAt = status === "maintenance" ? now : undefined;
+    if (lastMaintenanceAt) {
+      db.prepare("UPDATE equipment SET status = ?, lastMaintenanceAt = ?, updatedAt = ? WHERE id = ?").run(status, lastMaintenanceAt, now, id);
+    } else {
+      db.prepare("UPDATE equipment SET status = ?, updatedAt = ? WHERE id = ?").run(status, now, id);
+    }
+    return { updatedAt: now };
+  },
+};
+
+export const internalTransportHelpers = {
+  create: (req: {
+    patientName: string;
+    patientId?: string | null;
+    fromLocation: string;
+    toLocation: string;
+    transportType?: string;
+    requestedBy: string;
+    scheduledAt?: string | null;
+    notes?: string | null;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO internal_transport_requests (id, patientName, patientId, fromLocation, toLocation, transportType, requestedBy, scheduledAt, status, notes, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
+    `).run(id, req.patientName, req.patientId ?? null, req.fromLocation, req.toLocation, req.transportType || "wheelchair", req.requestedBy, req.scheduledAt ?? null, req.notes ?? null, now, now);
+    return { id, createdAt: now };
+  },
+  getAll: (status?: string) => {
+    let query = "SELECT * FROM internal_transport_requests WHERE 1=1";
+    const params: any[] = [];
+    if (status) { query += " AND status = ?"; params.push(status); }
+    query += " ORDER BY createdAt DESC";
+    const rows = db.prepare(query).all(...params) as any[];
+    return rows.map((r) => ({
+      id: r.id,
+      patientName: r.patientName,
+      patientId: r.patientId,
+      fromLocation: r.fromLocation,
+      toLocation: r.toLocation,
+      transportType: r.transportType,
+      requestedBy: r.requestedBy,
+      scheduledAt: r.scheduledAt,
+      status: r.status,
+      completedAt: r.completedAt,
+      notes: r.notes,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
+  },
+  updateStatus: (id: string, status: string) => {
+    const now = new Date().toISOString();
+    const completedAt = status === "completed" ? now : undefined;
+    if (completedAt) {
+      db.prepare("UPDATE internal_transport_requests SET status = ?, completedAt = ?, updatedAt = ? WHERE id = ?").run(status, completedAt, now, id);
+    } else {
+      db.prepare("UPDATE internal_transport_requests SET status = ?, updatedAt = ? WHERE id = ?").run(status, now, id);
+    }
+    return { updatedAt: now };
+  },
+};
+
 // Waitlist helpers (listă de așteptare pentru sloturi)
 export const waitlistHelpers = {
   create: (entry: {
@@ -3166,6 +3304,7 @@ export const hospitalRoomHelpers = {
       maxCapacity: r.maxCapacity,
       currentOccupancy: r.currentOccupancy,
       isAvailable: r.isAvailable === 1,
+      roomStatus: r.roomStatus || "available",
       equipment: r.equipment ? JSON.parse(r.equipment) : null,
       notes: r.notes,
       createdAt: parseDate(r.createdAt),
@@ -3185,6 +3324,7 @@ export const hospitalRoomHelpers = {
       maxCapacity: r.maxCapacity,
       currentOccupancy: r.currentOccupancy,
       isAvailable: r.isAvailable === 1,
+      roomStatus: r.roomStatus || "available",
       equipment: r.equipment ? JSON.parse(r.equipment) : null,
       notes: r.notes,
       createdAt: parseDate(r.createdAt),
@@ -3192,10 +3332,17 @@ export const hospitalRoomHelpers = {
     };
   },
 
+  updateRoomStatus: (roomId: string, roomStatus: string) => {
+    const now = new Date().toISOString();
+    db.prepare("UPDATE hospital_rooms SET roomStatus = ?, updatedAt = ? WHERE id = ?").run(roomStatus, now, roomId);
+    return { updatedAt: now };
+  },
+
   findAvailableRoom: (department: string, roomType?: string) => {
     let query = `
       SELECT * FROM hospital_rooms 
       WHERE department = ? AND isAvailable = 1 AND currentOccupancy < maxCapacity
+      AND (roomStatus IS NULL OR roomStatus = 'available')
     `;
     const params: any[] = [department];
     
@@ -3219,6 +3366,7 @@ export const hospitalRoomHelpers = {
       maxCapacity: room.maxCapacity,
       currentOccupancy: room.currentOccupancy,
       isAvailable: room.isAvailable === 1,
+      roomStatus: room.roomStatus || "available",
       equipment: room.equipment ? JSON.parse(room.equipment) : null,
       notes: room.notes,
       createdAt: parseDate(room.createdAt),

@@ -111,6 +111,35 @@
     @apply flex w-full flex-col justify-between gap-5 sm:flex-row xl:gap-10;
   }
 
+  /* Secțiuni admin: simetrie, spacing consistent, accesibilitate */
+  .admin-section-card {
+    @apply w-full rounded-2xl border border-dark-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md;
+  }
+  .admin-section-title {
+    @apply text-18-bold text-dark-900 mb-1;
+  }
+  .admin-section-desc {
+    @apply text-14-regular text-dark-600 mb-4;
+  }
+  .admin-grid-symmetric {
+    @apply grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+  .admin-stat-card {
+    @apply flex flex-col rounded-xl border border-dark-200 bg-white p-4 text-center shadow-sm;
+  }
+  .admin-tab-list {
+    @apply flex flex-wrap gap-2 border-b border-dark-200 pb-4;
+  }
+  .admin-tab {
+    @apply rounded-lg px-4 py-2 text-14-medium transition-colors focus-visible:outline focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2;
+  }
+  .admin-tab--active {
+    @apply bg-green-500 text-white;
+  }
+  .admin-tab--inactive {
+    @apply bg-dark-100 text-dark-700 hover:bg-dark-200;
+  }
+
   /* ==== FORM */
   .radio-group {
     @apply flex h-full flex-1 items-center gap-2 rounded-md border border-dashed border-dark-300 bg-white p-3;

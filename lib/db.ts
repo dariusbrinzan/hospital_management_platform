@@ -139,6 +139,23 @@ try {
   db.pragma("foreign_keys = ON");
 }
 
+// Migrare: roomStatus pentru curățenie/dezinfecție (hospital_rooms)
+try {
+  const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='hospital_rooms';").get();
+  if (tableExists) {
+    const tableInfo = db.prepare("PRAGMA table_info(hospital_rooms)").all() as any[];
+    const hasRoomStatus = tableInfo.some((col) => col.name === "roomStatus");
+    if (!hasRoomStatus) {
+      db.pragma("foreign_keys = OFF");
+      db.exec(`ALTER TABLE hospital_rooms ADD COLUMN roomStatus TEXT DEFAULT 'available';`);
+      db.pragma("foreign_keys = ON");
+    }
+  }
+} catch (error) {
+  console.error("Migration hospital_rooms roomStatus:", error);
+  db.pragma("foreign_keys = ON");
+}
+
 // Creează tabelele dacă nu există
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -584,14 +601,15 @@ db.exec(`
   -- Tabele pentru Spitalizări Normale (non-ATI)
   CREATE TABLE IF NOT EXISTS hospital_rooms (
     id TEXT PRIMARY KEY,
-    roomNumber TEXT NOT NULL UNIQUE, -- ex: "101", "2A", "301"
+    roomNumber TEXT NOT NULL UNIQUE,
     floor INTEGER NOT NULL DEFAULT 1,
-    department TEXT NOT NULL, -- 'cardiology', 'surgery', 'pediatrics', 'orthopedics', 'neurology', 'general'
-    roomType TEXT NOT NULL DEFAULT 'standard', -- 'standard', 'private', 'semi_private', 'isolation'
+    department TEXT NOT NULL,
+    roomType TEXT NOT NULL DEFAULT 'standard',
     maxCapacity INTEGER NOT NULL DEFAULT 2,
     currentOccupancy INTEGER NOT NULL DEFAULT 0,
     isAvailable INTEGER NOT NULL DEFAULT 1,
-    equipment TEXT, -- JSON cu echipamente disponibile
+    roomStatus TEXT DEFAULT 'available', -- 'available','cleaning','disinfection'
+    equipment TEXT,
     notes TEXT,
     createdAt TEXT NOT NULL DEFAULT (datetime('now')),
     updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
@@ -939,6 +957,59 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_problem_reports_userId ON problem_reports(userId);
   CREATE INDEX IF NOT EXISTS idx_problem_reports_status ON problem_reports(status);
   CREATE INDEX IF NOT EXISTS idx_problem_reports_createdAt ON problem_reports(createdAt);
+
+  -- Operațiuni zilnice și logistică
+  CREATE TABLE IF NOT EXISTS consumable_requests (
+    id TEXT PRIMARY KEY,
+    department TEXT NOT NULL,
+    requestedBy TEXT NOT NULL,
+    itemsJson TEXT NOT NULL,
+    priority TEXT NOT NULL DEFAULT 'normal' CHECK(priority IN ('low','normal','high','urgent')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','fulfilled','cancelled')),
+    notes TEXT,
+    fulfilledAt TEXT,
+    fulfilledBy TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_consumable_requests_department ON consumable_requests(department);
+  CREATE INDEX IF NOT EXISTS idx_consumable_requests_status ON consumable_requests(status);
+  CREATE INDEX IF NOT EXISTS idx_consumable_requests_createdAt ON consumable_requests(createdAt);
+
+  CREATE TABLE IF NOT EXISTS equipment (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    locationType TEXT NOT NULL,
+    locationId TEXT,
+    serialNumber TEXT,
+    status TEXT NOT NULL DEFAULT 'available' CHECK(status IN ('available','in_use','maintenance','out_of_service')),
+    notes TEXT,
+    lastMaintenanceAt TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_equipment_location ON equipment(locationType, locationId);
+  CREATE INDEX IF NOT EXISTS idx_equipment_status ON equipment(status);
+
+  CREATE TABLE IF NOT EXISTS internal_transport_requests (
+    id TEXT PRIMARY KEY,
+    patientName TEXT NOT NULL,
+    patientId TEXT,
+    fromLocation TEXT NOT NULL,
+    toLocation TEXT NOT NULL,
+    transportType TEXT NOT NULL DEFAULT 'wheelchair' CHECK(transportType IN ('wheelchair','stretcher','bed','ambulance_internal')),
+    requestedBy TEXT NOT NULL,
+    scheduledAt TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','scheduled','in_progress','completed','cancelled')),
+    completedAt TEXT,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_internal_transport_status ON internal_transport_requests(status);
+  CREATE INDEX IF NOT EXISTS idx_internal_transport_createdAt ON internal_transport_requests(createdAt);
 `);
 
 // Inițializare medicamente și stocuri

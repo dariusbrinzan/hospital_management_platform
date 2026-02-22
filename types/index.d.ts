@@ -528,6 +528,7 @@ declare interface HospitalRoom {
   maxCapacity: number;
   currentOccupancy: number;
   isAvailable: boolean;
+  roomStatus?: "available" | "cleaning" | "disinfection";
   equipment?: any;
   notes?: string | null;
   createdAt: Date | string;
