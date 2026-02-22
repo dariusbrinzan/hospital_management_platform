@@ -87,13 +87,15 @@ export async function POST(
       }
       senderRole = "doctor";
       senderName = formatDoctorDisplayName(appointment.primaryPhysician);
-    } else if (doctorMatches(appointment, doctorName)) {
-      senderRole = "doctor";
-      senderName = formatDoctorDisplayName(doctorName);
     } else if (patientUserId && appointment.userId === patientUserId) {
+      // Prioritate: dacă sesiunea este de pacient și programarea îi aparține, mesajul e de la pacient
+      // (evită atribuirea greșită când există și cookie de medic în același browser)
       senderRole = "patient";
       const patient = patientHelpers.getByUserId(patientUserId);
       senderName = patient?.name ?? "Pacient";
+    } else if (doctorMatches(appointment, doctorName)) {
+      senderRole = "doctor";
+      senderName = formatDoctorDisplayName(doctorName);
     } else {
       return NextResponse.json({ error: "Nu aveți acces" }, { status: 403 });
     }
