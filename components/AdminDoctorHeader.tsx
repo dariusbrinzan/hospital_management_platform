@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { logoutDoctor } from "@/lib/actions/auth.actions";
+import { DoctorNotificationsDropdown } from "./DoctorNotificationsDropdown";
 
 interface AdminDoctorHeaderProps {
   doctorName: string;
@@ -36,13 +37,22 @@ export const AdminDoctorHeader = ({ doctorName }: AdminDoctorHeaderProps) => {
               Panou Medic — {doctorName}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-lg border border-dark-200 bg-white px-4 py-2 text-sm font-medium text-dark-600 hover:bg-gray-50"
-          >
-            Deconectare
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/admin/messages"
+              className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-100"
+            >
+              Mesaje
+            </Link>
+            <DoctorNotificationsDropdown />
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-lg border border-dark-200 bg-white px-4 py-2 text-sm font-medium text-dark-600 hover:bg-gray-50"
+            >
+              Deconectare
+            </button>
+          </div>
         </div>
       </div>
     </header>

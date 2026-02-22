@@ -76,6 +76,12 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
               Hartă Spital
             </Link>
             <Link
+              href={`/patients/${userId}/messages`}
+              className="text-14-medium text-dark-600 hover:text-dark-700"
+            >
+              Mesaje
+            </Link>
+            <Link
               href={`/patients/${userId}/new-appointment`}
               className="text-14-medium text-green-500 hover:text-green-600"
             >
@@ -372,6 +378,12 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                             )}
 
                             <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-dark-100 pt-3">
+                              <Link
+                                href={`/patients/${userId}/messages?appointmentId=${appointment.$id}`}
+                                className="inline-flex h-10 min-w-[2.5rem] items-center justify-center gap-2 rounded-lg border border-dark-200 bg-white px-4 py-2.5 text-14-medium text-dark-700 transition-colors hover:bg-dark-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:border-dark-600 dark:bg-dark-800 dark:text-dark-200 dark:hover:bg-dark-700"
+                              >
+                                Mesaje
+                              </Link>
                               {appointment.status !== "cancelled" && (
                                 <>
                                   <RescheduleAppointmentButton

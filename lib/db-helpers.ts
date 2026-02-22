@@ -670,6 +670,46 @@ export const appointmentHelpers = {
   },
 };
 
+// Appointment messages (doctor–patient per appointment)
+export const appointmentMessageHelpers = {
+  create: (msg: { appointmentId: string; senderRole: "patient" | "doctor"; senderName: string; body: string }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO appointment_messages (id, appointmentId, senderRole, senderName, body, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(id, msg.appointmentId, msg.senderRole, msg.senderName, msg.body, now);
+    return appointmentMessageHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const r = db.prepare("SELECT * FROM appointment_messages WHERE id = ?").get(id) as any;
+    if (!r) return null;
+    return {
+      $id: r.id,
+      appointmentId: r.appointmentId,
+      senderRole: r.senderRole,
+      senderName: r.senderName,
+      body: r.body,
+      createdAt: parseDate(r.createdAt),
+    };
+  },
+
+  getByAppointmentId: (appointmentId: string) => {
+    const rows = db.prepare(`
+      SELECT * FROM appointment_messages WHERE appointmentId = ? ORDER BY createdAt ASC
+    `).all(appointmentId) as any[];
+    return rows.map((r) => ({
+      $id: r.id,
+      appointmentId: r.appointmentId,
+      senderRole: r.senderRole,
+      senderName: r.senderName,
+      body: r.body,
+      createdAt: parseDate(r.createdAt),
+    }));
+  },
+};
+
 // Notifications helpers
 export const notificationHelpers = {
   create: (notification: {
@@ -759,6 +799,71 @@ export const notificationHelpers = {
       isRead: notif.isRead === 1,
       createdAt: parseDate(notif.createdAt),
     };
+  },
+};
+
+// Notificări pentru medici (mesaje noi etc.)
+function normalizeDoctorNameForStorage(name: string): string {
+  return name.trim();
+}
+
+export const doctorNotificationHelpers = {
+  create: (notif: { doctorName: string; type: string; title: string; message: string; appointmentId?: string | null }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    const doctorName = normalizeDoctorNameForStorage(notif.doctorName);
+    db.prepare(`
+      INSERT INTO doctor_notifications (id, doctorName, type, title, message, appointmentId, isRead, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+    `).run(id, doctorName, notif.type, notif.title, notif.message, notif.appointmentId || null, now);
+    return {
+      $id: id,
+      doctorName,
+      type: notif.type,
+      title: notif.title,
+      message: notif.message,
+      appointmentId: notif.appointmentId || null,
+      isRead: false,
+      createdAt: parseDate(now),
+    };
+  },
+
+  getByDoctorName: (doctorName: string, limit?: number) => {
+    const key = normalizeDoctorNameForStorage(doctorName);
+    const query = limit
+      ? `SELECT * FROM doctor_notifications WHERE doctorName = ? ORDER BY createdAt DESC LIMIT ?`
+      : `SELECT * FROM doctor_notifications WHERE doctorName = ? ORDER BY createdAt DESC`;
+    const rows = (limit ? db.prepare(query).all(key, limit) : db.prepare(query).all(key)) as any[];
+    return rows.map((r) => ({
+      $id: r.id,
+      doctorName: r.doctorName,
+      type: r.type,
+      title: r.title,
+      message: r.message,
+      appointmentId: r.appointmentId,
+      isRead: r.isRead === 1,
+      createdAt: parseDate(r.createdAt),
+    }));
+  },
+
+  getUnreadCount: (doctorName: string) => {
+    const key = normalizeDoctorNameForStorage(doctorName);
+    const r = db.prepare(`SELECT COUNT(*) as count FROM doctor_notifications WHERE doctorName = ? AND isRead = 0`).get(key) as { count: number };
+    return r.count;
+  },
+
+  markAsRead: (id: string) => {
+    db.prepare(`UPDATE doctor_notifications SET isRead = 1 WHERE id = ?`).run(id);
+  },
+
+  markAllAsRead: (doctorName: string) => {
+    const key = normalizeDoctorNameForStorage(doctorName);
+    db.prepare(`UPDATE doctor_notifications SET isRead = 1 WHERE doctorName = ? AND isRead = 0`).run(key);
+  },
+
+  markAsReadByAppointmentId: (doctorName: string, appointmentId: string) => {
+    const key = normalizeDoctorNameForStorage(doctorName);
+    db.prepare(`UPDATE doctor_notifications SET isRead = 1 WHERE doctorName = ? AND appointmentId = ?`).run(key, appointmentId);
   },
 };
 

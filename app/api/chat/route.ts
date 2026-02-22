@@ -12,7 +12,7 @@ import {
   vaccinationHelpers,
   vitalSignsHelpers,
 } from "@/lib/db-helpers";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, formatDoctorDisplayName } from "@/lib/utils";
 
 async function buildDynamicReply(
   dynamicIntent: string,
@@ -41,7 +41,7 @@ async function buildDynamicReply(
       let reply = `Ai ${upcoming.length} programări viitoare:\n\n`;
       upcoming.forEach((apt: any, idx: number) => {
         const dateTime = formatDateTime(apt.schedule).dateTime;
-        reply += `${idx + 1}. ${dateTime} - Dr. ${apt.primaryPhysician}`;
+        reply += `${idx + 1}. ${dateTime} - ${formatDoctorDisplayName(apt.primaryPhysician)}`;
         if (apt.reason) reply += ` (${apt.reason})`;
         reply += `\n`;
       });
@@ -58,7 +58,7 @@ async function buildDynamicReply(
       let reply = `Ultimele ${records.length} consultații:\n\n`;
       records.forEach((record: any, idx: number) => {
         const date = formatDateTime(record.visitDate).dateOnly;
-        reply += `${idx + 1}. ${date} - Dr. ${record.doctorName}`;
+        reply += `${idx + 1}. ${date} - ${formatDoctorDisplayName(record.doctorName)}`;
         if (record.chiefComplaint) reply += `\n   Motive: ${record.chiefComplaint}`;
         if (record.assessment) reply += `\n   Diagnostic: ${record.assessment}`;
         reply += `\n`;
@@ -264,7 +264,7 @@ async function buildDynamicReply(
       let reply = `Programări trecute (ultimele ${past.length}):\n\n`;
       past.forEach((apt: any, idx: number) => {
         const dateTime = formatDateTime(apt.schedule).dateTime;
-        reply += `${idx + 1}. ${dateTime} - Dr. ${apt.primaryPhysician}`;
+        reply += `${idx + 1}. ${dateTime} - ${formatDoctorDisplayName(apt.primaryPhysician)}`;
         if (apt.reason) reply += ` (${apt.reason})`;
         reply += `\n`;
       });

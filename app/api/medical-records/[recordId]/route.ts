@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { medicalRecordHelpers, patientHelpers, appointmentHelpers } from "@/lib/db-helpers";
 import { createNotification } from "@/lib/actions/notification.actions";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, formatDoctorDisplayName } from "@/lib/utils";
 
 export async function GET(
   request: NextRequest,
@@ -51,7 +51,7 @@ export async function PATCH(
           userId: patient.userId,
           type: "consultation_added",
           title: "Consultație medicală actualizată",
-          message: `Dr. ${record.doctorName} a actualizat consultația medicală${appointmentInfo}. Puteți vizualiza detaliile în istoricul medical.`,
+          message: `${formatDoctorDisplayName(record.doctorName)} a actualizat consultația medicală${appointmentInfo}. Puteți vizualiza detaliile în istoricul medical.`,
           appointmentId: record.appointmentId || undefined,
         });
       }

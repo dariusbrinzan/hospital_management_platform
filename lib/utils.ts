@@ -102,6 +102,14 @@ export const formatDateTime = (dateString: Date | string, timeZone: string = Int
   };
 };
 
+/** Afișează numele medicului fără a dubla prefixul "Dr." */
+export function formatDoctorDisplayName(name: string | undefined | null): string {
+  if (!name) return "";
+  const t = name.trim();
+  if (t.toLowerCase().startsWith("dr.") || t.toLowerCase().startsWith("dr ")) return t;
+  return `Dr. ${t}`;
+}
+
 export function encryptKey(passkey: string) {
   return btoa(passkey);
 }

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import {
   DropdownMenu,
@@ -13,120 +12,68 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import {
-  getUserNotifications,
-  getUnreadNotificationCount,
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
-} from "@/lib/actions/notification.actions";
 import { formatDateTime } from "@/lib/utils";
 
-interface Notification {
+interface DoctorNotification {
   $id: string;
-  userId: string;
+  doctorName: string;
   type: string;
   title: string;
   message: string;
   appointmentId: string | null;
   isRead: boolean;
-  createdAt: Date | string;
+  createdAt: string;
 }
 
-export const NotificationsDropdown = ({ userId }: { userId: string }) => {
-  const router = useRouter();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+export const DoctorNotificationsDropdown = () => {
+  const [notifications, setNotifications] = useState<DoctorNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    loadNotifications();
-    // Reîncarcă notificările la fiecare 30 de secunde
-    const interval = setInterval(loadNotifications, 30000);
-    return () => clearInterval(interval);
-  }, [userId]);
-
   const loadNotifications = async () => {
     try {
-      const [notifs, count] = await Promise.all([
-        getUserNotifications(userId, 10),
-        getUnreadNotificationCount(userId),
-      ]);
-      setNotifications(notifs);
-      setUnreadCount(count);
+      const res = await fetch("/api/notifications/doctor?limit=15");
+      if (!res.ok) return;
+      const data = await res.json();
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount ?? 0);
     } catch (error) {
-      console.error("Error loading notifications:", error);
+      console.error("Error loading doctor notifications:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleNotificationClick = async (notification: Notification) => {
+  useEffect(() => {
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleNotificationClick = async (notification: DoctorNotification) => {
     if (!notification.isRead) {
-      await markNotificationAsRead(notification.$id);
+      await fetch("/api/notifications/doctor", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "markRead", notificationId: notification.$id }),
+      });
       setNotifications((prev) =>
-        prev.map((n) =>
-          n.$id === notification.$id ? { ...n, isRead: true } : n
-        )
+        prev.map((n) => (n.$id === notification.$id ? { ...n, isRead: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     }
     setOpen(false);
-    if (notification.type === "new_message" && notification.appointmentId) {
-      router.push(`/patients/${userId}/messages?appointmentId=${notification.appointmentId}`);
-    }
   };
 
   const handleMarkAllAsRead = async () => {
-    await markAllNotificationsAsRead(userId);
+    await fetch("/api/notifications/doctor", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "markAllRead" }),
+    });
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     setUnreadCount(0);
-  };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "appointment_confirmed":
-        return "/assets/icons/check-circle.svg";
-      case "appointment_cancelled":
-        return "/assets/icons/x-circle.svg";
-      case "analysis_results_ready":
-        return "/assets/icons/file-text.svg";
-      case "appointment_reminder":
-        return "/assets/icons/calendar.svg";
-      case "appointment_created":
-        return "/assets/icons/clock.svg";
-      case "consultation_added":
-        return "/assets/icons/file-text.svg";
-      case "slot_available_assigned":
-        return "/assets/icons/check-circle.svg";
-      case "new_message":
-        return "/assets/icons/file-text.svg";
-      default:
-        return "/assets/icons/bell.svg";
-    }
-  };
-
-  const getNotificationColor = (type: string) => {
-    switch (type) {
-      case "appointment_confirmed":
-        return "text-green-600";
-      case "appointment_cancelled":
-        return "text-red-600";
-      case "analysis_results_ready":
-        return "text-blue-600";
-      case "appointment_reminder":
-        return "text-yellow-600";
-      case "appointment_created":
-        return "text-gray-600";
-      case "consultation_added":
-        return "text-purple-600";
-      case "slot_available_assigned":
-        return "text-green-600";
-      case "new_message":
-        return "text-blue-600";
-      default:
-        return "text-dark-600";
-    }
   };
 
   return (
@@ -186,16 +133,22 @@ export const NotificationsDropdown = ({ userId }: { userId: string }) => {
                   !notification.isRead ? "bg-blue-50" : ""
                 }`}
                 onClick={() => handleNotificationClick(notification)}
+                asChild
               >
-                <div className="flex items-start gap-3 w-full">
+                <Link
+                  href={
+                    notification.appointmentId
+                      ? `/admin/messages?appointmentId=${notification.appointmentId}`
+                      : "/admin/messages"
+                  }
+                  className="flex items-start gap-3 w-full"
+                >
                   <Image
-                    src={getNotificationIcon(notification.type)}
+                    src="/assets/icons/file-text.svg"
                     height={20}
                     width={20}
-                    alt={notification.type}
-                    className={`mt-0.5 flex-shrink-0 ${getNotificationColor(
-                      notification.type
-                    )}`}
+                    alt="mesaj"
+                    className="mt-0.5 flex-shrink-0 text-blue-600"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
@@ -218,7 +171,7 @@ export const NotificationsDropdown = ({ userId }: { userId: string }) => {
                         formatDateTime(notification.createdAt).dateTime}
                     </p>
                   </div>
-                </div>
+                </Link>
               </DropdownMenuItem>
             ))}
           </div>
@@ -227,14 +180,14 @@ export const NotificationsDropdown = ({ userId }: { userId: string }) => {
         <DropdownMenuSeparator />
         <div className="p-2">
           <Link
-            href={`/patients/${userId}/notifications`}
+            href="/admin/messages"
             className="block text-center text-14-medium text-green-500 hover:text-green-600 py-2"
             onClick={() => setOpen(false)}
           >
-            Vezi toate notificările
+            Vezi toate mesajele
           </Link>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
-};
+}

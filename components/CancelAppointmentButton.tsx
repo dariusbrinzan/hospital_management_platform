@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cancelAppointmentByPatient } from "@/lib/actions/appointment.actions";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, formatDoctorDisplayName } from "@/lib/utils";
 
 interface CancelAppointmentButtonProps {
   appointment: {
@@ -102,7 +102,7 @@ export const CancelAppointmentButton = ({
             </div>
 
             <p className="text-14-regular text-dark-600 mb-4">
-              Programare: <strong>Dr. {appointment.primaryPhysician}</strong> – {scheduleStr}. Introdu motivul anulării (min. 2 caractere).
+              Programare: <strong>{formatDoctorDisplayName(appointment.primaryPhysician)}</strong> – {scheduleStr}. Introdu motivul anulării (min. 2 caractere).
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">

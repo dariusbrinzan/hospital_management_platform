@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { appointmentHelpers, waitlistHelpers } from "../db-helpers";
 import { createNotification } from "./notification.actions";
 import { getNormalizedSlotKey } from "../utils/slots";
-import { formatDateTime, parseStringify } from "../utils";
+import { formatDateTime, formatDoctorDisplayName, parseStringify } from "../utils";
 
 export type AddToWaitlistParams = {
   userId: string;
@@ -88,7 +88,7 @@ export async function processWaitlistForSlot(
       userId: first.userId,
       type: "slot_available_assigned",
       title: "Slot eliberat – ai fost programat(ă)",
-      message: `S-a eliberat un loc la data și ora dorite. Ai fost programat(ă) automat pentru ${dateTimeStr} cu Dr. ${primaryPhysician}. Verifică programările în Dashboard.`,
+      message: `S-a eliberat un loc la data și ora dorite. Ai fost programat(ă) automat pentru ${dateTimeStr} cu ${formatDoctorDisplayName(primaryPhysician)}. Verifică programările în Dashboard.`,
       appointmentId: newAppointment.$id,
     });
 

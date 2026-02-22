@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { Appointment } from "@/types/appwrite.types";
 
 import { appointmentHelpers } from "../db-helpers";
-import { formatDateTime, parseStringify } from "../utils";
+import { formatDateTime, formatDoctorDisplayName, parseStringify } from "../utils";
 import { createNotification } from "./notification.actions";
 import { getAvailableSlots } from "./slots.actions";
 import { processWaitlistForSlot } from "./waitlist.actions";
@@ -114,7 +114,7 @@ export const updateAppointment = async ({
     // Trimite SMS (mock)
     const smsMessage = `Salutări de la eHealth.ro. ${
       type === "schedule"
-        ? `Programarea dvs. este confirmată pentru ${formatDateTime(appointment.schedule!, timeZone).dateTime} cu Dr. ${appointment.primaryPhysician}`
+        ? `Programarea dvs. este confirmată pentru ${formatDateTime(appointment.schedule!, timeZone).dateTime} cu ${formatDoctorDisplayName(appointment.primaryPhysician)}`
         : `Ne pare rău să vă informăm că programarea dvs. pentru ${formatDateTime(appointment.schedule!, timeZone).dateTime} este anulată. Motiv: ${appointment.cancellationReason}`
     }.`;
 
@@ -126,7 +126,7 @@ export const updateAppointment = async ({
         userId,
         type: "appointment_confirmed",
         title: "Programare confirmată",
-        message: `Programarea dvs. pentru ${formatDateTime(appointment.schedule!, timeZone).dateTime} cu Dr. ${appointment.primaryPhysician} a fost confirmată.`,
+        message: `Programarea dvs. pentru ${formatDateTime(appointment.schedule!, timeZone).dateTime} cu ${formatDoctorDisplayName(appointment.primaryPhysician)} a fost confirmată.`,
         appointmentId: appointmentId,
       });
     } else if (type === "cancel") {
@@ -134,7 +134,7 @@ export const updateAppointment = async ({
         userId,
         type: "appointment_cancelled",
         title: "Programare anulată",
-        message: `Programarea dvs. pentru ${formatDateTime(appointment.schedule!, timeZone).dateTime} cu Dr. ${appointment.primaryPhysician} a fost anulată.${appointment.cancellationReason ? ` Motiv: ${appointment.cancellationReason}` : ""}`,
+        message: `Programarea dvs. pentru ${formatDateTime(appointment.schedule!, timeZone).dateTime} cu ${formatDoctorDisplayName(appointment.primaryPhysician)} a fost anulată.${appointment.cancellationReason ? ` Motiv: ${appointment.cancellationReason}` : ""}`,
         appointmentId: appointmentId,
       });
       await processWaitlistForSlot(
@@ -211,7 +211,7 @@ export const updateAnalysisResults = async (
       userId: updatedAppointment.userId,
       type: "analysis_results_ready",
       title: "Rezultate analize disponibile",
-      message: `Rezultatele analizelor pentru programarea din ${formatDateTime(updatedAppointment.schedule).dateTime} cu Dr. ${updatedAppointment.primaryPhysician} sunt disponibile.`,
+      message: `Rezultatele analizelor pentru programarea din ${formatDateTime(updatedAppointment.schedule).dateTime} cu ${formatDoctorDisplayName(updatedAppointment.primaryPhysician)} sunt disponibile.`,
       appointmentId: appointmentId,
     });
 
@@ -258,7 +258,7 @@ export const cancelAppointmentByPatient = async (
       userId,
       type: "appointment_cancelled",
       title: "Programare anulată",
-      message: `Programarea pentru ${formatDateTime(appointment.schedule!).dateTime} cu Dr. ${appointment.primaryPhysician} a fost anulată.${cancellationReason.trim() ? ` Motiv: ${cancellationReason.trim()}` : ""}`,
+      message: `Programarea pentru ${formatDateTime(appointment.schedule!).dateTime} cu ${formatDoctorDisplayName(appointment.primaryPhysician)} a fost anulată.${cancellationReason.trim() ? ` Motiv: ${cancellationReason.trim()}` : ""}`,
       appointmentId,
     });
 
@@ -339,14 +339,14 @@ export const rescheduleAppointment = async (
       userId,
       type: "appointment_rescheduled",
       title: "Programare reprogramată",
-      message: `Programarea dvs. cu Dr. ${appointment.primaryPhysician} a fost reprogramată pentru ${formatDateTime(newSchedule).dateTime}.`,
+      message: `Programarea dvs. cu ${formatDoctorDisplayName(appointment.primaryPhysician)} a fost reprogramată pentru ${formatDateTime(newSchedule).dateTime}.`,
       appointmentId: appointmentId,
     });
 
     // Trimite SMS (mock)
     await sendSMSNotification(
       userId,
-      `Salutări de la eHealth.ro. Programarea dvs. cu Dr. ${appointment.primaryPhysician} a fost reprogramată pentru ${formatDateTime(newSchedule).dateTime}.`
+      `Salutări de la eHealth.ro. Programarea dvs. cu ${formatDoctorDisplayName(appointment.primaryPhysician)} a fost reprogramată pentru ${formatDateTime(newSchedule).dateTime}.`
     );
 
     revalidatePath(`/patients/${userId}/dashboard`);

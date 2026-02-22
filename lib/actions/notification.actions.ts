@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { notificationHelpers } from "../db-helpers";
-import { parseStringify, formatDateTime } from "../utils";
+import { parseStringify, formatDateTime, formatDoctorDisplayName } from "../utils";
 import { getPatientAppointments } from "./appointment.actions";
 
 export type NotificationType =
@@ -13,7 +13,8 @@ export type NotificationType =
   | "appointment_reminder"
   | "appointment_created"
   | "consultation_added"
-  | "slot_available_assigned";
+  | "slot_available_assigned"
+  | "new_message";
 
 export interface CreateNotificationParams {
   userId: string;
@@ -114,7 +115,7 @@ export const ensureAppointmentReminders24h = async (userId: string) => {
 
       const schedule = new Date(apt.schedule);
       const dateTimeStr = formatDateTime(apt.schedule).dateTime;
-      const doctorMsg = ` cu Dr. ${apt.primaryPhysician}${apt.reason ? ` – ${apt.reason}` : ""}`;
+      const doctorMsg = ` cu ${formatDoctorDisplayName(apt.primaryPhysician)}${apt.reason ? ` – ${apt.reason}` : ""}`;
 
       if (schedule >= in23h && schedule <= in25h) {
         await createNotification({

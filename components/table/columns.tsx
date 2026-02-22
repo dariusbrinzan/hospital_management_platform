@@ -12,6 +12,7 @@ import { AppointmentModal } from "../AppointmentModal";
 import { StatusBadge } from "../StatusBadge";
 import { AnalysisResultsModal } from "../AnalysisResultsModal";
 import { AddMedicalRecordModal } from "../AddMedicalRecordModal";
+import { OpenAppointmentMessagesButton } from "../OpenAppointmentMessagesButton";
 import { Button } from "../ui/button";
 
 export const columns: ColumnDef<Appointment>[] = [
@@ -96,7 +97,8 @@ export const columns: ColumnDef<Appointment>[] = [
       const hasResults = appointment.analysisResults && appointment.analysisResults.trim().length > 0;
 
       return (
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
+          <OpenAppointmentMessagesButton appointment={appointment} />
           {isAnalysisDoctor && appointment.status === "scheduled" && !hasResults && (
             <AnalysisResultsModal appointment={appointment} />
           )}

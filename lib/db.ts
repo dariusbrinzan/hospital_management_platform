@@ -228,6 +228,31 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_notifications_isRead ON notifications(isRead);
   CREATE INDEX IF NOT EXISTS idx_notifications_createdAt ON notifications(createdAt);
 
+  CREATE TABLE IF NOT EXISTS appointment_messages (
+    id TEXT PRIMARY KEY,
+    appointmentId TEXT NOT NULL,
+    senderRole TEXT NOT NULL,
+    senderName TEXT NOT NULL,
+    body TEXT NOT NULL,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (appointmentId) REFERENCES appointments(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_appointment_messages_appointmentId ON appointment_messages(appointmentId);
+
+  CREATE TABLE IF NOT EXISTS doctor_notifications (
+    id TEXT PRIMARY KEY,
+    doctorName TEXT NOT NULL,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    appointmentId TEXT,
+    isRead INTEGER NOT NULL DEFAULT 0,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (appointmentId) REFERENCES appointments(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_doctor_notifications_doctorName ON doctor_notifications(doctorName);
+  CREATE INDEX IF NOT EXISTS idx_doctor_notifications_isRead ON doctor_notifications(isRead);
+
   CREATE TABLE IF NOT EXISTS appointment_waitlist (
     id TEXT PRIMARY KEY,
     userId TEXT NOT NULL,

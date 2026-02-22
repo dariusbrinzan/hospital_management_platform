@@ -1162,7 +1162,7 @@ export function generateFullMedicalRecordPDF(data: FullMedicalRecordPDFData): Bu
       checkPageBreak(8);
       const statusText = apt.status === "scheduled" ? "Confirmată" : apt.status === "pending" ? "În așteptare" : "Anulată";
       const reasonText = apt.reason ? ` - ${apt.reason}` : "";
-      doc.text(`• ${formatDateTime(apt.schedule).dateTime} - Dr. ${apt.primaryPhysician} (${statusText})${reasonText}`, margin + 5, yPos);
+      doc.text(`• ${formatDateTime(apt.schedule).dateTime} - ${formatPhysicianName(apt.primaryPhysician)} (${statusText})${reasonText}`, margin + 5, yPos);
       yPos += 6;
     });
     
@@ -1398,7 +1398,7 @@ export function generateAppointmentsListPDF(data: AppointmentsListPDFData): Buff
       yPos = 20;
     }
     const statusRo = apt.status === "scheduled" ? "Confirmată" : apt.status === "pending" ? "În așteptare" : "Anulată";
-    const line = `${i + 1}. ${formatDateTime(apt.schedule).dateTime} - Dr. ${apt.primaryPhysician} (${statusRo})${apt.patientName ? ` - ${apt.patientName}` : ""}${apt.reason ? ` - ${apt.reason}` : ""}`;
+    const line = `${i + 1}. ${formatDateTime(apt.schedule).dateTime} - ${formatPhysicianName(apt.primaryPhysician)} (${statusRo})${apt.patientName ? ` - ${apt.patientName}` : ""}${apt.reason ? ` - ${apt.reason}` : ""}`;
     const lines = doc.splitTextToSize(line, pageWidth - 2 * margin);
     doc.text(lines, margin, yPos);
     yPos += lines.length * 6 + 2;
