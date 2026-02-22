@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminLogisticsPage() {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/admin");
+  if (await getDoctorSession()) redirect("/doctor");
 
   const [requests, equipment, transports, rooms] = await Promise.all([
     Promise.resolve(consumableRequestsHelpers.getAll()),

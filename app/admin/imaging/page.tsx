@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminImagingPage({ searchParams }: SearchParamProps) {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/admin");
+  if (await getDoctorSession()) redirect("/doctor");
   const patientId = (searchParams?.patientId as string) || undefined;
   const [modalities, upcoming, initialPatient] = await Promise.all([
     getModalities(),

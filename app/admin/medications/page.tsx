@@ -6,7 +6,7 @@ import { MedicationStockDashboard } from "@/components/MedicationStockDashboard"
 
 const MedicationsPage = async () => {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/admin");
+  if (await getDoctorSession()) redirect("/doctor");
   const allStocks = medicationStockHelpers.getAll();
   const lowStock = medicationStockHelpers.getLowStock();
   const emergencyStocks = medicationStockHelpers.getAll("emergency_department");

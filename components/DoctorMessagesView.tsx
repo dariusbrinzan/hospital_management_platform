@@ -56,7 +56,7 @@ export function DoctorMessagesView({
 
   const setSelected = useCallback(
     (appointmentId: string) => {
-      router.push(`/admin/messages?appointmentId=${appointmentId}`);
+      router.push(`/doctor/messages?appointmentId=${appointmentId}`);
     },
     [router]
   );

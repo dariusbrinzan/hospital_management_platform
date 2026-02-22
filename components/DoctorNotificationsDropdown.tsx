@@ -138,8 +138,8 @@ export const DoctorNotificationsDropdown = () => {
                 <Link
                   href={
                     notification.appointmentId
-                      ? `/admin/messages?appointmentId=${notification.appointmentId}`
-                      : "/admin/messages"
+                      ? `/doctor/messages?appointmentId=${notification.appointmentId}`
+                      : "/doctor/messages"
                   }
                   className="flex items-start gap-3 w-full"
                 >
@@ -180,7 +180,7 @@ export const DoctorNotificationsDropdown = () => {
         <DropdownMenuSeparator />
         <div className="p-2">
           <Link
-            href="/admin/messages"
+            href="/doctor/messages"
             className="block text-center text-14-medium text-green-500 hover:text-green-600 py-2"
             onClick={() => setOpen(false)}
           >

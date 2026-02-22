@@ -8,7 +8,7 @@ import { EmergencyKanbanBoard } from "@/components/EmergencyKanbanBoard";
 
 const EmergencyPage = async () => {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/admin");
+  if (await getDoctorSession()) redirect("/doctor");
   const emergencyCases = await emergencyHelpers.getAll();
   
   // Verifică și generează rotație automată dacă e necesar (la 12 ore)

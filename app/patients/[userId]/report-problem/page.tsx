@@ -10,7 +10,7 @@ import { ReportProblemForm } from "@/components/ReportProblemForm";
 export default async function ReportProblemPage({ params: { userId } }: SearchParamProps) {
   const session = await requireAuth();
   if (session.$id !== userId) redirect(`/patients/${session.$id}/dashboard`);
-  if (await getDoctorSession()) redirect("/admin");
+  if (await getDoctorSession()) redirect("/doctor");
 
   const patient = await getPatient(userId);
   if (!patient) redirect(`/patients/${userId}/register`);

@@ -4,8 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { logoutDoctor } from "@/lib/actions/auth.actions";
-import { DoctorNotificationsDropdown } from "@/components/DoctorNotificationsDropdown";
 import {
   Select,
   SelectContent,
@@ -33,25 +31,18 @@ const ADMIN_NAV = [
   { href: "/admin/logistics", label: "Logistică", icon: "📦" },
 ] as const;
 
-const DOCTOR_NAV = [
-  { href: "/admin", label: "Programări", icon: "📅" },
-  { href: "/admin/messages", label: "Mesaje", icon: "✉️" },
-] as const;
-
 interface AdminLayoutSidebarProps {
-  isDoctorView: boolean;
-  doctorName?: string;
   doctors: Doctor[];
 }
 
-export function AdminLayoutSidebar({ isDoctorView, doctorName, doctors }: AdminLayoutSidebarProps) {
+export function AdminLayoutSidebar({ doctors }: AdminLayoutSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const selectedSpecialty = searchParams.get("specialty") || "";
-  const selectedDoctor = searchParams.get("doctor") || (isDoctorView ? doctorName || "" : "all");
+  const selectedDoctor = searchParams.get("doctor") || "all";
 
   const specialties = useMemo(
     () => Array.from(new Set(doctors.map((d) => d.specialty).filter(Boolean))).sort() as string[],
@@ -62,11 +53,12 @@ export function AdminLayoutSidebar({ isDoctorView, doctorName, doctors }: AdminL
     return doctors.filter((d) => d.specialty === selectedSpecialty);
   }, [doctors, selectedSpecialty]);
 
-  const showDashboardFilters = !isDoctorView && pathname === "/admin";
+  const showDashboardFilters = pathname === "/admin";
 
   const handleSpecialtyChange = (value: string) => {
-    if (value === "all") router.push("/admin");
-    else router.push(`/admin?specialty=${encodeURIComponent(value)}`);
+    const params = new URLSearchParams();
+    if (value !== "all") params.set("specialty", value);
+    router.push(params.toString() ? `/admin?${params.toString()}` : "/admin");
   };
   const handleDoctorChange = (value: string) => {
     const params = new URLSearchParams();
@@ -75,17 +67,8 @@ export function AdminLayoutSidebar({ isDoctorView, doctorName, doctors }: AdminL
     router.push(`/admin?${params.toString()}`);
   };
 
-  const handleLogout = async () => {
-    await logoutDoctor();
-    router.push("/");
-    router.refresh();
-  };
-
-  const navItems = isDoctorView ? DOCTOR_NAV : ADMIN_NAV;
-
   return (
     <>
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -94,7 +77,6 @@ export function AdminLayoutSidebar({ isDoctorView, doctorName, doctors }: AdminL
         />
       )}
 
-      {/* Mobile open button (ascuns când meniul e deschis) */}
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
@@ -108,14 +90,12 @@ export function AdminLayoutSidebar({ isDoctorView, doctorName, doctors }: AdminL
 
       <aside
         className={`
-          fixed left-0 top-0 z-50 h-full w-72 flex-shrink-0 flex-col overflow-y-auto border-r border-dark-200 bg-white shadow-lg
+          fixed left-0 top-0 z-50 flex h-full w-72 flex-shrink-0 flex-col overflow-y-auto border-r border-dark-200 bg-white shadow-lg
           transition-transform duration-200 ease-out lg:sticky lg:z-auto lg:translate-x-0 lg:shadow-none
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
-          flex
         `}
       >
         <div className="flex flex-col p-4 lg:p-5">
-          {/* Close on mobile */}
           <div className="flex items-center justify-between pb-3 lg:hidden">
             <span className="text-16-semibold text-dark-900">Meniul</span>
             <button
@@ -130,7 +110,6 @@ export function AdminLayoutSidebar({ isDoctorView, doctorName, doctors }: AdminL
             </button>
           </div>
 
-          {/* Logo */}
           <Link
             href="/admin"
             onClick={() => setMobileOpen(false)}
@@ -145,23 +124,14 @@ export function AdminLayoutSidebar({ isDoctorView, doctorName, doctors }: AdminL
             />
           </Link>
 
-          {/* Role */}
           <div className="mb-4 rounded-lg border border-dark-200 bg-dark-50 px-3 py-2">
-            <p className="text-12-semibold text-dark-500">
-              {isDoctorView ? "Panou Medic" : "Panou Administrator"}
-            </p>
-            {isDoctorView && doctorName && (
-              <p className="text-14-semibold text-dark-900 truncate">{doctorName}</p>
-            )}
+            <p className="text-12-semibold text-dark-500">Panou Administrator</p>
           </div>
 
-          {/* Nav */}
-          <nav className="flex flex-col gap-0.5" aria-label="Navigare principală">
-            {navItems.map((item) => {
+          <nav className="flex flex-col gap-0.5" aria-label="Navigare administrator">
+            {ADMIN_NAV.map((item) => {
               const isActive =
-                item.href === "/admin"
-                  ? pathname === "/admin"
-                  : pathname.startsWith(item.href);
+                item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
@@ -174,8 +144,7 @@ export function AdminLayoutSidebar({ isDoctorView, doctorName, doctors }: AdminL
                       ? item.primary
                         ? "bg-green-500 text-white hover:bg-green-600"
                         : "bg-green-50 text-green-800 hover:bg-green-100"
-                      : "text-dark-700 hover:bg-dark-100"
-                    }
+                      : "text-dark-700 hover:bg-dark-100"}
                   `}
                 >
                   <span className="flex h-6 w-6 items-center justify-center text-base" aria-hidden>
@@ -187,7 +156,6 @@ export function AdminLayoutSidebar({ isDoctorView, doctorName, doctors }: AdminL
             })}
           </nav>
 
-          {/* Dashboard filters (only admin on /admin) */}
           {showDashboardFilters && (
             <div className="mt-6 space-y-4 border-t border-dark-200 pt-4">
               <h3 className="text-12-semibold uppercase tracking-wide text-dark-500">
@@ -240,26 +208,6 @@ export function AdminLayoutSidebar({ isDoctorView, doctorName, doctors }: AdminL
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          )}
-
-          {/* Notifications + Logout (doctor) */}
-          {isDoctorView && (
-            <div className="mt-auto space-y-2 border-t border-dark-200 pt-4">
-              <div className="flex items-center justify-center px-2">
-                <DoctorNotificationsDropdown />
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileOpen(false);
-                  handleLogout();
-                }}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-14-medium text-dark-600 hover:bg-red-50 hover:text-red-700"
-              >
-                <span aria-hidden>🚪</span>
-                <span>Deconectare</span>
-              </button>
             </div>
           )}
         </div>

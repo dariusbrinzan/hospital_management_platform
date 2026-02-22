@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 
 const HospitalizationsPage = async ({ searchParams }: SearchParamProps) => {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/admin");
+  if (await getDoctorSession()) redirect("/doctor");
   const showForm = searchParams?.new === "true";
 
   const allRooms = hospitalRoomHelpers.getAllRooms();

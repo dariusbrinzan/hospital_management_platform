@@ -53,7 +53,7 @@ export const DoctorCodeModal = ({ open, onOpenChange }: DoctorCodeModalProps) =>
         setError(result.error);
       } else if (result.success) {
         onOpenChange(false);
-        router.push("/admin");
+        router.push("/doctor");
         router.refresh();
       }
     } finally {

@@ -9,7 +9,7 @@ import { PatientSearchInput } from "@/components/PatientSearchInput";
 
 const PatientsSearchPage = async ({ searchParams }: SearchParamProps) => {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/admin");
+  if (await getDoctorSession()) redirect("/doctor");
   const query = (searchParams?.q as string) || "";
 
   // Căutarea se face pe server, direct din baza de date

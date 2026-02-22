@@ -3,14 +3,14 @@ import { getDoctorSession } from "@/lib/actions/auth.actions";
 import { Doctors } from "@/constants";
 import { DoctorMessagesView } from "@/components/DoctorMessagesView";
 
-const AdminMessagesPage = async ({
+export default async function DoctorMessagesPage({
   searchParams,
 }: {
   searchParams: { appointmentId?: string };
-}) => {
+}) {
   const doctorName = await getDoctorSession();
   if (!doctorName) {
-    redirect("/?admin=true");
+    redirect("/?doctor=true");
   }
 
   const doctorData = Doctors.find((d) => d.name === doctorName);
@@ -30,6 +30,4 @@ const AdminMessagesPage = async ({
       </div>
     </>
   );
-};
-
-export default AdminMessagesPage;
+}

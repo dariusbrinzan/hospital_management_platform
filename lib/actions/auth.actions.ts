@@ -128,6 +128,7 @@ export const loginDoctor = async (code: string) => {
       return { error: "Cod invalid. Introduceți codul de 4 cifre alocat." };
     }
     const cookieStore = await cookies();
+    // Nu ștergem admin_session – permitem două tab-uri: unul medic, unul admin
     cookieStore.set(DOCTOR_SESSION_COOKIE, row.doctor_name, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -171,7 +172,7 @@ export const loginAdmin = async (passkey: string): Promise<{ success?: boolean; 
       return { error: "Parolă invalidă. Accesul este rezervat administratorului." };
     }
     const cookieStore = await cookies();
-    cookieStore.delete(DOCTOR_SESSION_COOKIE);
+    // Nu ștergem doctor_session – permitem două tab-uri: unul medic, unul admin
     cookieStore.set(ADMIN_SESSION_COOKIE, "1", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

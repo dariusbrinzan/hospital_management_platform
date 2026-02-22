@@ -7,13 +7,14 @@ import { PasskeyModal } from "@/components/PasskeyModal";
 import { DoctorCodeModalWrapper } from "@/components/DoctorCodeModalWrapper";
 import { LogoLink } from "@/components/LogoLink";
 import { Button } from "@/components/ui/button";
-import { getAdminSession } from "@/lib/actions/auth.actions";
+import { getAdminSession, getDoctorSession } from "@/lib/actions/auth.actions";
 
 const Home = async ({ searchParams }: SearchParamProps) => {
   const isAdmin = searchParams?.admin === "true";
   const isDoctor = searchParams?.doctor === "true";
 
   if (isAdmin && (await getAdminSession())) redirect("/admin");
+  if (isDoctor && (await getDoctorSession())) redirect("/doctor");
 
   return (
     <div className="flex h-screen max-h-screen">

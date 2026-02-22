@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminLabImportPage() {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/admin");
+  if (await getDoctorSession()) redirect("/doctor");
   return (
     <div className="mx-auto flex max-w-4xl flex-col space-y-8">
       <header className="admin-header">

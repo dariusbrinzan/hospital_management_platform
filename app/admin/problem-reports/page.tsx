@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminProblemReportsPage() {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/admin");
+  if (await getDoctorSession()) redirect("/doctor");
 
   const reports = problemReportsHelpers.getAll();
 
