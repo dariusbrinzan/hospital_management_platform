@@ -7,6 +7,9 @@ import { userHelpers, patientHelpers, doctorAccessCodesHelpers } from "../db-hel
 import { parseStringify } from "../utils";
 
 const DOCTOR_SESSION_COOKIE = "doctor_session";
+const ADMIN_SESSION_COOKIE = "admin_session";
+/** Parola administrator: întotdeauna 0000 (4 cifre). */
+const ADMIN_PASSKEY = "0000";
 
 // LOGIN PATIENT
 export const loginPatient = async (email: string, password: string) => {
@@ -157,4 +160,54 @@ export const logoutDoctor = async () => {
     console.error("Doctor logout error:", error);
     return { error: "A apărut o eroare la deconectare." };
   }
+};
+
+// ─── LOGIN ADMINISTRATOR (parolă 0000 – strict roluri administrative) ─────
+
+export const loginAdmin = async (passkey: string): Promise<{ success?: boolean; error?: string }> => {
+  try {
+    const digits = String(passkey ?? "").replace(/\D/g, "");
+    if (digits !== "0000") {
+      return { error: "Parolă invalidă. Accesul este rezervat administratorului." };
+    }
+    const cookieStore = await cookies();
+    cookieStore.delete(DOCTOR_SESSION_COOKIE);
+    cookieStore.set(ADMIN_SESSION_COOKIE, "1", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 8, // 8 ore
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Admin login error:", error);
+    return { error: "A apărut o eroare la autentificare." };
+  }
+};
+
+export const getAdminSession = async (): Promise<boolean> => {
+  try {
+    const cookieStore = await cookies();
+    const value = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
+    return value === "1";
+  } catch {
+    return false;
+  }
+};
+
+export const logoutAdmin = async () => {
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete(ADMIN_SESSION_COOKIE);
+    return { success: true };
+  } catch (error) {
+    console.error("Admin logout error:", error);
+    return { error: "A apărut o eroare la deconectare." };
+  }
+};
+
+/** Redirect la /?admin=true dacă nu există sesiune administrator. Folosit pe rutele doar pentru admin. */
+export const requireAdmin = async () => {
+  const isAdmin = await getAdminSession();
+  if (!isAdmin) redirect("/?admin=true");
 };

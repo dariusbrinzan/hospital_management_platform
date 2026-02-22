@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import {
   AlertDialog,
@@ -18,79 +18,57 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { config } from "@/lib/config";
-import { decryptKey, encryptKey } from "@/lib/utils";
+import { loginAdmin } from "@/lib/actions/auth.actions";
 
 export const PasskeyModal = () => {
   const router = useRouter();
-  const path = usePathname();
-  const [open, setOpen] = useState(false);
   const [passkey, setPasskey] = useState("");
   const [error, setError] = useState("");
-
-  const encryptedKey =
-    typeof window !== "undefined"
-      ? window.localStorage.getItem("accessKey")
-      : null;
-
-  useEffect(() => {
-    const accessKey = encryptedKey && decryptKey(encryptedKey);
-    const adminPasskey = process.env.NEXT_PUBLIC_ADMIN_PASSKEY || config.admin.passkey;
-
-    if (path)
-      if (accessKey === adminPasskey.toString()) {
-        setOpen(false);
-        router.push("/admin");
-      } else {
-        setOpen(true);
-      }
-  }, [encryptedKey, path, router]);
+  const [loading, setLoading] = useState(false);
 
   const closeModal = () => {
-    setOpen(false);
+    setError("");
+    setPasskey("");
     router.push("/");
   };
 
-  const validatePasskey = (
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
-  ) => {
+  const validatePasskey = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.preventDefault();
-
-    const adminPasskey = process.env.NEXT_PUBLIC_ADMIN_PASSKEY || config.admin.passkey;
-
-    if (passkey === adminPasskey) {
-      const encryptedKey = encryptKey(passkey);
-
-      localStorage.setItem("accessKey", encryptedKey);
-
-      setOpen(false);
-    } else {
-      setError("Parolă invalidă. Vă rugăm să încercați din nou.");
+    setError("");
+    setLoading(true);
+    const digitsOnly = passkey.replace(/\D/g, "");
+    const result = await loginAdmin(digitsOnly);
+    setLoading(false);
+    if (result?.error) {
+      setError(result.error);
+      return;
     }
+    setPasskey("");
+    router.push("/admin");
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog open={true} onOpenChange={(open) => !open && closeModal()}>
       <AlertDialogContent className="shad-alert-dialog">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-start justify-between">
-            Verificare acces administrator
+            Acces administrator
             <Image
               src="/assets/icons/close.svg"
               alt="close"
               width={20}
               height={20}
-              onClick={() => closeModal()}
+              onClick={closeModal}
               className="cursor-pointer"
             />
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Pentru a accesa pagina de administrator, introduceți parola de acces.
+            Parola de acces administrator (4 cifre). Doar roluri administrative.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div>
           <InputOTP
-            maxLength={6}
+            maxLength={4}
             value={passkey}
             onChange={(value) => setPasskey(value)}
           >
@@ -99,8 +77,6 @@ export const PasskeyModal = () => {
               <InputOTPSlot className="shad-otp-slot" index={1} />
               <InputOTPSlot className="shad-otp-slot" index={2} />
               <InputOTPSlot className="shad-otp-slot" index={3} />
-              <InputOTPSlot className="shad-otp-slot" index={4} />
-              <InputOTPSlot className="shad-otp-slot" index={5} />
             </InputOTPGroup>
           </InputOTP>
 
@@ -112,10 +88,11 @@ export const PasskeyModal = () => {
         </div>
         <AlertDialogFooter>
           <AlertDialogAction
-            onClick={(e) => validatePasskey(e)}
+            onClick={validatePasskey}
+            disabled={passkey.replace(/\D/g, "").length !== 4 || loading}
             className="shad-primary-btn w-full"
           >
-            Introdu parola de acces
+            {loading ? "Se verifică…" : "Introdu parola de acces"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

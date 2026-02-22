@@ -7,8 +7,8 @@ export const config = {
     url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   },
   
-  // Admin Passkey - MODIFICĂ ACEASTĂ VALOARE CU PASSKEY-UL TĂU
+  // Admin Passkey - parola de acces administrator (doar roluri administrative)
   admin: {
-    passkey: process.env.NEXT_PUBLIC_ADMIN_PASSKEY || "123456", // Schimbă această valoare!
+    passkey: process.env.NEXT_PUBLIC_ADMIN_PASSKEY || "0000",
   },
 };

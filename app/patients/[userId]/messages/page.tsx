@@ -79,6 +79,12 @@ const PatientMessagesPage = async ({
             >
               Programare nouă
             </Link>
+            <Link
+              href="/faq"
+              className="text-14-medium text-dark-600 hover:text-dark-700 dark:text-dark-300 dark:hover:text-dark-200"
+            >
+              Întrebări frecvente
+            </Link>
             <NotificationsDropdown userId={userId} />
             <ThemeToggle />
             <div className="flex items-center gap-2">

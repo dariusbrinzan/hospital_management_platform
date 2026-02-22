@@ -1,16 +1,21 @@
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
 import { getDoctorSession, requireAdmin } from "@/lib/actions/auth.actions";
-import { LabImportForm } from "@/components/LabImportForm";
+import { problemReportsHelpers } from "@/lib/db-helpers";
+import { ProblemReportsList } from "@/components/ProblemReportsList";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminLabImportPage() {
+export default async function AdminProblemReportsPage() {
   await requireAdmin();
   if (await getDoctorSession()) redirect("/admin");
+
+  const reports = problemReportsHelpers.getAll();
+
   return (
-    <div className="mx-auto flex max-w-4xl flex-col space-y-8">
+    <div className="mx-auto flex max-w-5xl flex-col space-y-8">
       <header className="admin-header">
         <Link href="/admin" className="cursor-pointer">
           <Image
@@ -25,16 +30,15 @@ export default async function AdminLabImportPage() {
           <Link href="/admin" className="text-14-medium text-dark-600 hover:text-dark-700">
             ← Înapoi la Dashboard
           </Link>
-          <h1 className="text-16-semibold">Import rezultate laborator (CSV)</h1>
+          <h1 className="text-16-semibold">Raportări probleme (pacienți)</h1>
         </div>
       </header>
 
       <main className="admin-main">
-        <p className="mb-6 text-14-regular text-dark-600">
-          Încarcă un fișier CSV cu coloane: <strong>testName</strong> (obligatoriu), testCategory, resultValue, unit, referenceRange, status, notes.
-          Rezultatele vor fi legate de pacientul selectat și opțional de o programare.
+        <p className="text-14-regular text-dark-600 mb-4">
+          Rapoarte trimise de pacienți către administrator. Doar administratorul are acces la această pagină.
         </p>
-        <LabImportForm />
+        <ProblemReportsList reports={reports} />
       </main>
     </div>
   );

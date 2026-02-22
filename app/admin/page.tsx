@@ -1,11 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { StatCard } from "@/components/StatCard";
 import { columns } from "@/components/table/columns";
 import { DataTable } from "@/components/table/DataTable";
 import { getRecentAppointmentList } from "@/lib/actions/appointment.actions";
-import { getDoctorSession } from "@/lib/actions/auth.actions";
+import { getDoctorSession, getAdminSession } from "@/lib/actions/auth.actions";
 import { Doctors } from "@/constants";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { DoctorDetails } from "@/components/DoctorDetails";
@@ -13,6 +14,8 @@ import { AdminDoctorHeader } from "@/components/AdminDoctorHeader";
 
 const AdminPage = async ({ searchParams }: SearchParamProps) => {
   const doctorSession = await getDoctorSession();
+  const adminSession = await getAdminSession();
+  if (!doctorSession && !adminSession) redirect("/?admin=true");
   const isDoctorView = !!doctorSession;
 
   // Medic: vede doar datele lui. Admin: poate selecta doctor din URL/searchParams
@@ -105,6 +108,11 @@ const AdminPage = async ({ searchParams }: SearchParamProps) => {
                     <span className="admin-nav-icon" aria-hidden>📊</span>
                     <span className="hidden sm:inline">Rapoarte</span>
                     <span className="sm:hidden">Rapoarte</span>
+                  </Link>
+                  <Link href="/admin/problem-reports" className="admin-nav-link">
+                    <span className="admin-nav-icon" aria-hidden>📝</span>
+                    <span className="hidden sm:inline">Raportări probleme</span>
+                    <span className="sm:hidden">Probleme</span>
                   </Link>
                 </nav>
               </div>

@@ -1,15 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/forms/LoginForm";
 import { PasskeyModal } from "@/components/PasskeyModal";
 import { DoctorCodeModalWrapper } from "@/components/DoctorCodeModalWrapper";
 import { LogoLink } from "@/components/LogoLink";
 import { Button } from "@/components/ui/button";
+import { getAdminSession } from "@/lib/actions/auth.actions";
 
 const Home = async ({ searchParams }: SearchParamProps) => {
   const isAdmin = searchParams?.admin === "true";
   const isDoctor = searchParams?.doctor === "true";
+
+  if (isAdmin && (await getAdminSession())) redirect("/admin");
 
   return (
     <div className="flex h-screen max-h-screen">
@@ -37,7 +41,10 @@ const Home = async ({ searchParams }: SearchParamProps) => {
             <p className="text-dark-500 xl:text-left">
               © 2026 eHealth.ro
             </p>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap justify-center">
+              <Link href="/faq" className="text-green-500 hover:text-green-600">
+                Întrebări frecvente
+              </Link>
               <Link href="/?doctor=true" className="text-green-500 hover:text-green-600">
                 Medic
               </Link>

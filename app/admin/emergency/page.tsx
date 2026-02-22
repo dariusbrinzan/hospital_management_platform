@@ -3,10 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { emergencyHelpers, doctorsOnDutyHelpers } from "@/lib/db-helpers";
-import { getDoctorSession } from "@/lib/actions/auth.actions";
+import { getDoctorSession, requireAdmin } from "@/lib/actions/auth.actions";
 import { EmergencyKanbanBoard } from "@/components/EmergencyKanbanBoard";
 
 const EmergencyPage = async () => {
+  await requireAdmin();
   if (await getDoctorSession()) redirect("/admin");
   const emergencyCases = await emergencyHelpers.getAll();
   

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getDoctorSession } from "@/lib/actions/auth.actions";
+import { getDoctorSession, requireAdmin } from "@/lib/actions/auth.actions";
 import { getModalities, getUpcomingStudies } from "@/lib/actions/imaging.actions";
 import { getPatientById } from "@/lib/actions/patient.actions";
 import { formatDateTime } from "@/lib/utils";
@@ -10,6 +10,7 @@ import { ImagingBookingForm } from "@/components/ImagingBookingForm";
 export const dynamic = "force-dynamic";
 
 export default async function AdminImagingPage({ searchParams }: SearchParamProps) {
+  await requireAdmin();
   if (await getDoctorSession()) redirect("/admin");
   const patientId = (searchParams?.patientId as string) || undefined;
   const [modalities, upcoming, initialPatient] = await Promise.all([

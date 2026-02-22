@@ -888,6 +888,61 @@ export const doctorAccessCodesHelpers = {
   },
 };
 
+export const problemReportsHelpers = {
+  create: (report: {
+    userId?: string | null;
+    reporterName: string;
+    reporterEmail: string;
+    subject: string;
+    description: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO problem_reports (id, userId, reporterName, reporterEmail, subject, description, status, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?)
+    `).run(
+      id,
+      report.userId ?? null,
+      report.reporterName,
+      report.reporterEmail,
+      report.subject,
+      report.description,
+      now,
+      now
+    );
+    return { id, createdAt: now };
+  },
+
+  getAll: () => {
+    const rows = db.prepare(`
+      SELECT id, userId, reporterName, reporterEmail, subject, description, status, adminNotes, createdAt, updatedAt
+      FROM problem_reports
+      ORDER BY createdAt DESC
+    `).all() as any[];
+    return rows.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      reporterName: r.reporterName,
+      reporterEmail: r.reporterEmail,
+      subject: r.subject,
+      description: r.description,
+      status: r.status,
+      adminNotes: r.adminNotes,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
+  },
+
+  updateStatus: (id: string, status: string, adminNotes?: string | null) => {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE problem_reports SET status = ?, adminNotes = ?, updatedAt = ? WHERE id = ?
+    `).run(status, adminNotes ?? null, now, id);
+    return { updatedAt: now };
+  },
+};
+
 // Waitlist helpers (listă de așteptare pentru sloturi)
 export const waitlistHelpers = {
   create: (entry: {

@@ -87,6 +87,18 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
             >
               Programare nouă
             </Link>
+            <Link
+              href="/faq"
+              className="text-14-medium text-dark-600 hover:text-dark-700"
+            >
+              Întrebări frecvente
+            </Link>
+            <Link
+              href={`/patients/${userId}/report-problem`}
+              className="text-14-medium text-dark-600 hover:text-dark-700"
+            >
+              Raportează o problemă
+            </Link>
             <NotificationsDropdown userId={userId} />
             <ThemeToggle />
             <div className="flex items-center gap-2">

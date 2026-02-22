@@ -921,6 +921,24 @@ db.exec(`
     createdAt TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_doctor_access_codes_doctor_name ON doctor_access_codes(doctor_name);
+
+  -- Raportări probleme către administrator (doar pacienți, vizibile doar admin)
+  CREATE TABLE IF NOT EXISTS problem_reports (
+    id TEXT PRIMARY KEY,
+    userId TEXT,
+    reporterName TEXT NOT NULL,
+    reporterEmail TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'new' CHECK(status IN ('new','in_progress','resolved')),
+    adminNotes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (userId) REFERENCES users(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_problem_reports_userId ON problem_reports(userId);
+  CREATE INDEX IF NOT EXISTS idx_problem_reports_status ON problem_reports(status);
+  CREATE INDEX IF NOT EXISTS idx_problem_reports_createdAt ON problem_reports(createdAt);
 `);
 
 // Inițializare medicamente și stocuri

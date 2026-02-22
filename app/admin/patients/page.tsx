@@ -3,11 +3,12 @@ import { redirect } from "next/navigation";
 
 import { LogoLink } from "@/components/LogoLink";
 import { patientHelpers } from "@/lib/db-helpers";
-import { getDoctorSession } from "@/lib/actions/auth.actions";
+import { getDoctorSession, requireAdmin } from "@/lib/actions/auth.actions";
 import { formatDateTime } from "@/lib/utils";
 import { PatientSearchInput } from "@/components/PatientSearchInput";
 
 const PatientsSearchPage = async ({ searchParams }: SearchParamProps) => {
+  await requireAdmin();
   if (await getDoctorSession()) redirect("/admin");
   const query = (searchParams?.q as string) || "";
 
