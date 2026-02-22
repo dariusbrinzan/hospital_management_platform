@@ -53,7 +53,7 @@ export function AdminLayoutSidebar({ doctors }: AdminLayoutSidebarProps) {
     return doctors.filter((d) => d.specialty === selectedSpecialty);
   }, [doctors, selectedSpecialty]);
 
-  const showDashboardFilters = pathname === "/admin";
+  const showDashboardFilters = false;
 
   const handleSpecialtyChange = (value: string) => {
     const params = new URLSearchParams();
