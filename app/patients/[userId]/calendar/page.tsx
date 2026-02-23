@@ -1,16 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getPatient } from "@/lib/actions/patient.actions";
 import { getPatientAppointments } from "@/lib/actions/appointment.actions";
 import { requireAuth } from "@/lib/actions/auth.actions";
-import { LogoLink } from "@/components/LogoLink";
-import { LogoutButton } from "@/components/LogoutButton";
-import { NotificationsDropdown } from "@/components/NotificationsDropdown";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { MedicalCalendar } from "@/components/MedicalCalendar";
 import { vaccinationHelpers, prescriptionHelpers } from "@/lib/db-helpers";
-import Image from "next/image";
 
 const CalendarPage = async ({ params: { userId } }: SearchParamProps) => {
   const session = await requireAuth();
@@ -85,72 +79,17 @@ const CalendarPage = async ({ params: { userId } }: SearchParamProps) => {
   });
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b border-dark-200 bg-white px-6 py-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <LogoLink />
-          <div className="flex items-center gap-6">
-            <Link
-              href={`/patients/${userId}/dashboard`}
-              className="text-14-medium text-dark-600 hover:text-dark-700"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href={`/patients/${userId}/medical-history`}
-              className="text-14-medium text-dark-600 hover:text-dark-700"
-            >
-              Istoric Medical
-            </Link>
-            <Link
-              href={`/patients/${userId}/profile`}
-              className="text-14-medium text-dark-600 hover:text-dark-700"
-            >
-              Profil Medical
-            </Link>
-            <Link
-              href={`/patients/${userId}/new-appointment`}
-              className="text-14-medium text-green-500 hover:text-green-600"
-            >
-              Programare nouă
-            </Link>
-            <NotificationsDropdown userId={userId} />
-            <ThemeToggle />
-            <div className="flex items-center gap-2">
-              <Image
-                src="/assets/icons/user.svg"
-                height={24}
-                width={24}
-                alt="user"
-                className="size-6"
-              />
-              <p className="text-14-medium">{patient.name}</p>
-            </div>
-            <LogoutButton />
-          </div>
-        </div>
-      </header>
+    <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+      <section className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">Calendar Medical</h1>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          Vizualizează programările, vaccinările și rețetele tale într-un calendar interactiv.
+        </p>
+      </section>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-8">
-        <section className="mb-6">
-          <h1 className="header mb-2">Calendar Medical</h1>
-          <p className="text-dark-600">
-            Vizualizează programările, vaccinările și rețetele tale într-un calendar interactiv.
-          </p>
-        </section>
-
-        <section className="rounded-lg border border-dark-200 bg-white p-6">
-          <MedicalCalendar events={events} />
-        </section>
-      </main>
-
-      <footer className="border-t border-dark-200 bg-white px-6 py-4">
-        <div className="mx-auto max-w-7xl">
-          <p className="text-14-regular text-dark-500 text-center">
-            © 2026 eHealth.ro
-          </p>
-        </div>
-      </footer>
+      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+        <MedicalCalendar events={events} />
+      </section>
     </div>
   );
 };

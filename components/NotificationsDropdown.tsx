@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,8 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import {
-  getUserNotifications,
-  getUnreadNotificationCount,
   markNotificationAsRead,
   markAllNotificationsAsRead,
 } from "@/lib/actions/notification.actions";
@@ -32,34 +30,47 @@ interface Notification {
   createdAt: Date | string;
 }
 
-export const NotificationsDropdown = ({ userId }: { userId: string }) => {
+export const NotificationsDropdown = ({
+  userId,
+  initialNotifications,
+  initialUnreadCount,
+}: {
+  userId: string;
+  initialNotifications?: Notification[];
+  initialUnreadCount?: number;
+}) => {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications ?? []);
+  const [unreadCount, setUnreadCount] = useState(initialUnreadCount ?? 0);
   const [open, setOpen] = useState(false);
+  const mounted = useRef(false);
 
-  useEffect(() => {
-    loadNotifications();
-    // Reîncarcă notificările la fiecare 30 de secunde
-    const interval = setInterval(loadNotifications, 30000);
-    return () => clearInterval(interval);
-  }, [userId]);
-
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     try {
-      const [notifs, count] = await Promise.all([
-        getUserNotifications(userId, 10),
-        getUnreadNotificationCount(userId),
-      ]);
-      setNotifications(notifs);
-      setUnreadCount(count);
+      const res = await fetch(`/api/notifications?userId=${encodeURIComponent(userId)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setNotifications(data.notifications ?? []);
+      setUnreadCount(data.unreadCount ?? 0);
     } catch (error) {
       console.error("Error loading notifications:", error);
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    mounted.current = true;
+
+    const hasInitial = (initialNotifications && initialNotifications.length > 0) || (initialUnreadCount != null && initialUnreadCount > 0);
+    if (!hasInitial) {
+      loadNotifications();
+    }
+
+    const interval = setInterval(loadNotifications, 30000);
+    return () => {
+      mounted.current = false;
+      clearInterval(interval);
+    };
+  }, [userId, loadNotifications]);
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.isRead) {
@@ -169,11 +180,7 @@ export const NotificationsDropdown = ({ userId }: { userId: string }) => {
           )}
         </div>
 
-        {isLoading ? (
-          <div className="p-4 text-center text-14-regular text-dark-500">
-            Se încarcă...
-          </div>
-        ) : notifications.length === 0 ? (
+        {notifications.length === 0 ? (
           <div className="p-4 text-center text-14-regular text-dark-500">
             Nu aveți notificări
           </div>

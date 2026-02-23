@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  getUserNotifications,
-  getUnreadNotificationCount,
   markNotificationAsRead,
   markAllNotificationsAsRead,
 } from "@/lib/actions/notification.actions";
@@ -28,23 +26,22 @@ export function NotificationsList({ userId }: { userId: string }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadNotifications = async () => {
-    try {
-      const [notifs, count] = await Promise.all([
-        getUserNotifications(userId),
-        getUnreadNotificationCount(userId),
-      ]);
-      setNotifications(notifs);
-      setUnreadCount(count);
-    } catch (error) {
-      console.error("Error loading notifications:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadNotifications();
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/notifications?userId=${encodeURIComponent(userId)}`);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        setNotifications(data.notifications ?? []);
+        setUnreadCount(data.unreadCount ?? 0);
+      } catch (error) {
+        console.error("Error loading notifications:", error);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [userId]);
 
   const handleMarkAsRead = async (notification: Notification) => {

@@ -1,13 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getPatient, getUser } from "@/lib/actions/patient.actions";
 import { requireAuth } from "@/lib/actions/auth.actions";
-import { LogoutButton } from "@/components/LogoutButton";
-import { LogoLink } from "@/components/LogoLink";
-import { NotificationsDropdown } from "@/components/NotificationsDropdown";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationsList } from "@/components/NotificationsList";
 
 const NotificationsPage = async ({ params: { userId } }: SearchParamProps) => {
@@ -24,72 +19,18 @@ const NotificationsPage = async ({ params: { userId } }: SearchParamProps) => {
   if (!patient) redirect(`/patients/${userId}/register`);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b border-dark-200 bg-white px-6 py-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <LogoLink />
+    <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Toate notificările</h1>
+        <Link
+          href={`/patients/${userId}/dashboard`}
+          className="text-sm font-medium text-teal-600 hover:text-teal-700"
+        >
+          Înapoi la Dashboard
+        </Link>
+      </div>
 
-          <div className="flex items-center gap-6">
-            <Link
-              href={`/patients/${userId}/dashboard`}
-              className="text-14-medium text-dark-600 hover:text-dark-700"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href={`/patients/${userId}/medical-history`}
-              className="text-14-medium text-dark-600 hover:text-dark-700"
-            >
-              Istoric Medical
-            </Link>
-            <Link
-              href={`/patients/${userId}/calendar`}
-              className="text-14-medium text-dark-600 hover:text-dark-700"
-            >
-              Calendar
-            </Link>
-            <Link
-              href={`/patients/${userId}/profile`}
-              className="text-14-medium text-dark-600 hover:text-dark-700"
-            >
-              Profil Medical
-            </Link>
-            <Link
-              href={`/patients/${userId}/new-appointment`}
-              className="text-14-medium text-green-500 hover:text-green-600"
-            >
-              Programare nouă
-            </Link>
-            <NotificationsDropdown userId={userId} />
-            <ThemeToggle />
-            <div className="flex items-center gap-2">
-              <Image
-                src="/assets/icons/user.svg"
-                height={24}
-                width={24}
-                alt="user"
-                className="size-6"
-              />
-              <p className="text-14-medium">{patient.name}</p>
-            </div>
-            <LogoutButton />
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-24-semibold text-dark-800">Toate notificările</h1>
-          <Link
-            href={`/patients/${userId}/dashboard`}
-            className="text-14-medium text-green-500 hover:text-green-600"
-          >
-            Înapoi la Dashboard
-          </Link>
-        </div>
-
-        <NotificationsList userId={userId} />
-      </main>
+      <NotificationsList userId={userId} />
     </div>
   );
 };

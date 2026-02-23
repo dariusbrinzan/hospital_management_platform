@@ -1,6 +1,7 @@
 import { withSentryConfig } from "@sentry/nextjs";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: false,
   webpack: (config, { isServer }) => {
     // Exclude better-sqlite3 from bundling - it's a native module
     config.externals = config.externals || [];
