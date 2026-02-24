@@ -22,7 +22,6 @@ import { cn } from "@/lib/utils";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LogoutButton } from "@/components/LogoutButton";
-import { LogoLink } from "@/components/LogoLink";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
@@ -64,7 +63,15 @@ export function PatientLayoutClient({
             >
               {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
             </Button>
-            <LogoLink />
+            <Link href={`${base}/dashboard`} prefetch={false} className="cursor-pointer">
+              <Image
+                src="/assets/icons/logo-full.svg"
+                height={1000}
+                width={1000}
+                alt="eHealth.ro logo"
+                className="mb-12 h-10 w-fit"
+              />
+            </Link>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">

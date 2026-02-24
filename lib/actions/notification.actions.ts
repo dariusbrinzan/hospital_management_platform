@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { notificationHelpers } from "../db-helpers";
 import { parseStringify, formatDateTime, formatDoctorDisplayName } from "../utils";
 import { getPatientAppointments } from "./appointment.actions";
@@ -30,7 +29,6 @@ export const createNotification = async (
 ) => {
   try {
     const notification = notificationHelpers.create(params);
-    revalidatePath(`/patients/${params.userId}/dashboard`);
     return parseStringify(notification);
   } catch (error) {
     console.error("A apărut o eroare la crearea notificării:", error);
@@ -69,7 +67,6 @@ export const markNotificationAsRead = async (notificationId: string) => {
     }
     
     notificationHelpers.markAsRead(notificationId);
-    revalidatePath(`/patients/${notification.userId}/dashboard`);
     return { success: true };
   } catch (error) {
     console.error("A apărut o eroare la marcarea notificării ca citită:", error);
@@ -81,7 +78,6 @@ export const markNotificationAsRead = async (notificationId: string) => {
 export const markAllNotificationsAsRead = async (userId: string) => {
   try {
     notificationHelpers.markAllAsRead(userId);
-    revalidatePath(`/patients/${userId}/dashboard`);
     return { success: true };
   } catch (error) {
     console.error("A apărut o eroare la marcarea tuturor notificărilor ca citite:", error);

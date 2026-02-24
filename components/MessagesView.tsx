@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { usePathname } from "next/navigation";
+import { useCallback, useState, useEffect } from "react";
 import { formatDateTime, formatDoctorDisplayName } from "@/lib/utils";
 import { AppointmentMessageThread } from "./AppointmentMessageThread";
 
@@ -22,15 +22,28 @@ export function MessagesView({
   userId: string;
   initialAppointmentId?: string | null;
 }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const selectedId = searchParams.get("appointmentId") || initialAppointmentId;
+  const pathname = usePathname();
+  const [selectedId, setSelectedIdState] = useState<string | null>(
+    initialAppointmentId ?? null
+  );
+
+  // Sync selection from URL on browser back/forward
+  useEffect(() => {
+    const onPopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      setSelectedIdState(params.get("appointmentId"));
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   const setSelected = useCallback(
     (appointmentId: string) => {
-      router.push(`/patients/${userId}/messages?appointmentId=${appointmentId}`);
+      setSelectedIdState(appointmentId);
+      const url = `${pathname}?appointmentId=${encodeURIComponent(appointmentId)}`;
+      window.history.pushState(null, "", url);
     },
-    [router, userId]
+    [pathname]
   );
 
   const selectedAppointment = selectedId ? appointments.find((a) => a.$id === selectedId) : null;
