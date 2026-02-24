@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   Calendar,
   FileText,
+  FlaskConical,
   MapPin,
   MessageSquare,
   Pill,
@@ -29,6 +30,7 @@ const navItems = [
   { href: "dashboard", label: "Dashboard", icon: Stethoscope },
   { href: "medical-history", label: "Istoric Medical", icon: FileText },
   { href: "prescriptions", label: "Rețete", icon: Pill },
+  { href: "lab-results", label: "Analize Medicale", icon: FlaskConical },
   { href: "calendar", label: "Calendar", icon: Calendar },
   { href: "profile", label: "Profil Medical", icon: User },
   { href: "hospital-map", label: "Hartă Spital", icon: MapPin },

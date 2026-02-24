@@ -2550,6 +2550,33 @@ export const labResultHelpers = {
       createdAt: parseDate(l.createdAt),
     }));
   },
+
+  getAllByPatientIdWithRecord: (patientId: string) => {
+    const results = db.prepare(`
+      SELECT lr.*, mr.doctorName, mr.visitDate, mr.appointmentId as mrAppointmentId
+      FROM lab_results lr
+      JOIN medical_records mr ON lr.medicalRecordId = mr.id
+      WHERE mr.patientId = ?
+      ORDER BY lr.performedDate DESC
+    `).all(patientId) as any[];
+
+    return results.map((l) => ({
+      $id: l.id,
+      medicalRecordId: l.medicalRecordId,
+      appointmentId: l.appointmentId || l.mrAppointmentId,
+      testName: l.testName,
+      testCategory: l.testCategory,
+      resultValue: l.resultValue,
+      unit: l.unit,
+      referenceRange: l.referenceRange,
+      status: l.status,
+      notes: l.notes,
+      performedDate: parseDate(l.performedDate),
+      createdAt: parseDate(l.createdAt),
+      doctorName: l.doctorName,
+      visitDate: parseDate(l.visitDate),
+    }));
+  },
 };
 
 // Procedure Helpers
