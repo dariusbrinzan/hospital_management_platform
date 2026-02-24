@@ -8,7 +8,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import Image from "next/image";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
+  const router = useRouter();
   const encryptedKey =
     typeof window !== "undefined"
       ? window.localStorage.getItem("accessKey")
@@ -42,9 +43,9 @@ export function DataTable<TData, TValue>({
     const adminPasskey = process.env.NEXT_PUBLIC_ADMIN_PASSKEY || config.admin.passkey;
 
     if (accessKey !== adminPasskey.toString()) {
-      redirect("/");
+      router.replace("/");
     }
-  }, [encryptedKey]);
+  }, [encryptedKey, router]);
 
   const table = useReactTable({
     data,
@@ -54,14 +55,14 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <div className="data-table">
-      <Table className="shad-table">
-        <TableHeader className=" bg-dark-200">
+    <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <Table>
+        <TableHeader className="bg-slate-100/80 dark:bg-slate-800/60">
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="shad-table-row-header">
+            <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 return (
-                  <TableHead key={header.id}>
+                  <TableHead key={header.id} className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -80,10 +81,10 @@ export function DataTable<TData, TValue>({
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
-                className="shad-table-row"
+                className="border-b border-slate-100 hover:bg-slate-50/60 dark:border-slate-800 dark:hover:bg-slate-800/60"
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell key={cell.id} className="px-4 py-3 align-top text-sm text-slate-700 dark:text-slate-200">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -91,20 +92,23 @@ export function DataTable<TData, TValue>({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
+              <TableCell
+                colSpan={columns.length}
+                className="h-28 text-center text-sm text-slate-500 dark:text-slate-400"
+              >
                 Nu există rezultate.
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
-      <div className="table-actions">
+      <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-4 py-3 dark:border-slate-800">
         <Button
           variant="outline"
           size="sm"
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
-          className="shad-gray-btn"
+          className="h-9 rounded-lg border-slate-300 bg-white px-3 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
         >
           <Image
             src="/assets/icons/arrow.svg"
@@ -118,7 +122,7 @@ export function DataTable<TData, TValue>({
           size="sm"
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
-          className="shad-gray-btn"
+          className="h-9 rounded-lg border-slate-300 bg-white px-3 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
         >
           <Image
             src="/assets/icons/arrow.svg"

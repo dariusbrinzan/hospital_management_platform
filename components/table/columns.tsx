@@ -12,14 +12,13 @@ import { AppointmentModal } from "../AppointmentModal";
 import { StatusBadge } from "../StatusBadge";
 import { AnalysisResultsModal } from "../AnalysisResultsModal";
 import { AddMedicalRecordModal } from "../AddMedicalRecordModal";
-import { OpenAppointmentMessagesButton } from "../OpenAppointmentMessagesButton";
 import { Button } from "../ui/button";
 
 export const columns: ColumnDef<Appointment>[] = [
   {
     header: "#",
     cell: ({ row }) => {
-      return <p className="text-14-medium ">{row.index + 1}</p>;
+      return <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{row.index + 1}</p>;
     },
   },
   {
@@ -29,8 +28,8 @@ export const columns: ColumnDef<Appointment>[] = [
       const appointment = row.original;
       return (
         <Link
-          href={`/admin/patients/${appointment.patient.$id}`}
-          className="text-14-medium text-green-500 hover:text-green-600 hover:underline"
+          href={`/doctor/patients/${appointment.patient.$id}`}
+          className="text-sm font-medium text-teal-600 hover:text-teal-700 hover:underline dark:text-teal-400 dark:hover:text-teal-300"
         >
           {appointment.patient.name}
         </Link>
@@ -78,9 +77,9 @@ export const columns: ColumnDef<Appointment>[] = [
             alt="doctor"
             width={100}
             height={100}
-            className="size-8"
+            className="size-8 rounded-full border border-slate-200 dark:border-slate-700"
           />
-          <p className="whitespace-nowrap">{doctor?.name}</p>
+          <p className="whitespace-nowrap text-sm text-slate-700 dark:text-slate-200">{doctor?.name}</p>
         </div>
       );
     },
@@ -97,15 +96,14 @@ export const columns: ColumnDef<Appointment>[] = [
       const hasResults = appointment.analysisResults && appointment.analysisResults.trim().length > 0;
 
       return (
-        <div className="flex flex-wrap gap-1">
-          <OpenAppointmentMessagesButton appointment={appointment} />
+        <div className="flex min-w-[260px] flex-wrap items-center gap-2">
           {isAnalysisDoctor && appointment.status === "scheduled" && !hasResults && (
             <AnalysisResultsModal appointment={appointment} />
           )}
           {isAnalysisDoctor && appointment.status === "scheduled" && hasResults && (
             <Button
               variant="outline"
-              className="shad-gray-btn text-14-medium cursor-default"
+              className="h-10 rounded-lg border-slate-300 bg-slate-100 px-4 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
               disabled
             >
               Rezultate completate
@@ -122,6 +120,7 @@ export const columns: ColumnDef<Appointment>[] = [
               type="cancel"
               title="Anulează programarea"
               description="Sunteți sigur că doriți să anulați programarea?"
+              triggerClassName="h-10 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-900/20 dark:text-rose-300 dark:hover:bg-rose-900/30"
             />
           )}
         </div>

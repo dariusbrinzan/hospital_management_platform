@@ -24,6 +24,7 @@ export const AppointmentModal = ({
   type,
   title,
   description,
+  triggerClassName,
 }: {
   patientId: string;
   userId: string;
@@ -31,6 +32,7 @@ export const AppointmentModal = ({
   type: "schedule" | "cancel";
   title: string;
   description: string;
+  triggerClassName?: string;
 }) => {
   const [open, setOpen] = useState(false);
 
@@ -39,7 +41,7 @@ export const AppointmentModal = ({
       <DialogTrigger asChild>
         <Button
           variant="ghost"
-          className={`capitalize ${type === "schedule" && "text-green-500"}`}
+          className={`capitalize ${type === "schedule" && "text-green-500"} ${triggerClassName ?? ""}`}
         >
           {type === "schedule" ? "Confirmă" : "Anulează"}
         </Button>
