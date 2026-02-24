@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Doctors } from "@/constants";
 import Image from "next/image";
@@ -60,11 +61,11 @@ export const EmergencyCaseDetails = ({ emergencyCase, imagingStudies = [] }: Eme
         setActiveForm(null);
       } else {
         const error = await response.json();
-        alert(error.error || "Eroare la tranziția de stare");
+        toast.error(error.error || "Eroare la tranziția de stare");
       }
     } catch (error) {
       console.error(error);
-      alert("Eroare la tranziția de stare");
+      toast.error("Eroare la tranziția de stare");
     }
   };
 
@@ -240,15 +241,15 @@ export const EmergencyCaseDetails = ({ emergencyCase, imagingStudies = [] }: Eme
                       }),
                     });
                     if (response.ok) {
-                      alert("Pacientul a fost transferat în ATI cu succes");
+                      toast.success("Pacientul a fost transferat în ATI cu succes");
                       router.refresh();
                     } else {
                       const error = await response.json();
-                      alert(error.error || "Eroare la transferul în ATI");
+                      toast.error(error.error || "Eroare la transferul în ATI");
                     }
                   } catch (error) {
                     console.error(error);
-                    alert("Eroare la transferul în ATI");
+                    toast.error("Eroare la transferul în ATI");
                   }
                 }}
                 className="shad-gray-btn bg-red-600 hover:bg-red-700 text-white"
@@ -280,15 +281,15 @@ export const EmergencyCaseDetails = ({ emergencyCase, imagingStudies = [] }: Eme
                       }),
                     });
                     if (response.ok) {
-                      alert("Pacientul a fost transferat în ATI cu succes");
+                      toast.success("Pacientul a fost transferat în ATI cu succes");
                       router.refresh();
                     } else {
                       const error = await response.json();
-                      alert(error.error || "Eroare la transferul în ATI");
+                      toast.error(error.error || "Eroare la transferul în ATI");
                     }
                   } catch (error) {
                     console.error(error);
-                    alert("Eroare la transferul în ATI");
+                    toast.error("Eroare la transferul în ATI");
                   }
                 }}
                 className="shad-gray-btn bg-red-600 hover:bg-red-700 text-white"

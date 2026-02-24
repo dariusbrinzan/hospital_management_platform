@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const triageSchema = z.object({
   triageLevel: z.enum(["critic", "urgent", "normal"]),
@@ -65,11 +66,11 @@ export const TriageForm = ({ emergencyCase, onComplete, onCancel }: TriageFormPr
         onComplete();
       } else {
         const error = await response.json();
-        alert(error.error || "Eroare la salvarea triajului");
+        toast.error(error.error || "Eroare la salvarea triajului");
       }
     } catch (error) {
       console.error(error);
-      alert("Eroare la salvarea triajului");
+      toast.error("Eroare la salvarea triajului");
     }
     setIsLoading(false);
   };

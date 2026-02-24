@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { Appointment } from "@/types/appwrite.types";
+import { toast } from "sonner";
 
 interface AddMedicalRecordModalProps {
   appointment: Appointment;
@@ -87,9 +88,13 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
     glucoseLevel: "",
   });
 
-  // Verifică dacă există deja o consultație pentru această programare
+  // Resetează și încarcă datele la fiecare deschidere
   useEffect(() => {
-    const checkExistingRecord = async () => {
+    if (!open) return;
+
+    setStep(1);
+
+    const loadRecord = async () => {
       try {
         const response = await fetch(`/api/medical-records/by-appointment/${appointment.$id}`);
         if (response.ok) {
@@ -97,14 +102,24 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
           if (record) {
             setExistingRecord(record);
             setIsEditMode(true);
-            // Populează formularul cu datele existente
             setChiefComplaint(record.chiefComplaint || "");
             setSubjectiveNotes(record.subjectiveNotes || "");
             setObjectiveFindings(record.objectiveFindings || "");
             setAssessment(record.assessment || "");
             setPlan(record.plan || "");
             setDiagnoses(record.diagnoses || []);
-            setPrescriptions(record.prescriptions || []);
+            setPrescriptions(
+              (record.prescriptions || []).map((p: any) => ({
+                $id: p.$id,
+                medicationName: p.medicationName || "",
+                dosage: p.dosage || "",
+                frequency: p.frequency || "",
+                route: p.route || "oral",
+                quantity: p.quantity || "",
+                instructions: p.instructions || "",
+                refills: p.refills ?? 0,
+              }))
+            );
             if (record.vitalSigns) {
               setVitalSigns({
                 bloodPressureSystolic: record.vitalSigns.bloodPressureSystolic?.toString() || "",
@@ -117,17 +132,49 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
                 height: record.vitalSigns.height?.toString() || "",
                 glucoseLevel: record.vitalSigns.glucoseLevel?.toString() || "",
               });
+            } else {
+              setVitalSigns({
+                bloodPressureSystolic: "",
+                bloodPressureDiastolic: "",
+                pulse: "",
+                temperature: "",
+                oxygenSaturation: "",
+                respiratoryRate: "",
+                weight: "",
+                height: "",
+                glucoseLevel: "",
+              });
             }
+            return;
           }
         }
+        // No existing record – reset to fresh state
+        setExistingRecord(null);
+        setIsEditMode(false);
+        setChiefComplaint("");
+        setSubjectiveNotes("");
+        setObjectiveFindings("");
+        setAssessment("");
+        setPlan("");
+        setDiagnoses([]);
+        setPrescriptions([]);
+        setVitalSigns({
+          bloodPressureSystolic: "",
+          bloodPressureDiastolic: "",
+          pulse: "",
+          temperature: "",
+          oxygenSaturation: "",
+          respiratoryRate: "",
+          weight: "",
+          height: "",
+          glucoseLevel: "",
+        });
       } catch (error) {
         console.error("Error checking existing record:", error);
       }
     };
 
-    if (open) {
-      checkExistingRecord();
-    }
+    loadRecord();
   }, [open, appointment.$id]);
 
   const addDiagnosis = () => {
@@ -170,7 +217,6 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
       let recordId: string;
 
       if (isEditMode && existingRecord) {
-        // Actualizează înregistrarea existentă
         const updateResponse = await fetch(`/api/medical-records/${existingRecord.$id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -189,10 +235,10 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
 
         recordId = existingRecord.$id;
 
-        // Șterge diagnosticurile și rețetele vechi (le vom adăuga din nou)
-        // Notă: În producție, ar trebui să actualizezi doar cele modificate
+        // Șterge diagnosticele și rețetele vechi, apoi re-creează tot
+        await fetch(`/api/medical-records/${recordId}/diagnoses`, { method: "DELETE" });
+        await fetch(`/api/medical-records/${recordId}/prescriptions`, { method: "DELETE" });
       } else {
-        // Creează înregistrarea medicală nouă
         const recordResponse = await fetch("/api/medical-records", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -218,31 +264,28 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
         recordId = record.$id;
       }
 
-      // 2. Adaugă/actualizează diagnosticurile
-      // Notă: În producție, ar trebui să verifici care sunt noi și care sunt modificate
+      // Adaugă toate diagnosticele (fresh, fără $id check)
       for (const diagnosis of diagnoses) {
-        // Verifică dacă diagnosticul există deja (are $id)
-        if (diagnosis.$id) {
-          // Actualizează diagnosticul existent (ar trebui endpoint PATCH)
-          // Pentru moment, ignorăm actualizarea și adăugăm doar cele noi
-          continue;
-        }
-        await fetch(`/api/medical-records/${recordId}/diagnoses`, {
+        const res = await fetch(`/api/medical-records/${recordId}/diagnoses`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(diagnosis),
+          body: JSON.stringify({
+            diagnosisName: diagnosis.diagnosisName,
+            diagnosisCode: diagnosis.diagnosisCode,
+            diagnosisType: diagnosis.diagnosisType,
+            status: diagnosis.status,
+            notes: diagnosis.notes,
+          }),
         });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.error("Failed to save diagnosis:", err);
+        }
       }
 
-      // 3. Adaugă/actualizează rețetele
+      // Adaugă toate rețetele (fresh, fără $id check)
       for (const prescription of prescriptions) {
-        // Verifică dacă rețeta există deja (are $id)
-        if (prescription.$id) {
-          // Actualizează rețeta existentă (ar trebui endpoint PATCH)
-          // Pentru moment, ignorăm actualizarea și adăugăm doar cele noi
-          continue;
-        }
-        await fetch(`/api/medical-records/${recordId}/prescriptions`, {
+        const res = await fetch(`/api/medical-records/${recordId}/prescriptions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -257,9 +300,13 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
             status: "active",
           }),
         });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.error("Failed to save prescription:", err);
+        }
       }
 
-      // 4. Adaugă semnele vitale (dacă există)
+      // Adaugă semnele vitale (dacă există)
       const hasVitalSigns = Object.values(vitalSigns).some((v) => v !== "");
       if (hasVitalSigns) {
         await fetch(`/api/medical-records/${recordId}/vital-signs`, {
@@ -281,10 +328,10 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
 
       setOpen(false);
       router.refresh();
-      alert(isEditMode ? "Consultație medicală actualizată cu succes!" : "Consultație medicală adăugată cu succes!");
+      toast.success(isEditMode ? "Consultație medicală actualizată cu succes!" : "Consultație medicală adăugată cu succes!");
     } catch (error: any) {
-      console.error("Error adding medical record:", error);
-      alert("Eroare la adăugarea consultației: " + error.message);
+      console.error("Error saving medical record:", error);
+      toast.error("Eroare la salvarea consultației: " + error.message);
     } finally {
       setLoading(false);
     }

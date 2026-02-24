@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, MessageSquare, Stethoscope, X } from "lucide-react";
+import { Menu, MessageSquare, Stethoscope, Users, X } from "lucide-react";
 import { useState } from "react";
 
 import { logoutDoctor } from "@/lib/actions/auth.actions";
@@ -13,7 +13,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { href: "/doctor", label: "Programari", icon: Stethoscope },
+  { href: "/doctor", label: "Programări", icon: Stethoscope },
+  { href: "/doctor/patients", label: "Istoric pacienți", icon: Users },
   { href: "/doctor/messages", label: "Mesaje", icon: MessageSquare },
 ];
 
@@ -60,14 +61,18 @@ export function DoctorLayoutClient({
           <div className="flex items-center gap-2 sm:gap-4">
             <DoctorNotificationsDropdown />
             <ThemeToggle />
-            <div className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/80">
+            <Link
+              href="/doctor/profile"
+              prefetch={false}
+              className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 transition hover:border-teal-300 hover:bg-teal-50/60 dark:border-slate-700 dark:bg-slate-800/80 dark:hover:border-teal-700 dark:hover:bg-teal-950/30"
+            >
               <div className="flex size-8 items-center justify-center rounded-full bg-teal-100 text-teal-600 dark:bg-teal-900/50 dark:text-teal-400">
                 <Stethoscope className="size-4" />
               </div>
               <span className="max-w-[180px] truncate text-sm font-medium text-slate-700 dark:text-slate-200">
                 {doctorName}
               </span>
-            </div>
+            </Link>
             <button
               type="button"
               onClick={handleLogout}

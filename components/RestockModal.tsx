@@ -22,6 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from "./ui/form";
+import { toast } from "sonner";
 interface RestockModalProps {
   stock: Omit<MedicationStock, "medication"> & { medication?: Partial<Medication> | null };
   onClose: () => void;
@@ -65,11 +66,11 @@ export const RestockModal = ({ stock, onClose, onSuccess }: RestockModalProps) =
         onSuccess();
       } else {
         const error = await response.json();
-        alert(error.error || "Eroare la reaprovizionare");
+        toast.error(error.error || "Eroare la reaprovizionare");
       }
     } catch (error) {
       console.error("Error restocking:", error);
-      alert("Eroare la reaprovizionare");
+      toast.error("Eroare la reaprovizionare");
     } finally {
       setIsLoading(false);
     }

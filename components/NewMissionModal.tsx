@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -84,11 +85,11 @@ export const NewMissionModal = ({ ambulances, onClose, onSuccess }: NewMissionMo
         onSuccess();
       } else {
         const error = await response.json();
-        alert(error.error || "Eroare la crearea misiunii");
+        toast.error(error.error || "Eroare la crearea misiunii");
       }
     } catch (error) {
       console.error("Error creating mission:", error);
-      alert("Eroare la crearea misiunii");
+      toast.error("Eroare la crearea misiunii");
     } finally {
       setIsLoading(false);
     }

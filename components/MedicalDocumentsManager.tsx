@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { formatDateTime } from "@/lib/utils";
 import { DocumentUploadModal } from "./DocumentUploadModal";
@@ -87,11 +88,11 @@ export const MedicalDocumentsManager = ({
       if (response.ok) {
         loadDocuments();
       } else {
-        alert("Eroare la ștergerea documentului");
+        toast.error("Eroare la ștergerea documentului");
       }
     } catch (error) {
       console.error("Error deleting document:", error);
-      alert("Eroare la ștergerea documentului");
+      toast.error("Eroare la ștergerea documentului");
     }
   };
 
@@ -109,11 +110,11 @@ export const MedicalDocumentsManager = ({
         a.remove();
         window.URL.revokeObjectURL(url);
       } else {
-        alert("Eroare la descărcarea documentului");
+        toast.error("Eroare la descărcarea documentului");
       }
     } catch (error) {
       console.error("Error downloading document:", error);
-      alert("Eroare la descărcarea documentului");
+      toast.error("Eroare la descărcarea documentului");
     }
   };
 

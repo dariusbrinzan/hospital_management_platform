@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Plus_Jakarta_Sans as FontSans } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "sonner";
 import dynamic from "next/dynamic";
 
 import { cn } from "@/lib/utils";
@@ -46,6 +47,15 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="light">
           {children}
           <ChatBot />
+          <Toaster
+            position="top-right"
+            richColors
+            closeButton
+            toastOptions={{
+              duration: 4000,
+              className: "font-sans",
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>

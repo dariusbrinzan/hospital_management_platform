@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prescriptionHelpers } from "@/lib/db-helpers";
 
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { recordId: string } }
+) {
+  try {
+    prescriptionHelpers.deleteByMedicalRecordId(params.recordId);
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting prescriptions:", error);
+    return NextResponse.json(
+      { error: error.message || "Eroare la ștergerea rețetelor" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { recordId: string } }

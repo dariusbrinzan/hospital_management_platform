@@ -26,6 +26,7 @@ import { Checkbox } from "../ui/checkbox";
 import { SlotSelector } from "../SlotSelector";
 import { isValidAppointmentDate } from "@/lib/utils";
 import { DoctorInfoCard } from "../DoctorInfoCard";
+import { toast } from "sonner";
 
 export const AppointmentForm = ({
   userId,
@@ -146,7 +147,7 @@ export const AppointmentForm = ({
       
       // Verifică dacă slot-ul este valid pentru programări noi (doar dacă nu este pachet de analize)
       if (!selectedAnalysisPackage && !selectedSlot) {
-        alert("Vă rugăm să selectați un slot disponibil");
+        toast.warning("Vă rugăm să selectați un slot disponibil");
         setIsLoading(false);
         return;
       }
@@ -156,7 +157,7 @@ export const AppointmentForm = ({
     }
 
     if (type === "create" && !isValidAppointmentDate(scheduleDate)) {
-      alert("Data selectată nu este validă. Selectați o zi lucrătoare în viitor.");
+      toast.warning("Data selectată nu este validă. Selectați o zi lucrătoare în viitor.");
       setIsLoading(false);
       return;
     }
@@ -234,7 +235,7 @@ export const AppointmentForm = ({
       }
     } catch (error) {
       console.log(error);
-      alert("A apărut o eroare. Slot-ul poate fi deja rezervat. Vă rugăm să încercați din nou.");
+      toast.error("A apărut o eroare. Slot-ul poate fi deja rezervat. Vă rugăm să încercați din nou.");
     }
     setIsLoading(false);
   };

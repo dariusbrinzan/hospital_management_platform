@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 const treatmentSchema = z.object({
   medicationStockId: z.string().min(1, "Selectează un medicament"),
@@ -138,11 +139,11 @@ export const AddTreatmentForm = ({ patientId, onSuccess, onCancel }: AddTreatmen
         loadAvailableMedications();
       } else {
         const error = await response.json();
-        alert(error.error || "Eroare la adăugarea tratamentului");
+        toast.error(error.error || "Eroare la adăugarea tratamentului");
       }
     } catch (error) {
       console.error(error);
-      alert("Eroare la adăugarea tratamentului");
+      toast.error("Eroare la adăugarea tratamentului");
     } finally {
       setIsLoading(false);
     }

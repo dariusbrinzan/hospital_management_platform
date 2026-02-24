@@ -1,6 +1,7 @@
 "use client";
 
 import { formatDateTime } from "@/lib/utils";
+import { toast } from "sonner";
 import { Button } from "./ui/button";
 import Link from "next/link";
 
@@ -59,11 +60,11 @@ export const MissionCard = ({ mission }: MissionCardProps) => {
         window.location.reload();
       } else {
         const error = await response.json();
-        alert(error.error || "Eroare la actualizarea statusului");
+        toast.error(error.error || "Eroare la actualizarea statusului");
       }
     } catch (error) {
       console.error("Error updating mission status:", error);
-      alert("Eroare la actualizarea statusului");
+      toast.error("Eroare la actualizarea statusului");
     }
   };
 

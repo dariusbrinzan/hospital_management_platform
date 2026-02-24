@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { formatDateTime } from "@/lib/utils";
@@ -55,12 +56,12 @@ export const HospitalAdmissionModal = ({ admission, onClose }: HospitalAdmission
       });
 
       if (response.ok) {
-        alert("Status actualizat cu succes!");
+        toast.success("Status actualizat cu succes!");
         window.location.reload();
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Eroare la actualizarea statusului");
+      toast.error("Eroare la actualizarea statusului");
     }
   };
 
@@ -80,16 +81,16 @@ export const HospitalAdmissionModal = ({ admission, onClose }: HospitalAdmission
       });
 
       if (response.ok) {
-        alert("Pacientul a fost externat cu succes!");
+        toast.success("Pacientul a fost externat cu succes!");
         onClose();
         window.location.reload();
       } else {
         const error = await response.json();
-        alert(error.error || "Eroare la externare");
+        toast.error(error.error || "Eroare la externare");
       }
     } catch (error) {
       console.error("Error discharging patient:", error);
-      alert("Eroare la externarea pacientului");
+      toast.error("Eroare la externarea pacientului");
     }
   };
 

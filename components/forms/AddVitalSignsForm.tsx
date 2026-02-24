@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 const vitalSignsSchema = z.object({
   bloodPressureSystolic: z.number().optional(),
@@ -87,11 +88,11 @@ export const AddVitalSignsForm = ({ patientId, onSuccess, onCancel }: AddVitalSi
         form.reset();
       } else {
         const error = await response.json();
-        alert(error.error || "Eroare la adăugarea semnelor vitale");
+        toast.error(error.error || "Eroare la adăugarea semnelor vitale");
       }
     } catch (error) {
       console.error(error);
-      alert("Eroare la adăugarea semnelor vitale");
+      toast.error("Eroare la adăugarea semnelor vitale");
     } finally {
       setIsLoading(false);
     }

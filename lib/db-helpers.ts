@@ -2171,6 +2171,10 @@ export const diagnosisHelpers = {
       createdAt: parseDate(d.createdAt),
     }));
   },
+
+  deleteByMedicalRecordId: (medicalRecordId: string) => {
+    db.prepare("DELETE FROM diagnoses WHERE medicalRecordId = ?").run(medicalRecordId);
+  },
 };
 
 // Prescription Helpers
@@ -2259,6 +2263,10 @@ export const prescriptionHelpers = {
     }));
   },
 
+  deleteByMedicalRecordId: (medicalRecordId: string) => {
+    db.prepare("DELETE FROM prescriptions WHERE medicalRecordId = ?").run(medicalRecordId);
+  },
+
   getActiveByPatientId: (patientId: string) => {
     const prescriptions = db.prepare(`
       SELECT p.* FROM prescriptions p
@@ -2282,6 +2290,36 @@ export const prescriptionHelpers = {
       status: p.status,
       discontinuedReason: p.discontinuedReason,
       createdAt: parseDate(p.createdAt),
+    }));
+  },
+
+  getAllByPatientId: (patientId: string) => {
+    const prescriptions = db.prepare(`
+      SELECT p.*, mr.doctorName, mr.visitDate, mr.appointmentId
+      FROM prescriptions p
+      JOIN medical_records mr ON p.medicalRecordId = mr.id
+      WHERE mr.patientId = ?
+      ORDER BY p.startDate DESC
+    `).all(patientId) as any[];
+
+    return prescriptions.map((p) => ({
+      $id: p.id,
+      medicalRecordId: p.medicalRecordId,
+      medicationName: p.medicationName,
+      dosage: p.dosage,
+      frequency: p.frequency,
+      route: p.route,
+      quantity: p.quantity,
+      startDate: parseDate(p.startDate),
+      endDate: p.endDate ? parseDate(p.endDate) : null,
+      instructions: p.instructions,
+      refills: p.refills,
+      status: p.status,
+      discontinuedReason: p.discontinuedReason,
+      createdAt: parseDate(p.createdAt),
+      doctorName: p.doctorName,
+      visitDate: parseDate(p.visitDate),
+      appointmentId: p.appointmentId,
     }));
   },
 };

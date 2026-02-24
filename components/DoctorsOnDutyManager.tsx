@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Input } from "./ui/input";
+import { toast } from "sonner";
 
 interface Workload {
   doctorName: string;
@@ -59,7 +60,7 @@ export const DoctorsOnDutyManager = () => {
 
   const addDoctorToDuty = async () => {
     if (!selectedDoctor || !weekStart || !weekEnd) {
-      alert("Completează toate câmpurile");
+      toast.warning("Completează toate câmpurile");
       return;
     }
 
@@ -79,11 +80,11 @@ export const DoctorsOnDutyManager = () => {
         await loadDoctorsOnDuty();
         setSelectedDoctor("");
       } else {
-        alert("Eroare la adăugarea medicului de gardă");
+        toast.error("Eroare la adăugarea medicului de gardă");
       }
     } catch (error) {
       console.error(error);
-      alert("Eroare la adăugarea medicului de gardă");
+      toast.error("Eroare la adăugarea medicului de gardă");
     }
   };
 
@@ -112,16 +113,16 @@ export const DoctorsOnDutyManager = () => {
 
       if (response.ok) {
         const result = await response.json();
-        alert(result.message || "Rotație generată cu succes!");
+        toast.success(result.message || "Rotație generată cu succes!");
         await loadDoctorsOnDuty();
         await loadWorkloads();
       } else {
         const error = await response.json();
-        alert(error.error || "Eroare la generarea rotației");
+        toast.error(error.error || "Eroare la generarea rotației");
       }
     } catch (error) {
       console.error(error);
-      alert("Eroare la generarea rotației");
+      toast.error("Eroare la generarea rotației");
     } finally {
       setIsGenerating(false);
     }

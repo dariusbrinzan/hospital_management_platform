@@ -79,7 +79,12 @@ export const columns: ColumnDef<Appointment>[] = [
             height={100}
             className="size-8 rounded-full border border-slate-200 dark:border-slate-700"
           />
-          <p className="whitespace-nowrap text-sm text-slate-700 dark:text-slate-200">{doctor?.name}</p>
+          <Link
+            href="/doctor/profile"
+            className="whitespace-nowrap text-sm font-medium text-teal-600 hover:text-teal-700 hover:underline dark:text-teal-400 dark:hover:text-teal-300"
+          >
+            {doctor?.name}
+          </Link>
         </div>
       );
     },

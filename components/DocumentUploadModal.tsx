@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { toast } from "sonner";
 
 interface DocumentUploadModalProps {
   patientId: string;
@@ -103,11 +104,11 @@ export const DocumentUploadModal = ({
         onClose();
       } else {
         const error = await response.json();
-        alert(error.error || "Eroare la upload document");
+        toast.error(error.error || "Eroare la upload document");
       }
     } catch (error) {
       console.error("Error uploading document:", error);
-      alert("Eroare la upload document");
+      toast.error("Eroare la upload document");
     } finally {
       setIsLoading(false);
     }

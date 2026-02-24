@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import SubmitButton from "@/components/SubmitButton";
 import { patientHelpers } from "@/lib/db-helpers";
+import { toast } from "sonner";
 
 const emergencyCaseSchema = z.object({
   patientId: z.string().optional(),
@@ -85,11 +86,11 @@ export const NewEmergencyCaseForm = () => {
         const data = await response.json();
         router.push(`/admin/emergency/${data.id}`);
       } else {
-        alert("Eroare la crearea cazului de urgență");
+        toast.error("Eroare la crearea cazului de urgență");
       }
     } catch (error) {
       console.error(error);
-      alert("Eroare la crearea cazului de urgență");
+      toast.error("Eroare la crearea cazului de urgență");
     }
     setIsLoading(false);
   };

@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { logoutPatient } from "@/lib/actions/auth.actions";
+import { toast } from "sonner";
 import { Button } from "./ui/button";
 
 export const LogoutButton = () => {
@@ -17,12 +18,12 @@ export const LogoutButton = () => {
         window.location.href = "/";
       } else {
         console.error("Logout failed:", result.error);
-        alert("A apărut o eroare la deconectare. Vă rugăm să încercați din nou.");
+        toast.error("A apărut o eroare la deconectare. Vă rugăm să încercați din nou.");
         setIsLoading(false);
       }
     } catch (error) {
       console.error("Logout error:", error);
-      alert("A apărut o eroare la deconectare. Vă rugăm să încercați din nou.");
+      toast.error("A apărut o eroare la deconectare. Vă rugăm să încercați din nou.");
       setIsLoading(false);
     }
   };

@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const dischargeSchema = z.object({
   dischargeSummary: z.string().min(10, "Rezumatul externării este obligatoriu"),
@@ -57,11 +58,11 @@ Medic responsabil: ${emergencyCase.assignedDoctorId || "N/A"}`;
         onComplete();
       } else {
         const error = await response.json();
-        alert(error.error || "Eroare la salvarea scrisorii de externare");
+        toast.error(error.error || "Eroare la salvarea scrisorii de externare");
       }
     } catch (error) {
       console.error(error);
-      alert("Eroare la salvarea scrisorii de externare");
+      toast.error("Eroare la salvarea scrisorii de externare");
     }
     setIsLoading(false);
   };

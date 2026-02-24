@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const consentSchema = z.object({
   consentGiven: z.boolean().refine((val) => val === true, {
@@ -52,11 +53,11 @@ export const ConsentForm = ({ emergencyCase, onComplete, onCancel }: ConsentForm
         onComplete();
       } else {
         const error = await response.json();
-        alert(error.error || "Eroare la salvarea consimțământului");
+        toast.error(error.error || "Eroare la salvarea consimțământului");
       }
     } catch (error) {
       console.error(error);
-      alert("Eroare la salvarea consimțământului");
+      toast.error("Eroare la salvarea consimțământului");
     }
     setIsLoading(false);
   };

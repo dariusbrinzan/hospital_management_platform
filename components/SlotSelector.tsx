@@ -6,6 +6,7 @@ import { addToWaitlist, isOnWaitlistForSlot } from "@/lib/actions/waitlist.actio
 import { formatSlotTime } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface SlotSelectorProps {
   doctorName: string;
@@ -78,7 +79,7 @@ export const SlotSelector = ({
       setWaitlistState((prev) => ({ ...prev, [index]: "on_list" }));
     } catch {
       setWaitlistState((prev) => ({ ...prev, [index]: "idle" }));
-      alert("Nu s-a putut te înscrie pe listă. Încearcă din nou.");
+      toast.error("Nu s-a putut te înscrie pe listă. Încearcă din nou.");
     }
   };
 

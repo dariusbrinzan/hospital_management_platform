@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Doctors } from "@/constants";
 
 export function MedicalLetterButton({
@@ -44,7 +45,7 @@ export function MedicalLetterButton({
       setOpen(false);
       setContent("");
     } catch (err) {
-      alert("Eroare la generarea PDF.");
+      toast.error("Eroare la generarea PDF.");
     } finally {
       setLoading(false);
     }

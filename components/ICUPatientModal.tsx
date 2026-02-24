@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { AddVitalSignsForm } from "./forms/AddVitalSignsForm";
@@ -99,13 +100,13 @@ export const ICUPatientModal = ({ patient, onClose }: ICUPatientModalProps) => {
       });
 
       if (response.ok) {
-        alert("Pacientul a fost externat cu succes");
+        toast.success("Pacientul a fost externat cu succes");
         onClose();
         window.location.reload();
       }
     } catch (error) {
       console.error("Error discharging patient:", error);
-      alert("Eroare la externarea pacientului");
+      toast.error("Eroare la externarea pacientului");
     }
   };
 

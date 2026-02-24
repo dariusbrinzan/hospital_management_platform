@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const carePlanSchema = z.object({
   diagnosis: z.string().min(5, "Diagnosticul este obligatoriu"),
@@ -59,11 +60,11 @@ ${values.followUp}` : ""}`;
         onComplete();
       } else {
         const error = await response.json();
-        alert(error.error || "Eroare la salvarea planului de îngrijire");
+        toast.error(error.error || "Eroare la salvarea planului de îngrijire");
       }
     } catch (error) {
       console.error(error);
-      alert("Eroare la salvarea planului de îngrijire");
+      toast.error("Eroare la salvarea planului de îngrijire");
     }
     setIsLoading(false);
   };

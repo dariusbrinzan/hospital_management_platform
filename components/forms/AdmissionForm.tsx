@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const DEPARTMENTS = [
   { value: "cardiology", label: "Cardiologie" },
@@ -127,7 +128,7 @@ export const AdmissionForm = ({ onSuccess, onCancel }: AdmissionFormProps) => {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Pacientul a fost internat cu succes!");
+        toast.success("Pacientul a fost internat cu succes!");
         if (onSuccess) onSuccess();
         else router.refresh();
       } else {

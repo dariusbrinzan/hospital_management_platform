@@ -8,6 +8,7 @@ import {
   FileText,
   MapPin,
   MessageSquare,
+  Pill,
   User,
   Bell,
   Stethoscope,
@@ -27,6 +28,7 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { href: "dashboard", label: "Dashboard", icon: Stethoscope },
   { href: "medical-history", label: "Istoric Medical", icon: FileText },
+  { href: "prescriptions", label: "Rețete", icon: Pill },
   { href: "calendar", label: "Calendar", icon: Calendar },
   { href: "profile", label: "Profil Medical", icon: User },
   { href: "hospital-map", label: "Hartă Spital", icon: MapPin },
