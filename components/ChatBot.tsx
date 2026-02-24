@@ -5,7 +5,16 @@ import type { ChatContext } from "@/lib/chatbot-rules";
 
 type Message = { role: "user" | "bot"; text: string };
 
-const WELCOME = "Bună! Sunt asistentul eHealth. Întreabă-mă despre programări, istoric medical, calendar, profil sau PDF-uri. Cu ce te pot ajuta?";
+const WELCOME_MESSAGES: Record<string, string> = {
+  patient:
+    "Bună! Sunt asistentul eHealth. Întreabă-mă despre programări, istoric medical, rețete, analize, calendar sau profil. Cu ce te pot ajuta?",
+  doctor:
+    "Bună! Sunt asistentul eHealth pentru medici. Poți întreba despre programări, pacienți, mesaje, consultații, statistici sau profil. Cu ce te pot ajuta?",
+  admin:
+    "Bună! Sunt asistentul eHealth pentru administrare. Poți întreba despre programări, pacienți, urgențe, ATI, internări, medicamente, echipamente, ambulanțe sau rapoarte. Cu ce te pot ajuta?",
+  guest:
+    "Bună! Sunt asistentul eHealth. Autentifică-te pentru a primi informații personalizate.",
+};
 
 export function ChatBot() {
   const [open, setOpen] = useState(false);
@@ -103,7 +112,7 @@ export function ChatBot() {
           >
             {messages.length === 0 ? (
               <div className="rounded-lg bg-gray-100 px-3 py-2 text-14-regular text-dark-700">
-                {WELCOME}
+                {WELCOME_MESSAGES[context?.role || "guest"]}
               </div>
             ) : (
               messages.map((m, i) => (

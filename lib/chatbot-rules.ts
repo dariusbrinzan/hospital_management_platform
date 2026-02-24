@@ -1,294 +1,442 @@
 /**
  * Reguli clasice pentru chatbot (fără AI).
- * Fiecare regulă are: cuvinte cheie care pot activa răspunsul și un răspuns (poate conține placeholders pentru context).
- * Sistem de scoring pentru a găsi cel mai relevant răspuns.
+ * Suportă 3 roluri: patient, doctor, admin.
  */
 
 export type ChatContext = {
   name?: string;
-  role?: "patient" | "admin" | "guest";
+  role?: "patient" | "doctor" | "admin" | "guest";
+  doctorName?: string;
+  // patient-specific
   nextAppointmentCount?: number;
   nextAppointmentDate?: string;
   hasUpcomingAppointment?: boolean;
+  // doctor-specific
+  doctorAppointmentCount?: number;
+  doctorPendingCount?: number;
+  // admin-specific
+  totalAppointments?: number;
+  totalPatients?: number;
 };
 
 export interface ChatRule {
-  /** Cuvinte sau fraze care pot activa răspunsul (se face match case-insensitive) */
   triggers: string[];
-  /** Răspunsul. Poate conține: {name}, {nextAppointmentCount}, {nextAppointmentDate} */
   response: string;
-  /** Tip de intenție care necesită date reale din API */
-  dynamicIntent?: "upcoming_appointments" | "recent_medical_history" | "active_medications" | "recent_lab_results" | "unread_notifications" | "allergies" | "recent_vaccinations" | "vital_signs" | "patient_info" | "insurance_info" | "emergency_contact" | "family_history" | "past_appointments";
-  /** Prioritate pentru matching (mai mare = mai relevant) */
+  dynamicIntent?: string;
   priority?: number;
+  roles?: ("patient" | "doctor" | "admin")[];
 }
 
-const RULES: ChatRule[] = [
-  // Salutări
+// ─── REGULI COMUNE ──────────────────────────────────────────
+const COMMON_RULES: ChatRule[] = [
   {
     triggers: ["salut", "bună", "buna", "hello", "hi", "hey", "bună ziua", "buna ziua", "bună seara", "buna seara"],
     response: "Bună, {name}! Cu ce te pot ajuta astăzi?",
     priority: 10,
   },
-  
-  // Ajutor general
-  {
-    triggers: ["ajutor", "help", "ajut", "nu știu", "nu stiu", "cum funcționează", "cum functioneaza", "ce pot face", "ce pot sa fac"],
-    response: "Te pot ghida cu: programări (cum faci, anulezi sau reprogramezi), istoric medical, calendar, profil medical, descărcare PDF consultații, medicamente, analize, alergii, vaccinări. Scrie o întrebare scurtă sau alege un subiect.",
-    priority: 5,
-  },
-  
-  // PROGRAMĂRI - trigger-uri extinse
-  {
-    triggers: ["programare", "programări", "programari", "programez", "rezerv", "program", "când am programare", "cand am programare", "ce programări am", "ce programari am", "programările mele", "programarile mele", "vreau să văd programările", "vreau sa vad programarile", "când am următoarea programare", "cand am urmatoarea programare", "următoarea programare", "urmatoarea programare", "când e programarea", "cand e programarea", "data programării", "data programarii"],
-    response: "Programările se fac din **Dashboard** → \"Programare nouă\". Poți anula sau **reprograma** direct din lista de programări. Dacă ai programări viitoare, le vezi pe dashboard și în **Calendar**.",
-    dynamicIntent: "upcoming_appointments",
-    priority: 9,
-  },
-  {
-    triggers: ["anulez", "anulare", "anula", "cancel", "renunț", "renunt", "vreau să anulez", "vreau sa anulez", "cum anulez", "cum anulez o programare"],
-    response: "Pentru a anula o programare, intră în **Dashboard**, găsești programarea în lista \"Programări viitoare\" și alegi opțiunea de anulare. Vei putea introduce și motivul anulării.",
-    priority: 8,
-  },
-  {
-    triggers: ["reprogram", "reprogramez", "schimb data", "altă dată", "alta data", "mut programarea", "vreau să schimb", "vreau sa schimb", "modific programarea", "schimb programarea"],
-    response: "Reprogramarea se face din **Dashboard**: la programarea pe care o vrei schimbată apasă \"Reprogramează\", alegi o nouă dată și interval orar disponibil.",
-    priority: 8,
-  },
-  {
-    triggers: ["programări trecute", "programari trecute", "programări anterioare", "programari anterioare", "istoric programări", "istoric programari"],
-    response: "Programările tale trecute le vezi în **Dashboard** în secțiunea \"Programări trecute\" sau în **Istoric Medical**.",
-    dynamicIntent: "past_appointments",
-    priority: 7,
-  },
-  
-  // ISTORIC MEDICAL - trigger-uri extinse
-  {
-    triggers: ["istoric", "istoric medical", "consultații", "consultatii", "diagnostic", "diagnostice", "ultimele consultații", "ultimele consultatii", "consultații recente", "consultatii recente", "ultima consultație", "ultima consultatie", "ce consultații am avut", "ce consultatii am avut", "consultațiile mele", "consultatii mele"],
-    response: "Întregul istoric medical (consultații, diagnosticuri, rețete, analize) îl găsești la **Istoric Medical** din meniu. Acolo vezi și documentele încărcate.",
-    dynamicIntent: "recent_medical_history",
-    priority: 9,
-  },
-  
-  // CALENDAR
-  {
-    triggers: ["calendar", "calendar medical", "când am", "cand am", "programări săptămâna", "programari saptamana", "ce am săptămâna asta", "ce am saptamana asta", "ce am luna asta", "ce am săptămâna viitoare", "ce am saptamana viitoare"],
-    response: "În **Calendar** vezi toate programările, vaccinările și rețetele cu termen. Poți naviga lunar și vedea ce ai în fiecare zi.",
-    priority: 7,
-  },
-  
-  // PDF/DESCĂRCĂRI
-  {
-    triggers: ["pdf", "descarc", "descărcare", "consultatie", "concluzii", "raport", "vreau să descarc", "vreau sa descarc", "cum descarc", "descărcare pdf", "descarcare pdf", "dosar medical", "dosar pdf"],
-    response: "Poți descărca **PDF pentru fiecare consultație** (cu concluzii) din **Istoric Medical** — la fiecare consultație există butonul \"Descarcă PDF\". Dosarul medical complet (un singur PDF) se descarcă din **Dashboard** cu \"Descarcă dosar PDF\".",
-    priority: 7,
-  },
-  
-  // PROFIL/DATE PERSONALE
-  {
-    triggers: ["profil", "date personale", "date mele", "informații personale", "informatii personale", "ce date am", "datele mele", "profilul meu"],
-    response: "Datele personale, alergiile, medicația curentă și stilul de viață le editezi din **Profil Medical**. Acolo poți actualiza și contactul de urgență.",
-    dynamicIntent: "patient_info",
-    priority: 8,
-  },
-  {
-    triggers: ["email", "adresă email", "adresa email", "emailul meu", "ce email am"],
-    response: "Email-ul tău este înregistrat în **Profil Medical**. Poți să-l verifici sau actualizezi acolo.",
-    dynamicIntent: "patient_info",
-    priority: 6,
-  },
-  {
-    triggers: ["telefon", "număr de telefon", "numar de telefon", "telefonul meu", "ce telefon am", "număr telefon", "numar telefon"],
-    response: "Numărul tău de telefon este înregistrat în **Profil Medical**. Poți să-l verifici sau actualizezi acolo.",
-    dynamicIntent: "patient_info",
-    priority: 6,
-  },
-  {
-    triggers: ["adresă", "adresa", "adresa mea", "unde locuiesc", "adresa de domiciliu"],
-    response: "Adresa ta este înregistrată în **Profil Medical**. Poți să o verifici sau actualizezi acolo.",
-    dynamicIntent: "patient_info",
-    priority: 6,
-  },
-  
-  // ALERGII
-  {
-    triggers: ["alergii", "alergie", "la ce sunt alergic", "ce alergii am", "sunt alergic", "am alergii", "alergii înregistrate", "alergii inregistrate"],
-    response: "Alergiile tale sunt înregistrate în profilul medical. Verifică-le în **Profil Medical** → secțiunea Alergii.",
-    dynamicIntent: "allergies",
-    priority: 9,
-  },
-  
-  // ANALIZE/REZULTATE LABORATOR
-  {
-    triggers: ["analize", "rezultate analize", "rezultate analize recente", "analize recente", "rezultate laborator", "analize de sânge", "analize de sange", "analize medicale", "rezultate test", "ce analize am", "analizele mele"],
-    response: "Rezultatele analizelor le vezi în **Istoric Medical** la fiecare consultație sau în secțiunea dedicată.",
-    dynamicIntent: "recent_lab_results",
-    priority: 9,
-  },
-  
-  // NOTIFICĂRI
-  {
-    triggers: ["notificări", "notificari", "mesaje noi", "notificări necitite", "notificari necitite", "ce notificări am", "mesaje", "alerts", "alertă", "alerta"],
-    response: "Notificările tale sunt disponibile în **Dashboard** în colțul din dreapta sus.",
-    dynamicIntent: "unread_notifications",
-    priority: 8,
-  },
-  
-  // VACCINĂRI
-  {
-    triggers: ["vaccinări", "vaccinari", "vaccin", "vaccinuri", "vaccinări recente", "vaccinari recente", "ce vaccinuri am", "vaccinurile mele", "vaccinare"],
-    response: "Vaccinările tale sunt înregistrate în **Istoric Medical** și **Profil Medical**.",
-    dynamicIntent: "recent_vaccinations",
-    priority: 8,
-  },
-  
-  // SEMNE VITALE
-  {
-    triggers: ["semne vitale", "tensiune", "puls", "temperatură", "temperatura", "greutate", "înălțime", "inaltime", "tensiune arterială", "tensiune arteriala", "presiune", "ce tensiune am", "ce greutate am", "ce înălțime am", "ce inaltime am"],
-    response: "Semnele vitale sunt înregistrate la fiecare consultație și le vezi în **Istoric Medical**.",
-    dynamicIntent: "vital_signs",
-    priority: 8,
-  },
-  
-  // MEDICAMENTE/REȚETE
-  {
-    triggers: ["rețetă", "reteta", "rețete", "retete", "medicament", "medicamente", "tratament", "medicație curentă", "medicatie curenta", "ce medicamente iau", "ce medicamente iau acum", "medicamente active", "tratament curent", "ce tratament am", "medicamentele mele"],
-    response: "Rețetele și tratamentele le vezi în **Istoric Medical** (la fiecare consultație) și în **Profil Medical** la secțiunea \"Medicație curentă\". În **Calendar** apar și rețetele cu termen de expirare.",
-    dynamicIntent: "active_medications",
-    priority: 9,
-  },
-  
-  // ASIGURARE MEDICALĂ
-  {
-    triggers: ["asigurare", "asigurare medicală", "asigurare medicala", "asigurator", "polita de asigurare", "polita mea", "ce asigurare am", "asigurarea mea"],
-    response: "Informațiile despre asigurarea ta medicală sunt înregistrate în **Profil Medical**. Poți să le verifici acolo.",
-    dynamicIntent: "insurance_info",
-    priority: 7,
-  },
-  
-  // CONTACT DE URGENȚĂ
-  {
-    triggers: ["contact urgență", "contact urgenta", "contact de urgență", "contact de urgenta", "persoană de contact", "persoana de contact", "cine e contactul meu", "cine este contactul meu", "persoană urgență", "persoana urgenta"],
-    response: "Contactul tău de urgență este înregistrat în **Profil Medical**. Poți să-l verifici sau actualizezi acolo.",
-    dynamicIntent: "emergency_contact",
-    priority: 7,
-  },
-  
-  // ISTORIC FAMILIAL
-  {
-    triggers: ["istoric familial", "istoric familie", "boli în familie", "boli in familie", "istoric medical familial", "ce boli sunt în familie", "ce boli sunt in familie"],
-    response: "Istoricul medical familial este înregistrat în **Profil Medical** și **Istoric Medical**. Poți să-l verifici acolo.",
-    dynamicIntent: "family_history",
-    priority: 7,
-  },
-  
-  // EVALUARE DOCTOR
-  {
-    triggers: ["evaluare", "evaluez", "rating", "doctor", "recenzie", "părere", "parere", "notă doctor", "nota doctor", "vreau să evaluez", "vreau sa evaluez", "cum evaluez"],
-    response: "După o consultație trecută, în **Dashboard** la programarea respectivă apare butonul **Evaluează**. Poți lăsa o notă (1–5 stele) și un comentariu. Evaluările sunt vizibile și altor pacienți la programare.",
-    priority: 6,
-  },
-  
-  // URGENȚE
-  {
-    triggers: ["urgență", "urgent", "urgentă", "emergență", "emergenta", "am nevoie urgent", "situație urgentă", "situatie urgenta"],
-    response: "Pentru urgențe medicale contactează **112** sau mergi la cel mai apropiat serviciu de urgențe. Platforma eHealth.ro este pentru programări și gestionarea dosarului medical, nu pentru situații de urgență.",
-    priority: 10,
-  },
-  
-  // CONTACT/SUPORT
-  {
-    triggers: ["contact", "suport", "ajutor uman", "vorbesc cu cineva", "telefon suport", "email suport", "cum contactez", "vreau să vorbesc", "vreau sa vorbesc"],
-    response: "Pentru suport tehnic sau întrebări despre cont, folosește datele de contact afișate pe site-ul spitalului/clinici. În aplicație poți verifica și datele din **Profil** (telefon, email).",
-    priority: 5,
-  },
-  
-  // GRUP SANGUIN
-  {
-    triggers: ["grup sanguin", "grup de sânge", "grup de sange", "ce grup sanguin am", "grupul meu sanguin"],
-    response: "Grupul tău sanguin este înregistrat în **Profil Medical**. Poți să-l verifici acolo.",
-    dynamicIntent: "patient_info",
-    priority: 6,
-  },
-  
-  // BOLI CRONICE
-  {
-    triggers: ["boli cronice", "boli cronice", "ce boli am", "boli", "afecțiuni", "afectiuni", "diagnostic", "diagnostice"],
-    response: "Boliile cronice și afecțiunile tale sunt înregistrate în **Profil Medical** și **Istoric Medical**. Poți să le verifici acolo.",
-    priority: 7,
-  },
-  
-  // INTERVENȚII CHIRURGICALE
-  {
-    triggers: ["operație", "operatie", "operații", "operatii", "intervenție chirurgicală", "interventie chirurgicala", "ce operații am avut", "ce operatii am avut"],
-    response: "Intervențiile chirurgicale sunt înregistrate în **Profil Medical** și **Istoric Medical**. Poți să le verifici acolo.",
-    priority: 7,
-  },
-  
-  // STIL DE VIAȚĂ
-  {
-    triggers: ["stil de viață", "stil de viata", "fumător", "fumator", "alcool", "exerciții", "exercitii", "activitate fizică", "activitate fizica"],
-    response: "Informațiile despre stilul tău de viață (fumat, alcool, exerciții) sunt înregistrate în **Profil Medical**. Poți să le verifici sau actualizezi acolo.",
-    dynamicIntent: "patient_info",
-    priority: 6,
-  },
-  
-  // MULȚUMIRI
   {
     triggers: ["mulțumesc", "multumesc", "mersi", "ok", "perfect", "super", "înțeles", "inteles", "bine", "clar"],
     response: "Cu plăcere! Dacă mai ai întrebări, scrie aici.",
     priority: 3,
   },
-  
-  // LA REVEDERE
   {
     triggers: ["la revedere", "pa", "bye", "o zi bună", "o zi buna", "ne vedem", "pa pa"],
     response: "La revedere! Să fii bine.",
     priority: 3,
   },
+  {
+    triggers: ["urgență", "urgent", "urgentă", "emergență", "emergenta", "am nevoie urgent", "situație urgentă", "situatie urgenta"],
+    response: "Pentru urgențe medicale contactează 112 sau mergi la cel mai apropiat serviciu de urgențe. Platforma eHealth.ro este pentru programări și gestionarea dosarului medical.",
+    priority: 10,
+  },
 ];
 
-const DEFAULT_RESPONSE =
-  "Nu am înțeles exact. Poți reformula întrebarea sau alege ce te interesează: programări, istoric medical, calendar, profil, PDF consultații, medicamente, analize, alergii sau evaluare doctor. Dacă ai nevoie de ajutor uman, folosește datele de contact ale clinicii.";
+// ─── REGULI PACIENT ─────────────────────────────────────────
+const PATIENT_RULES: ChatRule[] = [
+  {
+    triggers: ["ajutor", "help", "ajut", "nu știu", "nu stiu", "cum funcționează", "cum functioneaza", "ce pot face"],
+    response: "Te pot ghida cu: programări, istoric medical, calendar, profil medical, rețete, analize, alergii, vaccinări. Scrie o întrebare scurtă.",
+    priority: 5,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["programare", "programări", "programari", "programez", "rezerv", "program", "când am programare", "cand am programare", "ce programări am", "programările mele", "programarile mele", "următoarea programare", "urmatoarea programare"],
+    response: "Programările se fac din Dashboard → \"Programare nouă\". Poți anula sau reprograma direct din lista de programări.",
+    dynamicIntent: "upcoming_appointments",
+    priority: 9,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["anulez", "anulare", "anula", "cancel", "renunț", "renunt", "cum anulez"],
+    response: "Pentru a anula o programare, intră în Dashboard, găsești programarea și alegi opțiunea de anulare.",
+    priority: 8,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["reprogram", "reprogramez", "schimb data", "altă dată", "alta data", "mut programarea"],
+    response: "Reprogramarea se face din Dashboard: la programarea dorită apasă \"Reprogramează\", alegi o nouă dată și interval orar.",
+    priority: 8,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["programări trecute", "programari trecute", "programări anterioare", "programari anterioare", "istoric programări", "istoric programari"],
+    response: "Programările trecute le vezi în Dashboard sau în Istoric Medical.",
+    dynamicIntent: "past_appointments",
+    priority: 7,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["istoric", "istoric medical", "consultații", "consultatii", "diagnostic", "diagnostice", "ultimele consultații", "ultima consultație"],
+    response: "Întregul istoric medical îl găsești la Istoric Medical din meniu.",
+    dynamicIntent: "recent_medical_history",
+    priority: 9,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["calendar", "calendar medical", "ce am săptămâna", "ce am saptamana", "ce am luna"],
+    response: "În Calendar vezi toate programările, vaccinările și rețetele cu termen.",
+    priority: 7,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["pdf", "descarc", "descărcare", "raport", "dosar medical", "dosar pdf"],
+    response: "Poți descărca PDF pentru fiecare consultație din Istoric Medical. Dosarul complet se descarcă din Dashboard.",
+    priority: 7,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["profil", "date personale", "date mele", "informații personale", "profilul meu"],
+    response: "Datele personale le editezi din Profil Medical.",
+    dynamicIntent: "patient_info",
+    priority: 8,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["alergii", "alergie", "la ce sunt alergic", "ce alergii am", "sunt alergic"],
+    response: "Alergiile tale sunt în Profil Medical → secțiunea Alergii.",
+    dynamicIntent: "allergies",
+    priority: 9,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["analize", "rezultate analize", "analize recente", "rezultate laborator", "analize de sânge", "analize de sange", "analize medicale", "analizele mele"],
+    response: "Rezultatele analizelor le vezi la Analize Medicale din meniu.",
+    dynamicIntent: "recent_lab_results",
+    priority: 9,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["notificări", "notificari", "mesaje noi", "notificări necitite", "ce notificări am"],
+    response: "Notificările sunt în colțul din dreapta sus.",
+    dynamicIntent: "unread_notifications",
+    priority: 8,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["vaccinări", "vaccinari", "vaccin", "vaccinuri", "ce vaccinuri am", "vaccinurile mele"],
+    response: "Vaccinările tale sunt în Profil Medical și Istoric Medical.",
+    dynamicIntent: "recent_vaccinations",
+    priority: 8,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["semne vitale", "tensiune", "puls", "temperatură", "temperatura", "greutate", "înălțime", "inaltime"],
+    response: "Semnele vitale se înregistrează la fiecare consultație și le vezi în Istoric Medical.",
+    dynamicIntent: "vital_signs",
+    priority: 8,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["rețetă", "reteta", "rețete", "retete", "medicament", "medicamente", "tratament", "medicație curentă", "medicatie curenta", "ce medicamente iau", "medicamentele mele"],
+    response: "Rețetele le vezi la Rețete din meniu sau în Profil Medical.",
+    dynamicIntent: "active_medications",
+    priority: 9,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["asigurare", "asigurare medicală", "asigurare medicala", "asigurator", "ce asigurare am"],
+    response: "Informațiile despre asigurare sunt în Profil Medical.",
+    dynamicIntent: "insurance_info",
+    priority: 7,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["contact urgență", "contact urgenta", "contact de urgență", "persoană de contact"],
+    response: "Contactul de urgență este în Profil Medical.",
+    dynamicIntent: "emergency_contact",
+    priority: 7,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["istoric familial", "boli în familie", "boli in familie", "istoric medical familial"],
+    response: "Istoricul familial este în Profil Medical.",
+    dynamicIntent: "family_history",
+    priority: 7,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["evaluare", "evaluez", "rating", "recenzie", "notă doctor", "nota doctor"],
+    response: "După o consultație trecută, în Dashboard la programarea respectivă apare butonul Evaluează.",
+    priority: 6,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["harta", "hartă", "hartă spital", "harta spital", "unde e cabinetul", "unde este cabinetul", "etaj", "cabinet"],
+    response: "Harta interactivă a spitalului este accesibilă din Hartă Spital în meniu. Poți vedea cabinetul și etajul fiecărui medic.",
+    priority: 7,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["mesaje", "mesaj", "trimit mesaj", "scriu doctorului", "mesaj doctor"],
+    response: "Mesajele le trimiți din secțiunea Mesaje din meniu, legate de o programare specifică.",
+    priority: 7,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["grup sanguin", "grup de sânge", "grup de sange", "ce grup sanguin am"],
+    response: "Grupul sanguin este în Profil Medical.",
+    dynamicIntent: "patient_info",
+    priority: 6,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["boli cronice", "ce boli am", "afecțiuni", "afectiuni"],
+    response: "Bolile cronice sunt în Profil Medical și Istoric Medical.",
+    priority: 7,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["operație", "operatie", "intervenție chirurgicală", "interventie chirurgicala"],
+    response: "Intervențiile chirurgicale sunt în Profil Medical.",
+    priority: 7,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["stil de viață", "stil de viata", "fumător", "fumator", "alcool", "exerciții", "exercitii"],
+    response: "Stilul de viață (fumat, alcool, exerciții) este în Profil Medical.",
+    dynamicIntent: "patient_info",
+    priority: 6,
+    roles: ["patient"],
+  },
+  {
+    triggers: ["raportez", "raportare", "raportează", "raportez problemă", "raportez problema", "problemă", "problema"],
+    response: "Poți raporta o problemă din secțiunea Raportează o problemă din meniu.",
+    priority: 6,
+    roles: ["patient"],
+  },
+];
 
-/**
- * Calculează scorul de relevanță pentru o regulă bazat pe mesajul utilizatorului.
- * Returnează un scor mai mare pentru match-uri mai precise.
- */
+// ─── REGULI DOCTOR ──────────────────────────────────────────
+const DOCTOR_RULES: ChatRule[] = [
+  {
+    triggers: ["ajutor", "help", "ajut", "ce pot face", "cum funcționează", "cum functioneaza"],
+    response: "Ca medic, poți: vedea programările, consulta istoricul pacienților, trimite mesaje, adăuga consultații, prescrie rețete. Scrie un subiect.",
+    priority: 5,
+    roles: ["doctor"],
+  },
+  {
+    triggers: ["programare", "programări", "programari", "programările mele", "programarile mele", "ce programări am", "câte programări", "cate programari"],
+    response: "Programările tale sunt pe pagina principală (Dashboard). Poți vedea confirmări, în așteptare și anulate.",
+    dynamicIntent: "doctor_appointments",
+    priority: 9,
+    roles: ["doctor"],
+  },
+  {
+    triggers: ["pacienți", "pacienti", "pacienții mei", "pacientii mei", "câți pacienți", "cati pacienti", "lista pacienți", "lista pacienti", "istoric pacienți", "istoric pacienti"],
+    response: "Lista tuturor pacienților tăi este la Istoric pacienți din meniu. Apasă pe un pacient pentru detalii complete.",
+    dynamicIntent: "doctor_patients",
+    priority: 9,
+    roles: ["doctor"],
+  },
+  {
+    triggers: ["mesaje", "mesaj", "mesaje pacienți", "mesaje pacienti", "mesaje noi", "mesaje necitite", "am mesaje"],
+    response: "Mesajele de la pacienți sunt în secțiunea Mesaje din meniu.",
+    dynamicIntent: "doctor_messages",
+    priority: 8,
+    roles: ["doctor"],
+  },
+  {
+    triggers: ["consultație", "consultatie", "adaug consultație", "adaug consultatie", "consultație nouă", "consultatie noua", "cum adaug"],
+    response: "Pentru a adăuga o consultație, din tabelul de programări apasă butonul Adaugă/Editează Consultație la programarea dorită. Poți completa diagnostice, rețete și semne vitale.",
+    priority: 8,
+    roles: ["doctor"],
+  },
+  {
+    triggers: ["rețetă", "reteta", "prescriu", "prescrie", "medicamente", "medicament", "tratament"],
+    response: "Rețetele se adaugă din formularul de consultație (pas 3). Completează medicamentul, doza, frecvența și instrucțiunile.",
+    priority: 8,
+    roles: ["doctor"],
+  },
+  {
+    triggers: ["profil", "profilul meu", "date medic", "datele mele", "specializare"],
+    response: "Profilul tău de medic este accesibil din click pe numele tău din bara de sus.",
+    dynamicIntent: "doctor_profile",
+    priority: 7,
+    roles: ["doctor"],
+  },
+  {
+    triggers: ["statistici", "statistică", "statistica", "câte programări confirmate", "cate programari confirmate", "în așteptare", "in asteptare", "anulate"],
+    response: "Statisticile rapide (confirmate, în așteptare, anulate) le vezi pe Dashboard.",
+    dynamicIntent: "doctor_stats",
+    priority: 7,
+    roles: ["doctor"],
+  },
+  {
+    triggers: ["notificări", "notificari", "alertă", "alerta", "clopotel", "clopoțel"],
+    response: "Notificările le vezi în clopotelul din colțul dreapta-sus.",
+    dynamicIntent: "doctor_notifications",
+    priority: 7,
+    roles: ["doctor"],
+  },
+  {
+    triggers: ["deconectare", "logout", "ieși", "iesi", "deconecteaz"],
+    response: "Te poți deconecta din butonul Deconectare din bara de sus, dreapta.",
+    priority: 5,
+    roles: ["doctor"],
+  },
+];
+
+// ─── REGULI ADMIN ───────────────────────────────────────────
+const ADMIN_RULES: ChatRule[] = [
+  {
+    triggers: ["ajutor", "help", "ajut", "ce pot face", "cum funcționează", "cum functioneaza"],
+    response: "Ca administrator, poți gestiona: programări, pacienți, medici de gardă, urgențe, ATI, internări, medicamente, echipamente, transport, rapoarte. Scrie un subiect.",
+    priority: 5,
+    roles: ["admin"],
+  },
+  {
+    triggers: ["programare", "programări", "programari", "câte programări", "cate programari", "programări totale", "programari totale", "toate programările", "toate programarile"],
+    response: "Vizualizarea tuturor programărilor este pe Dashboard. Poți filtra pe specializare și medic din sidebar.",
+    dynamicIntent: "admin_appointments",
+    priority: 9,
+    roles: ["admin"],
+  },
+  {
+    triggers: ["pacienți", "pacienti", "câți pacienți", "cati pacienti", "total pacienți", "total pacienti", "lista pacienți", "lista pacienti"],
+    response: "Lista completă a pacienților este în secțiunea Pacienți din sidebar.",
+    dynamicIntent: "admin_patients",
+    priority: 9,
+    roles: ["admin"],
+  },
+  {
+    triggers: ["urgențe", "urgente", "urgență", "urgenta", "cazuri urgență", "cazuri urgenta", "caz urgență", "caz urgenta", "UPU"],
+    response: "Cazurile de urgență active sunt în secțiunea Urgențe din sidebar.",
+    dynamicIntent: "admin_emergencies",
+    priority: 9,
+    roles: ["admin"],
+  },
+  {
+    triggers: ["ATI", "ati", "terapie intensivă", "terapie intensiva", "paturi ATI", "locuri ATI", "locuri ati"],
+    response: "Statusul ATI (paturi, pacienți, echipamente) este în secțiunea ATI din sidebar.",
+    dynamicIntent: "admin_icu",
+    priority: 9,
+    roles: ["admin"],
+  },
+  {
+    triggers: ["internare", "internări", "internari", "pacienți internați", "pacienti internati", "admisii", "externare"],
+    response: "Internările active sunt în secțiunea Internări din sidebar.",
+    dynamicIntent: "admin_admissions",
+    priority: 8,
+    roles: ["admin"],
+  },
+  {
+    triggers: ["medicamente", "medicament", "stoc", "stocuri", "medicamente stoc", "farmacie", "reaprovizionare"],
+    response: "Stocurile de medicamente sunt în secțiunea Medicamente din sidebar. Poți vedea alertele de stoc scăzut.",
+    dynamicIntent: "admin_medications",
+    priority: 8,
+    roles: ["admin"],
+  },
+  {
+    triggers: ["echipament", "echipamente", "aparatură", "aparatura", "dispozitiv", "dispozitive"],
+    response: "Echipamentele medicale sunt în secțiunea Echipamente din sidebar.",
+    dynamicIntent: "admin_equipment",
+    priority: 8,
+    roles: ["admin"],
+  },
+  {
+    triggers: ["transport", "ambulanță", "ambulanta", "ambulanțe", "ambulante", "misiuni", "misiune"],
+    response: "Ambulanțele și misiunile de transport sunt în secțiunea Ambulanțe din sidebar.",
+    dynamicIntent: "admin_transport",
+    priority: 8,
+    roles: ["admin"],
+  },
+  {
+    triggers: ["gardă", "garda", "medici de gardă", "medici de garda", "cine e de gardă", "cine e de garda"],
+    response: "Medicii de gardă sunt gestionați din secțiunea Medici de gardă din sidebar.",
+    dynamicIntent: "admin_on_duty",
+    priority: 8,
+    roles: ["admin"],
+  },
+  {
+    triggers: ["rapoarte", "raport", "probleme raportate", "probleme", "reclamații", "reclamatii"],
+    response: "Problemele raportate sunt în secțiunea Rapoarte probleme din sidebar.",
+    dynamicIntent: "admin_reports",
+    priority: 7,
+    roles: ["admin"],
+  },
+  {
+    triggers: ["imagistică", "imagistica", "investigații", "investigatii", "RMN", "CT", "ecografie", "radiografie"],
+    response: "Investigațiile imagistice sunt în secțiunea Imagistică din sidebar.",
+    dynamicIntent: "admin_imaging",
+    priority: 7,
+    roles: ["admin"],
+  },
+  {
+    triggers: ["consumabile", "cereri consumabile", "consumabil"],
+    response: "Cererile de consumabile sunt în secțiunea Consumabile din sidebar.",
+    priority: 7,
+    roles: ["admin"],
+  },
+  {
+    triggers: ["statistici", "statistică", "statistica", "overview", "rezumat", "sumar"],
+    response: "Dashboard-ul principal arată un rezumat cu preview din fiecare secțiune.",
+    dynamicIntent: "admin_stats",
+    priority: 7,
+    roles: ["admin"],
+  },
+];
+
+// Combină toate regulile
+const ALL_RULES = [...COMMON_RULES, ...PATIENT_RULES, ...DOCTOR_RULES, ...ADMIN_RULES];
+
+const DEFAULT_RESPONSES: Record<string, string> = {
+  patient: "Nu am înțeles exact. Poți întreba despre: programări, istoric medical, rețete, analize, calendar, profil, alergii, vaccinări sau mesaje.",
+  doctor: "Nu am înțeles exact. Poți întreba despre: programări, pacienți, mesaje, consultații, rețete, profil sau statistici.",
+  admin: "Nu am înțeles exact. Poți întreba despre: programări, pacienți, urgențe, ATI, internări, medicamente, echipamente, transport, rapoarte sau statistici.",
+  guest: "Nu am înțeles exact. Te rog să te autentifici pentru a putea accesa informații personalizate.",
+};
+
 function calculateMatchScore(rule: ChatRule, normalizedMessage: string): number {
   let score = rule.priority || 5;
   let matchedTriggers = 0;
-  
+
   for (const trigger of rule.triggers) {
     const triggerLower = trigger.toLowerCase();
     if (normalizedMessage.includes(triggerLower)) {
       matchedTriggers++;
-      // Bonus pentru match-uri exacte sau mai lungi
       if (normalizedMessage === triggerLower) {
-        score += 10; // Match exact
+        score += 10;
       } else if (normalizedMessage.startsWith(triggerLower) || normalizedMessage.endsWith(triggerLower)) {
-        score += 5; // Match la început sau sfârșit
+        score += 5;
       } else {
-        score += 2; // Match parțial
+        score += 2;
       }
     }
   }
-  
-  // Bonus pentru mai multe trigger-uri match-uite
+
   if (matchedTriggers > 1) {
     score += matchedTriggers * 2;
   }
-  
+
   return score;
 }
 
-/**
- * Înlocuiește placeholders în răspuns cu date din context.
- */
 function fillResponse(response: string, context?: ChatContext | null): string {
   let out = response;
   if (context?.name) {
     out = out.replace(/\{name\}/g, context.name);
+  } else if (context?.doctorName) {
+    out = out.replace(/\{name\}/g, context.doctorName);
   } else {
     out = out.replace(/,?\s*\{name\}\s*/g, " ").replace(/\s+/g, " ").trim();
   }
@@ -296,27 +444,30 @@ function fillResponse(response: string, context?: ChatContext | null): string {
     out = out.replace(/\{nextAppointmentCount\}/g, String(context.nextAppointmentCount));
   if (context?.nextAppointmentDate)
     out = out.replace(/\{nextAppointmentDate\}/g, context.nextAppointmentDate);
-  return out.replace(/\*\*([^*]+)\*\*/g, "$1"); // bold -> plain
+  return out.replace(/\*\*([^*]+)\*\*/g, "$1");
 }
 
-/**
- * Găsește răspunsul potrivit pentru mesajul utilizatorului.
- * Folosește scoring pentru a găsi cel mai relevant răspuns.
- * Returnează răspunsul și tipul de intenție dacă există.
- */
-export function getReply(userMessage: string, context?: ChatContext | null): { reply: string; dynamicIntent?: string } {
+export function getReply(
+  userMessage: string,
+  context?: ChatContext | null
+): { reply: string; dynamicIntent?: string } {
   const normalized = userMessage.trim().toLowerCase();
-  if (!normalized) return { reply: fillResponse("Scrie ceva și îți răspund. 😊", context) };
+  if (!normalized) return { reply: fillResponse("Scrie ceva și îți răspund.", context) };
 
-  // Calculează scoruri pentru toate regulile
-  const scoredRules = RULES.map((rule) => ({
-    rule,
-    score: calculateMatchScore(rule, normalized),
-  }))
-    .filter((item) => item.score > (item.rule.priority || 5)) // Filtrează doar match-urile relevante
-    .sort((a, b) => b.score - a.score); // Sortează descrescător după scor
+  const role = context?.role || "guest";
 
-  // Returnează răspunsul cu cel mai mare scor
+  const applicableRules = ALL_RULES.filter(
+    (rule) => !rule.roles || rule.roles.includes(role as any)
+  );
+
+  const scoredRules = applicableRules
+    .map((rule) => ({
+      rule,
+      score: calculateMatchScore(rule, normalized),
+    }))
+    .filter((item) => item.score > (item.rule.priority || 5))
+    .sort((a, b) => b.score - a.score);
+
   if (scoredRules.length > 0) {
     const bestMatch = scoredRules[0].rule;
     return {
@@ -325,6 +476,5 @@ export function getReply(userMessage: string, context?: ChatContext | null): { r
     };
   }
 
-  // Dacă nu s-a găsit un match bun, returnează răspunsul implicit
-  return { reply: fillResponse(DEFAULT_RESPONSE, context) };
+  return { reply: fillResponse(DEFAULT_RESPONSES[role] || DEFAULT_RESPONSES.guest, context) };
 }
