@@ -213,6 +213,19 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
 
   const handleSubmit = async () => {
     setLoading(true);
+
+    // Auto-adaugă rețeta din formular dacă utilizatorul a completat dar n-a apăsat „Adaugă"
+    let finalPrescriptions = [...prescriptions];
+    if (newPrescription.medicationName && newPrescription.dosage && newPrescription.frequency) {
+      finalPrescriptions.push({ ...newPrescription });
+    }
+
+    // Auto-adaugă diagnosticul din formular dacă există
+    let finalDiagnoses = [...diagnoses];
+    if (newDiagnosis.diagnosisName) {
+      finalDiagnoses.push({ ...newDiagnosis });
+    }
+
     try {
       let recordId: string;
 
@@ -265,7 +278,7 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
       }
 
       // Adaugă toate diagnosticele (fresh, fără $id check)
-      for (const diagnosis of diagnoses) {
+      for (const diagnosis of finalDiagnoses) {
         const res = await fetch(`/api/medical-records/${recordId}/diagnoses`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -284,7 +297,7 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
       }
 
       // Adaugă toate rețetele (fresh, fără $id check)
-      for (const prescription of prescriptions) {
+      for (const prescription of finalPrescriptions) {
         const res = await fetch(`/api/medical-records/${recordId}/prescriptions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -328,7 +341,16 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
 
       setOpen(false);
       router.refresh();
-      toast.success(isEditMode ? "Consultație medicală actualizată cu succes!" : "Consultație medicală adăugată cu succes!");
+
+      const parts: string[] = [];
+      if (finalDiagnoses.length > 0) parts.push(`${finalDiagnoses.length} diagnostic(e)`);
+      if (finalPrescriptions.length > 0) parts.push(`${finalPrescriptions.length} rețetă(e)`);
+      const extra = parts.length > 0 ? ` (${parts.join(", ")})` : "";
+      toast.success(
+        isEditMode
+          ? `Consultație actualizată cu succes!${extra}`
+          : `Consultație adăugată cu succes!${extra}`
+      );
     } catch (error: any) {
       console.error("Error saving medical record:", error);
       toast.error("Eroare la salvarea consultației: " + error.message);
@@ -513,7 +535,15 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
                 <Button onClick={() => setStep(1)} variant="outline">
                   ← Înapoi
                 </Button>
-                <Button onClick={() => setStep(3)} className="shad-primary-btn">
+                <Button
+                  onClick={() => {
+                    if (newDiagnosis.diagnosisName) {
+                      addDiagnosis();
+                    }
+                    setStep(3);
+                  }}
+                  className="shad-primary-btn"
+                >
                   Următorul pas →
                 </Button>
               </div>
@@ -524,6 +554,9 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
           {step === 3 && (
             <div className="space-y-4">
               <h3 className="text-18-semibold">Rețete</h3>
+              <p className="text-sm text-slate-500">
+                Completează câmpurile și apasă „Adaugă rețetă". Poți adăuga mai multe rețete. La pasul următor se salvează automat.
+              </p>
 
               {prescriptions.length > 0 && (
                 <div className="space-y-2">
@@ -635,7 +668,15 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
                 <Button onClick={() => setStep(2)} variant="outline">
                   ← Înapoi
                 </Button>
-                <Button onClick={() => setStep(4)} className="shad-primary-btn">
+                <Button
+                  onClick={() => {
+                    if (newPrescription.medicationName && newPrescription.dosage && newPrescription.frequency) {
+                      addPrescription();
+                    }
+                    setStep(4);
+                  }}
+                  className="shad-primary-btn"
+                >
                   Următorul pas →
                 </Button>
               </div>
