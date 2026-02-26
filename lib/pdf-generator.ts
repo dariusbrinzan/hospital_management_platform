@@ -138,7 +138,7 @@ export function generateConsultationPDF(data: ConsultationPDFData): Buffer {
     pageBreak(18);
     setFillColor(PRIMARY);
     doc.roundedRect(m, y - 4, cw, 9, 1.5, 1.5, "F");
-    doc.setFont("helvetica", "bold");
+  doc.setFont("helvetica", "bold");
     doc.setFontSize(10.5);
     setColor(WHITE);
     doc.text(title.toUpperCase(), m + 4, y + 2);
@@ -147,11 +147,11 @@ export function generateConsultationPDF(data: ConsultationPDFData): Buffer {
   };
 
   const fieldLabel = (label: string, value: string, x: number, maxW: number) => {
-    doc.setFont("helvetica", "bold");
+  doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     setColor(GRAY);
     doc.text(label, x, y);
-    doc.setFont("helvetica", "normal");
+  doc.setFont("helvetica", "normal");
     setColor(DARK);
     const lines: string[] = doc.splitTextToSize(value, maxW - doc.getTextWidth(label) - 2);
     doc.text(lines[0] || "", x + doc.getTextWidth(label) + 2, y);
@@ -280,7 +280,7 @@ export function generateConsultationPDF(data: ConsultationPDFData): Buffer {
         setColor(GRAY);
         doc.text(v.label, xBox + boxW / 2, y, { align: "center" });
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
+  doc.setFontSize(12);
         setColor(DARK);
         doc.text(v.value, xBox + boxW / 2, y + 7, { align: "center" });
         doc.setFont("helvetica", "normal");
@@ -355,13 +355,13 @@ export function generateConsultationPDF(data: ConsultationPDFData): Buffer {
       setDrawColor(LIGHT_GRAY);
       doc.roundedRect(m, y - 4, cw, diag.notes ? 16 : 11, 1.5, 1.5, "FD");
 
-      doc.setFont("helvetica", "bold");
+  doc.setFont("helvetica", "bold");
       doc.setFontSize(9.5);
       setColor(DARK);
       doc.text(`${idx + 1}. ${diag.diagnosisName}`, m + 4, y + 1);
 
       if (diag.diagnosisCode) {
-        doc.setFont("helvetica", "normal");
+  doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         setColor(GRAY);
         doc.text(`(${diag.diagnosisCode})`, m + 4 + doc.getTextWidth(`${idx + 1}. ${diag.diagnosisName}  `), y + 1);
@@ -419,7 +419,7 @@ export function generateConsultationPDF(data: ConsultationPDFData): Buffer {
       doc.text(`${idx + 1}`, m + 6, y + 2, { align: "center" });
 
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
+  doc.setFontSize(10);
       setColor(DARK);
       doc.text(rx.medicationName, m + 12, y + 2);
       y += 7;
@@ -461,7 +461,7 @@ export function generateConsultationPDF(data: ConsultationPDFData): Buffer {
         setFillColor([250, 252, 250]);
         doc.rect(m, y - 3.5, cw, 6.5, "F");
       }
-      doc.setFont("helvetica", "normal");
+    doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
 
       const isAbnormal = lab.status === "abnormal" || lab.status === "critical";
@@ -542,7 +542,7 @@ export function generateConsultationPDF(data: ConsultationPDFData): Buffer {
   doc.setFontSize(8);
   setColor(GRAY);
   doc.text("Semnătura medicului", pageW - m - 35, y + 5, { align: "center" });
-  doc.setFont("helvetica", "bold");
+    doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   setColor(DARK);
   doc.text(data.doctor.name, pageW - m - 35, y + 10, { align: "center" });
@@ -637,7 +637,7 @@ export function generateAnalysisPDF(data: AnalysisPDFData): Buffer {
 
   const needPage = (need: number) => {
     if (y + need > pageHeight - 20) {
-      doc.addPage();
+    doc.addPage();
       y = 20;
       drawHeader();
     }
@@ -666,7 +666,7 @@ export function generateAnalysisPDF(data: AnalysisPDFData): Buffer {
   doc.text("Nume:", M, y);
   doc.text("Trimitator:", M + 90, y);
   y += 5;
-  doc.setFontSize(10);
+    doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0, 0, 0);
   doc.text(t(data.patient.name), col1 + 14, y - 5);
@@ -899,8 +899,8 @@ export function generateFullMedicalRecordPDF(data: FullMedicalRecordPDFData): Bu
   // Helper pentru adăugare pagină nouă dacă e necesar
   const checkPageBreak = (requiredSpace: number = 10) => {
     if (yPos + requiredSpace > 270) {
-      doc.addPage();
-      yPos = 20;
+    doc.addPage();
+    yPos = 20;
       return true;
     }
     return false;
@@ -916,11 +916,11 @@ export function generateFullMedicalRecordPDF(data: FullMedicalRecordPDFData): Bu
 
   // Header
   doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
+    doc.setFont("helvetica", "bold");
   doc.text("DOSAR MEDICAL COMPLET", pageWidth / 2, yPos, { align: "center" });
   yPos += 10;
   doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
+    doc.setFont("helvetica", "normal");
   doc.text(`Generat pe ${formatDateTime(new Date().toISOString()).dateTime}`, pageWidth / 2, yPos, { align: "center" });
   yPos += 15;
 
@@ -929,15 +929,15 @@ export function generateFullMedicalRecordPDF(data: FullMedicalRecordPDFData): Bu
   doc.setFont("helvetica", "bold");
   doc.text("1. INFORMATII PERSONALE", margin, yPos);
   yPos += 8;
-  doc.setFontSize(10);
+    doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   
   doc.text(`Nume complet: ${data.patient.name}`, margin, yPos);
-  yPos += 6;
+      yPos += 6;
   doc.text(`Data nașterii: ${formatDateTime(data.patient.birthDate).dateOnly}`, margin, yPos);
-  yPos += 6;
+      yPos += 6;
   doc.text(`Gen: ${data.patient.gender}`, margin, yPos);
-  yPos += 6;
+      yPos += 6;
   if (data.patient.phone) {
     doc.text(`Telefon: ${data.patient.phone}`, margin, yPos);
     yPos += 6;
@@ -1073,7 +1073,7 @@ export function generateFullMedicalRecordPDF(data: FullMedicalRecordPDFData): Bu
       
       if (record.diagnoses && record.diagnoses.length > 0) {
         doc.text("Diagnosticuri:", margin + 5, yPos);
-        yPos += 6;
+      yPos += 6;
         record.diagnoses.forEach((diag) => {
           const statusText = diag.status === "active" ? "Activ" : diag.status === "resolved" ? "Rezolvat" : diag.status === "chronic" ? "Cronic" : "Istoric";
           doc.text(`  - ${diag.diagnosisName} (${statusText})`, margin + 10, yPos);
@@ -1084,15 +1084,15 @@ export function generateFullMedicalRecordPDF(data: FullMedicalRecordPDFData): Bu
       
       if (record.prescriptions && record.prescriptions.length > 0) {
         doc.text("Medicamente prescrise:", margin + 5, yPos);
-        yPos += 6;
+      yPos += 6;
         record.prescriptions.forEach((presc) => {
           doc.text(`  - ${presc.medicationName} (${presc.dosage}, ${presc.frequency})`, margin + 10, yPos);
           yPos += 6;
           checkPageBreak(6);
         });
-      }
+    }
       
-      yPos += 5;
+    yPos += 5;
     });
     yPos += 5;
     checkPageBreak();
@@ -1119,10 +1119,10 @@ export function generateFullMedicalRecordPDF(data: FullMedicalRecordPDFData): Bu
     
     groupedByDate.forEach((labs, date) => {
       checkPageBreak(15);
-      doc.setFont("helvetica", "bold");
+    doc.setFont("helvetica", "bold");
       doc.text(`Data: ${date}`, margin, yPos);
-      yPos += 7;
-      doc.setFont("helvetica", "normal");
+    yPos += 7;
+    doc.setFont("helvetica", "normal");
       
       labs.forEach((lab) => {
         checkPageBreak(10);
@@ -1254,7 +1254,7 @@ export function generateReportsPDF(data: ReportsPDFData): Buffer {
   data.appointmentsByDay.slice(0, 25).forEach((r) => {
     checkPageBreak(6);
     doc.text(`${r.date}: ${r.count} programări`, margin + 5, yPos);
-    yPos += 6;
+  yPos += 6;
   });
   if (data.appointmentsByDay.length > 25) {
     doc.text(`... și încă ${data.appointmentsByDay.length - 25} zile`, margin + 5, yPos);
@@ -1286,7 +1286,7 @@ export function generateReportsPDF(data: ReportsPDFData): Buffer {
   data.emergenciesByDay.slice(0, 25).forEach((r) => {
     checkPageBreak(6);
     doc.text(`${r.date}: ${r.count} cazuri`, margin + 5, yPos);
-    yPos += 6;
+  yPos += 6;
   });
   if (data.emergenciesByDay.length > 25) {
     doc.text(`... și încă ${data.emergenciesByDay.length - 25} zile`, margin + 5, yPos);
@@ -1339,20 +1339,20 @@ export function generateMedicalLetterPDF(data: MedicalLetterPDFData): Buffer {
   };
 
   doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
+      doc.setFont("helvetica", "bold");
   doc.text(data.title, pageWidth / 2, yPos, { align: "center" });
   yPos += 12;
 
   doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
+      doc.setFont("helvetica", "normal");
   doc.text(`Data: ${formatDateTime(data.date).dateOnly}`, margin, yPos);
-  yPos += 6;
+        yPos += 6;
   doc.text(`Pacient: ${data.patient.name}`, margin, yPos);
-  yPos += 6;
+      yPos += 6;
   if (data.patient.birthDate) {
     doc.text(`Data nașterii: ${formatDateTime(data.patient.birthDate).dateOnly}`, margin, yPos);
-    yPos += 6;
-  }
+        yPos += 6;
+      }
   if (data.patient.identificationNumber) {
     doc.text(`CNP: ${data.patient.identificationNumber}`, margin, yPos);
     yPos += 6;
@@ -1384,19 +1384,19 @@ export function generateAppointmentsListPDF(data: AppointmentsListPDFData): Buff
   let yPos = 20;
 
   doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
+    doc.setFont("helvetica", "bold");
   doc.text(data.title, pageWidth / 2, yPos, { align: "center" });
   yPos += 8;
-  doc.setFontSize(10);
+    doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.text(`Generat: ${data.generatedAt}`, pageWidth / 2, yPos, { align: "center" });
   yPos += 15;
 
   data.appointments.slice(0, 50).forEach((apt, i) => {
     if (yPos > 260) {
-      doc.addPage();
-      yPos = 20;
-    }
+        doc.addPage();
+        yPos = 20;
+      }
     const statusRo = apt.status === "scheduled" ? "Confirmată" : apt.status === "pending" ? "În așteptare" : "Anulată";
     const line = `${i + 1}. ${formatDateTime(apt.schedule).dateTime} - ${formatPhysicianName(apt.primaryPhysician)} (${statusRo})${apt.patientName ? ` - ${apt.patientName}` : ""}${apt.reason ? ` - ${apt.reason}` : ""}`;
     const lines = doc.splitTextToSize(line, pageWidth - 2 * margin);

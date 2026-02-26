@@ -20,6 +20,7 @@ interface Doctor {
 
 const ADMIN_NAV = [
   { href: "/admin", label: "Dashboard", icon: "🏠" },
+  { href: "/admin/appointments", label: "Programări", icon: "📅" },
   { href: "/admin/emergency", label: "Urgente", icon: "🚨", primary: true },
   { href: "/admin/medications", label: "Medicamente", icon: "💊" },
   { href: "/admin/patients", label: "Pacienți", icon: "👥" },

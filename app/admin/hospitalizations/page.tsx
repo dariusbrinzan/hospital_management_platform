@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getDoctorSession, requireAdmin } from "@/lib/actions/auth.actions";
+import { requireAdmin } from "@/lib/actions/auth.actions";
 import { hospitalRoomHelpers, hospitalAdmissionHelpers } from "@/lib/db-helpers";
 import { AdminPageLayout } from "@/components/AdminPageLayout";
 import { HospitalRoomsDashboard } from "@/components/HospitalRoomsDashboard";
@@ -9,7 +8,6 @@ import { Button } from "@/components/ui/button";
 
 const HospitalizationsPage = async ({ searchParams }: SearchParamProps) => {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/doctor");
   const showForm = searchParams?.new === "true";
 
   const allRooms = hospitalRoomHelpers.getAllRooms();

@@ -1,35 +1,29 @@
-import Image from "next/image";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-
 import { emergencyHelpers, doctorsOnDutyHelpers } from "@/lib/db-helpers";
-import { getDoctorSession, requireAdmin } from "@/lib/actions/auth.actions";
+import { requireAdmin } from "@/lib/actions/auth.actions";
 import { EmergencyKanbanBoard } from "@/components/EmergencyKanbanBoard";
+import { AdminPageLayout } from "@/components/AdminPageLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Stethoscope, Users, Calendar, Ambulance } from "lucide-react";
 
 const EmergencyPage = async () => {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/doctor");
   const emergencyCases = await emergencyHelpers.getAll();
-  
-  // Verifică și generează rotație automată dacă e necesar (la 12 ore)
+
+  const activeCases = emergencyCases.filter((c) => c.currentState !== "discharge");
+  const inTriage = emergencyCases.filter((c) => c.currentState === "arrival" || c.currentState === "triage");
+  const criticalCount = emergencyCases.filter((c) => c.priority === 1 || c.triageLevel === "critic").length;
+
   try {
     const now = new Date();
     const currentPeriodStart = new Date(now);
     currentPeriodStart.setHours(Math.floor(now.getHours() / 12) * 12, 0, 0, 0);
     const currentPeriodEnd = new Date(currentPeriodStart);
     currentPeriodEnd.setHours(currentPeriodEnd.getHours() + 12);
-
-    // Verifică dacă există rotație pentru perioada curentă
     const existingRotation = (await import("@/lib/db")).default.prepare(`
-      SELECT COUNT(*) as count 
-      FROM doctors_on_duty 
-      WHERE weekStartDate <= ? AND weekEndDate >= ?
-    `).get(
-      currentPeriodStart.toISOString(),
-      currentPeriodEnd.toISOString()
-    ) as { count: number };
-
-    // Dacă nu există rotație, generează una automată
+      SELECT COUNT(*) as count FROM doctors_on_duty WHERE weekStartDate <= ? AND weekEndDate >= ?
+    `).get(currentPeriodStart.toISOString(), currentPeriodEnd.toISOString()) as { count: number };
     if (existingRotation.count === 0) {
       doctorsOnDutyHelpers.generateAutomaticRotationForPeriod({
         startDate: currentPeriodStart,
@@ -37,76 +31,86 @@ const EmergencyPage = async () => {
         doctorsCount: 3,
       });
     }
-  } catch (error) {
-    // Ignoră erorile la verificarea rotației
-    console.log("Auto-rotation check:", error);
+  } catch {
+    // ignore
   }
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col space-y-14">
-      <header className="admin-header">
-        <Link href="/admin" className="cursor-pointer">
-          <Image
-            src="/assets/icons/logo-full.svg"
-            height={32}
-            width={200}
-            alt="eHealth.ro logo"
-            className="h-8 w-fit"
-          />
-        </Link>
-
-        <div className="flex items-center gap-4">
-          <Link
-            href="/admin"
-            className="text-14-medium text-dark-600 hover:text-dark-700"
-          >
-            ← Înapoi la Dashboard
-          </Link>
-          <h1 className="text-16-semibold">🚨 Primiri Urgente</h1>
+    <AdminPageLayout
+      title="Primiri Urgențe"
+      description="Gestionați cazurile de urgență și urmăriți progresul pacienților în timp real."
+    >
+      <div className="space-y-6">
+        {/* Statistici rapide */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+                <Stethoscope className="size-5" />
+              </div>
+              <div>
+                <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{activeCases.length}</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Cazuri active</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400">
+                <Users className="size-5" />
+              </div>
+              <div>
+                <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{inTriage.length}</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">În așteptare triaj</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400">
+                <span className="text-lg font-bold">!</span>
+              </div>
+              <div>
+                <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{criticalCount}</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Critice</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-400">
+                <Calendar className="size-5" />
+              </div>
+              <div>
+                <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{emergencyCases.length}</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Total azi</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </header>
 
-      <main className="admin-main">
-        <section className="w-full space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="header">Dashboard Primiri Urgente</h2>
-              <p className="text-dark-600">
-                Gestionați cazurile de urgență și urmăriți progresul pacienților
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Link
-                href="/admin/emergency/new"
-                className="shad-primary-btn px-6 py-3 rounded-md text-14-medium hover:bg-green-600 transition-colors"
-              >
-                + Caz Nou
-              </Link>
-              <Link
-                href="/admin/emergency/doctors"
-                className="shad-gray-btn px-6 py-3 rounded-md text-14-medium hover:bg-dark-100 transition-colors"
-              >
-                Medici de Gardă
-              </Link>
-              <Link
-                href="/admin/icu"
-                className="shad-primary-btn px-6 py-3 rounded-md text-14-medium hover:bg-blue-600 transition-colors"
-              >
-                🏥 Dashboard ATI
-              </Link>
-              <Link
-                href="/admin/emergency/dispatcher"
-                className="shad-primary-btn px-6 py-3 rounded-md text-14-medium hover:bg-purple-600 transition-colors"
-              >
-                🚑 Dispecerat
-              </Link>
-            </div>
-          </div>
-        </section>
+        {/* Acțiuni */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button asChild className="rounded-lg bg-teal-600 hover:bg-teal-700">
+            <Link href="/admin/emergency/new">+ Caz nou</Link>
+          </Button>
+          <Button asChild variant="outline" className="rounded-lg border-slate-300 dark:border-slate-700">
+            <Link href="/admin/emergency/doctors">Medici de gardă</Link>
+          </Button>
+          <Button asChild variant="outline" className="rounded-lg border-slate-300 dark:border-slate-700">
+            <Link href="/admin/icu">Dashboard ATI</Link>
+          </Button>
+          <Button asChild variant="outline" className="rounded-lg border-slate-300 dark:border-slate-700">
+            <Link href="/admin/emergency/dispatcher">
+              <Ambulance className="size-4 mr-1.5" />
+              Dispecerat
+            </Link>
+          </Button>
+        </div>
 
         <EmergencyKanbanBoard cases={emergencyCases} />
-      </main>
-    </div>
+      </div>
+    </AdminPageLayout>
   );
 };
 

@@ -1,73 +1,40 @@
-import Image from "next/image";
 import Link from "next/link";
 import { emergencyHelpers } from "@/lib/db-helpers";
 import { getStudiesForEmergencyCase } from "@/lib/actions/imaging.actions";
 import { EmergencyCaseDetails } from "@/components/EmergencyCaseDetails";
+import { AdminPageLayout } from "@/components/AdminPageLayout";
+import { formatEmergencyCaseNumber } from "@/lib/utils";
 
 const EmergencyCasePage = async ({ params: { caseId } }: SearchParamProps) => {
-  const [emergencyCase, imagingStudies] = await Promise.all([
+  const [emergencyCase, imagingStudies, stateTransitions] = await Promise.all([
     emergencyHelpers.getById(caseId),
     getStudiesForEmergencyCase(caseId),
+    Promise.resolve(emergencyHelpers.getStateTransitions(caseId)),
   ]);
 
   if (!emergencyCase) {
     return (
-      <div className="mx-auto flex max-w-7xl flex-col space-y-14">
-        <header className="admin-header">
-          <Link href="/admin/emergency" className="cursor-pointer">
-            <Image
-              src="/assets/icons/logo-full.svg"
-              height={32}
-              width={200}
-              alt="eHealth.ro logo"
-              className="h-8 w-fit"
-            />
-          </Link>
-          <Link
-            href="/admin/emergency"
-            className="text-14-medium text-dark-600 hover:text-dark-700"
-          >
-            ← Înapoi
-          </Link>
-        </header>
-        <main className="admin-main">
-          <p className="text-16-semibold">Cazul nu a fost găsit</p>
-        </main>
-      </div>
+      <AdminPageLayout title="Caz negăsit" description="Cazul de urgență nu există." backHref="/admin/emergency">
+        <p className="text-slate-600 dark:text-slate-400">Cazul nu a fost găsit.</p>
+      </AdminPageLayout>
     );
   }
 
+  const patientName = emergencyCase.patient?.name || (emergencyCase as any).patientName || "Pacient necunoscut";
+  const caseNumber = formatEmergencyCaseNumber(emergencyCase.$id);
+
   return (
-    <div className="mx-auto flex max-w-7xl flex-col space-y-14">
-      <header className="admin-header">
-        <Link href="/admin/emergency" className="cursor-pointer">
-          <Image
-            src="/assets/icons/logo-full.svg"
-            height={32}
-            width={200}
-            alt="eHealth.ro logo"
-            className="h-8 w-fit"
-          />
-        </Link>
-
-        <div className="flex items-center gap-4">
-          <Link
-            href="/admin/emergency"
-            className="text-14-medium text-dark-600 hover:text-dark-700"
-          >
-            ← Înapoi
-          </Link>
-          <h1 className="text-16-semibold">Caz Urgență - {emergencyCase.patient?.name}</h1>
-        </div>
-      </header>
-
-      <main className="admin-main">
-        <EmergencyCaseDetails
-          emergencyCase={emergencyCase}
-          imagingStudies={imagingStudies}
-        />
-      </main>
-    </div>
+    <AdminPageLayout
+      title={`${caseNumber} — ${patientName}`}
+      description={emergencyCase.chiefComplaint}
+      backHref="/admin/emergency"
+    >
+      <EmergencyCaseDetails
+        emergencyCase={emergencyCase}
+        imagingStudies={imagingStudies}
+        stateTransitions={stateTransitions}
+      />
+    </AdminPageLayout>
   );
 };
 

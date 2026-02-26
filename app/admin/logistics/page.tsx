@@ -1,6 +1,4 @@
-import { redirect } from "next/navigation";
-
-import { getDoctorSession, requireAdmin } from "@/lib/actions/auth.actions";
+import { requireAdmin } from "@/lib/actions/auth.actions";
 import {
   consumableRequestsHelpers,
   equipmentHelpers,
@@ -14,7 +12,6 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminLogisticsPage() {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/doctor");
 
   const [requests, equipment, transports, rooms] = await Promise.all([
     Promise.resolve(consumableRequestsHelpers.getAll()),

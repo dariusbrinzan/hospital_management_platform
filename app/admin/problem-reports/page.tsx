@@ -1,8 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
-import { getDoctorSession, requireAdmin } from "@/lib/actions/auth.actions";
+import { requireAdmin } from "@/lib/actions/auth.actions";
 import { problemReportsHelpers } from "@/lib/db-helpers";
 import { ProblemReportsList } from "@/components/ProblemReportsList";
 
@@ -10,7 +9,6 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminProblemReportsPage() {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/doctor");
 
   const reports = problemReportsHelpers.getAll();
 

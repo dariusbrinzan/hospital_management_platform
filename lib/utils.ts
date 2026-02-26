@@ -102,6 +102,31 @@ export const formatDateTime = (dateString: Date | string, timeZone: string = Int
   };
 };
 
+/** Număr afișabil pentru caz de urgență (ex: ER-A1B2C3) */
+export function formatEmergencyCaseNumber(caseId: string | undefined | null): string {
+  if (!caseId) return "—";
+  const suffix = caseId.length >= 6 ? caseId.slice(-6).toUpperCase() : caseId.toUpperCase();
+  return `ER-${suffix}`;
+}
+
+/** Minute de așteptare de la arrivalTime până la endTime sau acum */
+export function getWaitingMinutes(
+  arrivalTime: string | Date,
+  endTime?: string | Date | null
+): number {
+  const start = new Date(arrivalTime).getTime();
+  const end = endTime ? new Date(endTime).getTime() : Date.now();
+  return Math.max(0, Math.floor((end - start) / (60 * 1000)));
+}
+
+/** Format afișabil pentru timp de așteptare (ex: "12 min", "1h 5 min") */
+export function formatWaitingTime(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m ? `${h}h ${m} min` : `${h}h`;
+}
+
 /** Afișează numele medicului fără a dubla prefixul "Dr." */
 export function formatDoctorDisplayName(name: string | undefined | null): string {
   if (!name) return "";

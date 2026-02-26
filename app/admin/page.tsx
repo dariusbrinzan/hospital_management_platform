@@ -36,7 +36,7 @@ const AdminPage = async () => {
 
       <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
         <div className="mx-auto max-w-4xl space-y-6">
-          <AdminDashboardSection title="Programări" href="/admin" icon="🏠">
+          <AdminDashboardSection title="Programări" href="/admin/appointments" icon="🏠">
             <div className="space-y-3">
               <p className="text-dark-700">
                 <strong>{data.appointments.scheduledCount}</strong> confirmate ·{" "}

@@ -1633,6 +1633,25 @@ export const emergencyHelpers = {
     return { $id: id, emergencyCaseId, fromState, toState, transitionReason: reason, performedBy, timestamp: new Date() };
   },
 
+  getStateTransitions: (emergencyCaseId: string) => {
+    const rows = db.prepare(`
+      SELECT id, emergencyCaseId, fromState, toState, transitionReason, performedBy, timestamp, metadata
+      FROM emergency_state_transitions
+      WHERE emergencyCaseId = ?
+      ORDER BY timestamp ASC
+    `).all(emergencyCaseId) as any[];
+    return rows.map((r) => ({
+      $id: r.id,
+      emergencyCaseId: r.emergencyCaseId,
+      fromState: r.fromState,
+      toState: r.toState,
+      transitionReason: r.transitionReason,
+      performedBy: r.performedBy,
+      timestamp: parseDate(r.timestamp),
+      metadata: r.metadata ? JSON.parse(r.metadata) : null,
+    }));
+  },
+
   updateConsent: (id: string, consentGiven: boolean) => {
     const now = new Date().toISOString();
     db.prepare(`UPDATE emergency_cases SET consentGiven = ?, updatedAt = ? WHERE id = ?`).run(consentGiven ? 1 : 0, now, id);

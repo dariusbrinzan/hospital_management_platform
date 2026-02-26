@@ -72,8 +72,8 @@ const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) =
           >
             ← Înapoi la căutare
           </Link>
-          <Link
-            href="/admin"
+        <Link
+          href="/admin"
             className="text-14-medium text-dark-500 hover:text-dark-700"
           >
             Dashboard
@@ -83,7 +83,7 @@ const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) =
             className="text-14-medium text-teal-600 hover:text-teal-700"
           >
             🩻 Programează investigație imagistică
-          </Link>
+        </Link>
           <MedicalLetterButton
             patientId={patientId}
             patientName={patient.name}
@@ -387,46 +387,46 @@ const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) =
           {/* Condiții Medicale Generale */}
           {(patient.allergies || patient.currentMedication || patient.cardiovascularDiseases || 
             patient.chronicDiseases || patient.surgeries || patient.pastMedicalHistory) && (
-            <div className="rounded-lg border border-dark-200 bg-white p-6 shadow-lg">
+          <div className="rounded-lg border border-dark-200 bg-white p-6 shadow-lg">
               <h2 className="sub-header mb-4">Condiții Medicale Generale</h2>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {patient.allergies && (
-                  <div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {patient.allergies && (
+                <div>
                     <p className="text-14-semibold text-dark-700 mb-2">Alergii (Text)</p>
-                    <p className="text-14-regular text-dark-600">{patient.allergies}</p>
-                  </div>
-                )}
-                {patient.currentMedication && (
-                  <div>
+                  <p className="text-14-regular text-dark-600">{patient.allergies}</p>
+                </div>
+              )}
+              {patient.currentMedication && (
+                <div>
                     <p className="text-14-semibold text-dark-700 mb-2">Medicație Curentă (Text)</p>
-                    <p className="text-14-regular text-dark-600">{patient.currentMedication}</p>
-                  </div>
-                )}
-                {patient.cardiovascularDiseases && (
-                  <div>
-                    <p className="text-14-semibold text-dark-700 mb-2">Boli Cardiovasculare</p>
-                    <p className="text-14-regular text-dark-600">{patient.cardiovascularDiseases}</p>
-                  </div>
-                )}
-                {patient.chronicDiseases && (
-                  <div>
-                    <p className="text-14-semibold text-dark-700 mb-2">Boli Cronice</p>
-                    <p className="text-14-regular text-dark-600">{patient.chronicDiseases}</p>
-                  </div>
-                )}
-                {patient.surgeries && (
-                  <div>
-                    <p className="text-14-semibold text-dark-700 mb-2">Intervenții Chirurgicale</p>
-                    <p className="text-14-regular text-dark-600">{patient.surgeries}</p>
-                  </div>
-                )}
-                {patient.pastMedicalHistory && (
-                  <div>
-                    <p className="text-14-semibold text-dark-700 mb-2">Istoric Medical Personal</p>
-                    <p className="text-14-regular text-dark-600">{patient.pastMedicalHistory}</p>
-                  </div>
-                )}
-              </div>
+                  <p className="text-14-regular text-dark-600">{patient.currentMedication}</p>
+                </div>
+              )}
+              {patient.cardiovascularDiseases && (
+                <div>
+                  <p className="text-14-semibold text-dark-700 mb-2">Boli Cardiovasculare</p>
+                  <p className="text-14-regular text-dark-600">{patient.cardiovascularDiseases}</p>
+                </div>
+              )}
+              {patient.chronicDiseases && (
+                <div>
+                  <p className="text-14-semibold text-dark-700 mb-2">Boli Cronice</p>
+                  <p className="text-14-regular text-dark-600">{patient.chronicDiseases}</p>
+                </div>
+              )}
+              {patient.surgeries && (
+                <div>
+                  <p className="text-14-semibold text-dark-700 mb-2">Intervenții Chirurgicale</p>
+                  <p className="text-14-regular text-dark-600">{patient.surgeries}</p>
+                </div>
+              )}
+              {patient.pastMedicalHistory && (
+                <div>
+                  <p className="text-14-semibold text-dark-700 mb-2">Istoric Medical Personal</p>
+                  <p className="text-14-regular text-dark-600">{patient.pastMedicalHistory}</p>
+                </div>
+              )}
+            </div>
             </div>
           )}
 
@@ -440,7 +440,7 @@ const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) =
                     <div className="mb-4 flex items-start justify-between border-b border-dark-200 pb-3">
                       <div>
                         <p className="text-18-semibold text-dark-700">{record.doctorName}</p>
-                        <p className="text-14-regular text-dark-500">
+              <p className="text-14-regular text-dark-500">
                           {formatDateTime(record.visitDate).dateTime}
                         </p>
                         {record.recordType && (
@@ -522,9 +522,9 @@ const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) =
                               {prescription.instructions && (
                                 <p className="text-12-regular text-dark-500 mt-1">
                                   {prescription.instructions}
-                                </p>
-                              )}
-                            </div>
+              </p>
+            )}
+          </div>
                           ))}
                         </div>
                       </div>

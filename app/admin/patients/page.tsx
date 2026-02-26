@@ -1,15 +1,13 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { LogoLink } from "@/components/LogoLink";
 import { patientHelpers } from "@/lib/db-helpers";
-import { getDoctorSession, requireAdmin } from "@/lib/actions/auth.actions";
+import { requireAdmin } from "@/lib/actions/auth.actions";
 import { formatDateTime } from "@/lib/utils";
 import { PatientSearchInput } from "@/components/PatientSearchInput";
 
 const PatientsSearchPage = async ({ searchParams }: SearchParamProps) => {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/doctor");
   const query = (searchParams?.q as string) || "";
 
   // Căutarea se face pe server, direct din baza de date

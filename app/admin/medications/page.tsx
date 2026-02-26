@@ -1,12 +1,10 @@
-import { redirect } from "next/navigation";
-import { getDoctorSession, requireAdmin } from "@/lib/actions/auth.actions";
+import { requireAdmin } from "@/lib/actions/auth.actions";
 import { medicationStockHelpers } from "@/lib/db-helpers";
 import { AdminPageLayout } from "@/components/AdminPageLayout";
 import { MedicationStockDashboard } from "@/components/MedicationStockDashboard";
 
 const MedicationsPage = async () => {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/doctor");
   const allStocks = medicationStockHelpers.getAll();
   const lowStock = medicationStockHelpers.getLowStock();
   const emergencyStocks = medicationStockHelpers.getAll("emergency_department");

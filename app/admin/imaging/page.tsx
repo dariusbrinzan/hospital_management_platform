@@ -1,17 +1,15 @@
-import Image from "next/image";
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getDoctorSession, requireAdmin } from "@/lib/actions/auth.actions";
+import { requireAdmin } from "@/lib/actions/auth.actions";
 import { getModalities, getUpcomingStudies } from "@/lib/actions/imaging.actions";
 import { getPatientById } from "@/lib/actions/patient.actions";
 import { formatDateTime } from "@/lib/utils";
 import { ImagingBookingForm } from "@/components/ImagingBookingForm";
+import { AdminPageLayout } from "@/components/AdminPageLayout";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminImagingPage({ searchParams }: SearchParamProps) {
   await requireAdmin();
-  if (await getDoctorSession()) redirect("/doctor");
   const patientId = (searchParams?.patientId as string) || undefined;
   const [modalities, upcoming, initialPatient] = await Promise.all([
     getModalities(),
@@ -24,34 +22,24 @@ export default async function AdminImagingPage({ searchParams }: SearchParamProp
       : undefined;
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col space-y-8">
-      <header className="admin-header">
-        <Link href="/admin" className="cursor-pointer">
-          <Image
-            src="/assets/icons/logo-full.svg"
-            height={32}
-            width={200}
-            alt="eHealth.ro logo"
-            className="h-8 w-fit"
-          />
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link
-            href="/admin"
-            className="text-14-medium text-dark-600 hover:text-dark-700"
-          >
-            ← Înapoi la Dashboard
-          </Link>
-          <h1 className="text-16-semibold">🩻 Investigații imagistice</h1>
-        </div>
-      </header>
+    <AdminPageLayout
+      title="🩻 Investigații imagistice"
+      description="Programări RMN, CT, Ecografie, Radiologie — pacienți ambulatori sau din urgențe."
+    >
+      <div className="rounded-lg border border-green-200 bg-green-50/60 p-4 text-14-regular text-dark-700 dark:border-green-800 dark:bg-green-950/30 dark:text-dark-200">
+        <p className="font-medium text-dark-900 dark:text-dark-100">Fluxuri programări imagistică</p>
+        <ul className="mt-2 list-inside list-disc space-y-1 text-dark-600 dark:text-dark-300">
+          <li><strong>Direct (aici):</strong> programare pentru orice pacient (căutare pacienți mai jos).</li>
+          <li><strong>Din programări:</strong> medicii pot programa imagistică din panoul Doctor → Imagistică (sursă „Programare”).</li>
+          <li><strong>Din urgențe:</strong> pentru pacienți din urgențe, deschide cazul în <Link href="/admin/emergency" className="text-green-700 underline hover:text-green-800 dark:text-green-400 dark:hover:text-green-300">Urgențe</Link> și adaugă investigații imagistice din detaliile cazului.</li>
+        </ul>
+      </div>
 
-      <main className="admin-main space-y-8">
-        <section>
-          <h2 className="text-18-semibold text-dark-900 mb-2">Modalități</h2>
-          <p className="text-14-regular text-dark-600 mb-4">
-            Programări imagistice (RMN, CT, Ecografie, Radiologie etc.) cu sloturi și integrare în fluxurile de programări și urgențe.
-          </p>
+      <section>
+        <h2 className="text-18-semibold text-dark-900 mb-2">Modalități disponibile</h2>
+        <p className="text-14-regular text-dark-600 mb-4">
+          Sloturi și durate per modalitate. Formularul de mai jos creează programări cu sursă „Direct”.
+        </p>
           <ul className="flex flex-wrap gap-2">
             {modalities.map((m: any) => (
               <li
@@ -63,15 +51,15 @@ export default async function AdminImagingPage({ searchParams }: SearchParamProp
               </li>
             ))}
           </ul>
-        </section>
+      </section>
 
-        <ImagingBookingForm
+      <ImagingBookingForm
           modalities={modalities}
           initialPatient={initialPatientForForm}
         />
 
-        <section className="rounded-lg border border-dark-200 bg-white p-6">
-          <h2 className="text-18-semibold text-dark-900 mb-4">Programări viitoare</h2>
+      <section className="rounded-lg border border-dark-200 bg-white p-6">
+        <h2 className="text-18-semibold text-dark-900 mb-4">Programări viitoare (toate sursele)</h2>
           {!upcoming || upcoming.length === 0 ? (
             <p className="text-14-regular text-dark-600">Nu există programări imagistice în perioada următoare.</p>
           ) : (
@@ -106,8 +94,7 @@ export default async function AdminImagingPage({ searchParams }: SearchParamProp
               </table>
             </div>
           )}
-        </section>
-      </main>
-    </div>
+      </section>
+    </AdminPageLayout>
   );
 }
