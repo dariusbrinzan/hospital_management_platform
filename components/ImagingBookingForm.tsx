@@ -7,6 +7,7 @@ import {
   getModalities,
   getImagingSlots,
   createImagingStudy,
+  createImagingStudyAsDoctor,
 } from "@/lib/actions/imaging.actions";
 import { formatDateTime } from "@/lib/utils";
 
@@ -18,10 +19,13 @@ export function ImagingBookingForm({
   modalities: initialModalities,
   initialPatient,
   onSuccess,
+  asDoctor = false,
 }: {
   modalities: Modality[];
   initialPatient?: { $id: string; name: string };
   onSuccess?: () => void;
+  /** Când true, folosește createImagingStudyAsDoctor (orderedBy = medicul curent). */
+  asDoctor?: boolean;
 }) {
   const router = useRouter();
   const [modalities, setModalities] = useState<Modality[]>(initialModalities);
@@ -91,13 +95,22 @@ export function ImagingBookingForm({
         /^\d{4}-\d{2}-\d{2}T/.test(selectedSlot)
           ? new Date(selectedSlot).toISOString()
           : new Date(`${date}T${selectedSlot}:00`).toISOString();
-      await createImagingStudy({
-        patientId: selectedPatient.$id,
-        modalityId,
-        scheduledAt,
-        sourceType: "direct",
-        reason: reason || null,
-      });
+      if (asDoctor) {
+        await createImagingStudyAsDoctor({
+          patientId: selectedPatient.$id,
+          modalityId,
+          scheduledAt,
+          reason: reason || null,
+        });
+      } else {
+        await createImagingStudy({
+          patientId: selectedPatient.$id,
+          modalityId,
+          scheduledAt,
+          sourceType: "direct",
+          reason: reason || null,
+        });
+      }
       setSelectedPatient(null);
       setPatientQuery("");
       setModalityId("");

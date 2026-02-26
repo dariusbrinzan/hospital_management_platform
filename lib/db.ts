@@ -125,12 +125,16 @@ try {
   if (tableExists) {
     const tableInfo = db.prepare("PRAGMA table_info(appointments)").all() as any[];
     const hasAnalysisResults = tableInfo.some((col) => col.name === "analysisResults");
-    
+    const hasAppointmentType = tableInfo.some((col) => col.name === "appointmentType");
+
     if (!hasAnalysisResults) {
       db.pragma("foreign_keys = OFF");
-      db.exec(`
-        ALTER TABLE appointments ADD COLUMN analysisResults TEXT;
-      `);
+      db.exec(`ALTER TABLE appointments ADD COLUMN analysisResults TEXT;`);
+      db.pragma("foreign_keys = ON");
+    }
+    if (!hasAppointmentType) {
+      db.pragma("foreign_keys = OFF");
+      db.exec(`ALTER TABLE appointments ADD COLUMN appointmentType TEXT NOT NULL DEFAULT 'in_person';`);
       db.pragma("foreign_keys = ON");
     }
   }

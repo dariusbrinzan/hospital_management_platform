@@ -99,6 +99,7 @@ export const CreateAppointmentSchema = z.object({
   cancellationReason: z.string().optional(),
   analysisPackage: z.string().optional(), // Pachet de analize (opțional)
   isInsured: z.boolean().default(false), // Status asigurare CASMB
+  appointmentType: z.enum(["in_person", "video"]).default("in_person"), // Tip programare: la cabinet sau videoconferință
 }).refine((data) => {
   // Dacă nu este pachet de analize, trebuie să existe doctor
   if (!data.analysisPackage && !data.primaryPhysician) {

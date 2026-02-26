@@ -18,6 +18,7 @@ import {
   Heart,
   ClipboardList,
   Stethoscope,
+  Video,
 } from "lucide-react";
 
 import { getPatient, getUser } from "@/lib/actions/patient.actions";
@@ -342,6 +343,20 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                                     Mesaje
                                   </Link>
                                 </Button>
+                                {(appointment.status === "scheduled" || appointment.status === "pending") &&
+                                  (appointment as any).appointmentType === "video" && (
+                                  <Button variant="outline" size="sm" asChild className="border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-300 dark:hover:bg-teal-900/40">
+                                    <Link
+                                      href={`/video-call?appointmentId=${appointment.$id}`}
+                                      prefetch={false}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      <Video className="size-4 mr-1.5" />
+                                      Videoconferință
+                                    </Link>
+                                  </Button>
+                                )}
                                 {appointment.status !== "cancelled" && (
                                   <>
                                     <RescheduleAppointmentButton appointment={appointment} userId={userId} />

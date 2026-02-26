@@ -68,6 +68,7 @@ export const AppointmentForm = ({
       cancellationReason: appointment?.cancellationReason || "",
       analysisPackage: "",
       isInsured: false, // Default: nu este asigurat
+      appointmentType: (appointment as any)?.appointmentType === "video" ? "video" : "in_person",
     },
   });
 
@@ -202,6 +203,7 @@ export const AppointmentForm = ({
           reason: values.reason || (selectedAnalysisPackage ? "Analize medicale" : ""),
           status: status as Status,
           note: note,
+          appointmentType: selectedAnalysisPackage ? "in_person" : (values.appointmentType === "video" ? "video" : "in_person"),
         };
 
         const newAppointment = await createAppointment(appointment);
@@ -503,6 +505,31 @@ export const AppointmentForm = ({
                         <DoctorInfoCard doctor={selectedDoctor} />
                       ) : null;
                     })()}
+
+                    {/* Tip programare: la cabinet sau videoconferință (doar pentru consultații cu doctor, nu pentru analize) */}
+                    {watchedDoctor && selectedSpecialty !== "Analize medicale" && (
+                      <FormField
+                        control={form.control}
+                        name="appointmentType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="shad-input-label">Tip programare</FormLabel>
+                            <FormControl>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <SelectTrigger className="shad-select-trigger">
+                                  <SelectValue placeholder="Alege tipul" />
+                                </SelectTrigger>
+                                <SelectContent className="shad-select-content">
+                                  <SelectItem value="in_person">La cabinet</SelectItem>
+                                  <SelectItem value="video">Videoconferință</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </>
                 )}
                 {selectedSpecialty && filteredDoctors.length === 0 && (

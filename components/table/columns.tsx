@@ -13,6 +13,7 @@ import { StatusBadge } from "../StatusBadge";
 import { AnalysisResultsModal } from "../AnalysisResultsModal";
 import { AddMedicalRecordModal } from "../AddMedicalRecordModal";
 import { Button } from "../ui/button";
+import { Video } from "lucide-react";
 
 export const columns: ColumnDef<Appointment>[] = [
   {
@@ -116,6 +117,20 @@ export const columns: ColumnDef<Appointment>[] = [
           )}
           {!isAnalysisDoctor && appointment.status === "scheduled" && (
             <AddMedicalRecordModal appointment={appointment} doctorName={appointment.primaryPhysician} />
+          )}
+          {(appointment.status === "scheduled" || appointment.status === "pending") &&
+            (appointment as any).appointmentType === "video" && (
+            <Button variant="outline" size="sm" className="h-10 rounded-lg" asChild>
+              <Link
+                href={`/video-call?appointmentId=${appointment.$id}`}
+                prefetch={false}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Video className="size-4 mr-1.5" />
+                Videoconferință
+              </Link>
+            </Button>
           )}
           {appointment.status !== "cancelled" && (
             <AppointmentModal

@@ -1,5 +1,6 @@
 "use server";
 
+import { getDoctorSession } from "./auth.actions";
 import { imagingModalityHelpers, imagingStudyHelpers } from "../db-helpers";
 import { generateTimeSlots, parseStringify } from "../utils";
 
@@ -80,6 +81,30 @@ export async function getStudiesForEmergencyCase(emergencyCaseId: string) {
 export async function getUpcomingStudies(limit?: number) {
   const list = imagingStudyHelpers.getAllUpcoming(limit ?? 50);
   return parseStringify(list);
+}
+
+export async function getStudiesOrderedByDoctor(doctorName: string, limit?: number) {
+  const list = imagingStudyHelpers.getByOrderedBy(doctorName, limit ?? 50);
+  return parseStringify(list);
+}
+
+/** Creare programare imagistică de către medic (orderedBy = medicul curent). */
+export async function createImagingStudyAsDoctor(params: {
+  patientId: string;
+  modalityId: string;
+  scheduledAt: Date | string;
+  reason?: string | null;
+}) {
+  const doctorName = await getDoctorSession();
+  if (!doctorName) throw new Error("Trebuie să fii autentificat ca medic.");
+  return createImagingStudy({
+    patientId: params.patientId,
+    modalityId: params.modalityId,
+    scheduledAt: params.scheduledAt,
+    sourceType: "appointment",
+    orderedBy: doctorName,
+    reason: params.reason ?? null,
+  });
 }
 
 export async function getImagingStudyById(id: string) {

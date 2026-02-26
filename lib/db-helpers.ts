@@ -313,11 +313,12 @@ export const appointmentHelpers = {
     const id = generateId();
     const now = new Date().toISOString();
     
+    const appointmentType = appointment.appointmentType === "video" ? "video" : "in_person";
     db.prepare(`
       INSERT INTO appointments (
         id, userId, patientId, schedule, status, primaryPhysician,
-        reason, note, cancellationReason, createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        reason, note, cancellationReason, appointmentType, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       appointment.userId,
@@ -328,6 +329,7 @@ export const appointmentHelpers = {
       appointment.reason,
       appointment.note || null,
       null,
+      appointmentType,
       now,
       now
     );
@@ -388,6 +390,7 @@ export const appointmentHelpers = {
       note: apt.note,
       cancellationReason: apt.cancellationReason,
       analysisResults: apt.analysisResults,
+      appointmentType: apt.appointmentType === "video" ? "video" : "in_person",
       createdAt: parseDate(apt.createdAt),
       updatedAt: parseDate(apt.updatedAt),
       patient: {
@@ -484,6 +487,7 @@ export const appointmentHelpers = {
       note: apt.note,
       cancellationReason: apt.cancellationReason,
       analysisResults: apt.analysisResults,
+      appointmentType: apt.appointmentType === "video" ? "video" : "in_person",
       createdAt: parseDate(apt.createdAt),
       updatedAt: parseDate(apt.updatedAt),
       patient: {
@@ -581,6 +585,7 @@ export const appointmentHelpers = {
       note: apt.note,
       cancellationReason: apt.cancellationReason,
       analysisResults: apt.analysisResults ?? null,
+      appointmentType: apt.appointmentType === "video" ? "video" : "in_person",
       createdAt: parseDate(apt.createdAt),
       updatedAt: parseDate(apt.updatedAt),
       patient: {
@@ -1356,6 +1361,32 @@ export const imagingStudyHelpers = {
     }));
   },
 
+  getByOrderedBy: (doctorName: string, limit = 50) => {
+    const now = new Date().toISOString();
+    const rows = db.prepare(`
+      SELECT s.*, p.name as patient_name, m.name as modality_name
+      FROM imaging_studies s
+      LEFT JOIN patients p ON s.patientId = p.id
+      LEFT JOIN imaging_modalities m ON s.modalityId = m.id
+      WHERE s.orderedBy = ? AND s.scheduledAt >= ?
+      ORDER BY s.scheduledAt ASC
+      LIMIT ?
+    `).all(doctorName, now, limit) as any[];
+    return rows.map((s) => ({
+      $id: s.id,
+      patientId: s.patientId,
+      modalityId: s.modalityId,
+      scheduledAt: parseDate(s.scheduledAt),
+      status: s.status,
+      sourceType: s.sourceType,
+      sourceId: s.sourceId,
+      orderedBy: s.orderedBy,
+      reason: s.reason,
+      patientName: s.patient_name,
+      modalityName: s.modality_name,
+    }));
+  },
+
   updateStatus: (id: string, status: string, resultNotes?: string | null) => {
     const now = new Date().toISOString();
     db.prepare(`
@@ -2072,6 +2103,44 @@ export const medicalRecordHelpers = {
     });
   },
 
+  getByDoctorName: (doctorName: string) => {
+    const records = db.prepare(`
+      SELECT * FROM medical_records 
+      WHERE doctorName = ? 
+      ORDER BY visitDate DESC
+    `).all(doctorName) as any[];
+
+    return records.map((record) => {
+      const diagnoses = diagnosisHelpers.getByMedicalRecordId(record.id);
+      const prescriptions = prescriptionHelpers.getByMedicalRecordId(record.id);
+      const vitalSigns = vitalSignsHelpers.getByMedicalRecordId(record.id);
+      const labResults = labResultHelpers.getByMedicalRecordId(record.id);
+      const procedures = procedureHelpers.getByMedicalRecordId(record.id);
+
+      return {
+        $id: record.id,
+        patientId: record.patientId,
+        appointmentId: record.appointmentId,
+        doctorName: record.doctorName,
+        recordType: record.recordType,
+        visitDate: parseDate(record.visitDate),
+        chiefComplaint: record.chiefComplaint,
+        subjectiveNotes: record.subjectiveNotes,
+        objectiveFindings: record.objectiveFindings,
+        assessment: record.assessment,
+        plan: record.plan,
+        notes: record.notes,
+        createdAt: parseDate(record.createdAt),
+        updatedAt: parseDate(record.updatedAt),
+        diagnoses,
+        prescriptions,
+        vitalSigns: vitalSigns?.[0] || null,
+        labResults,
+        procedures,
+      };
+    });
+  },
+
   update: (id: string, updates: Partial<{
     chiefComplaint: string;
     subjectiveNotes: string;
@@ -2320,6 +2389,38 @@ export const prescriptionHelpers = {
       doctorName: p.doctorName,
       visitDate: parseDate(p.visitDate),
       appointmentId: p.appointmentId,
+    }));
+  },
+
+  /** Toate rețetele emise de un medic (din consultațiile lui) */
+  getAllByDoctorName: (doctorName: string) => {
+    const prescriptions = db.prepare(`
+      SELECT p.*, mr.doctorName, mr.visitDate, mr.appointmentId, mr.patientId
+      FROM prescriptions p
+      JOIN medical_records mr ON p.medicalRecordId = mr.id
+      WHERE mr.doctorName = ?
+      ORDER BY p.startDate DESC
+    `).all(doctorName) as any[];
+
+    return prescriptions.map((p) => ({
+      $id: p.id,
+      medicalRecordId: p.medicalRecordId,
+      medicationName: p.medicationName,
+      dosage: p.dosage,
+      frequency: p.frequency,
+      route: p.route,
+      quantity: p.quantity,
+      startDate: parseDate(p.startDate),
+      endDate: p.endDate ? parseDate(p.endDate) : null,
+      instructions: p.instructions,
+      refills: p.refills,
+      status: p.status,
+      discontinuedReason: p.discontinuedReason,
+      createdAt: parseDate(p.createdAt),
+      doctorName: p.doctorName,
+      visitDate: parseDate(p.visitDate),
+      appointmentId: p.appointmentId,
+      patientId: p.patientId,
     }));
   },
 };
