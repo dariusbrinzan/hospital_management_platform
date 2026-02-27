@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { Appointment } from "@/types/appwrite.types";
 import { updateAnalysisResults } from "@/lib/actions/appointment.actions";
 import { AnalysisPackages } from "@/constants";
@@ -50,8 +51,10 @@ const AnalysisResultsSchema = z.object({
 
 export const AnalysisResultsModal = ({
   appointment,
+  triggerClassName,
 }: {
   appointment: Appointment;
+  triggerClassName?: string;
 }) => {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -193,7 +196,8 @@ export const AnalysisResultsModal = ({
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="shad-primary-btn text-14-medium"
+          size="sm"
+          className={cn("rounded-lg text-sm font-medium", triggerClassName ?? "shad-primary-btn text-14-medium")}
         >
           Completează rezultate analize
         </Button>

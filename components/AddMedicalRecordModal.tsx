@@ -20,9 +20,10 @@ import { toast } from "sonner";
 interface AddMedicalRecordModalProps {
   appointment: Appointment;
   doctorName: string;
+  triggerClassName?: string;
 }
 
-export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRecordModalProps) => {
+export const AddMedicalRecordModal = ({ appointment, doctorName, triggerClassName }: AddMedicalRecordModalProps) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -362,8 +363,11 @@ export const AddMedicalRecordModal = ({ appointment, doctorName }: AddMedicalRec
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="shad-primary-btn text-14-medium">
-          {isEditMode ? "✏️ Editează Consultație" : "📝 Adaugă Consultație"}
+        <Button
+          size="sm"
+          className={`rounded-lg text-sm font-medium ${triggerClassName ?? "shad-primary-btn text-14-medium"}`}
+        >
+          {isEditMode ? "Editează consultație" : "Raport consultație"}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">

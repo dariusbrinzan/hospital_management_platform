@@ -1704,6 +1704,12 @@ export const emergencyHelpers = {
     db.prepare(`UPDATE emergency_cases SET dischargeLetter = ?, updatedAt = ? WHERE id = ?`).run(dischargeLetter, now, id);
     return emergencyHelpers.getById(id);
   },
+
+  /** Cazuri de urgență asignate unui medic (assignedDoctorId = doctorName). */
+  getByAssignedDoctor: (doctorName: string) => {
+    const all = emergencyHelpers.getAll();
+    return all.filter((c) => c.assignedDoctorId === doctorName);
+  },
 };
 
 // Doctors on duty helpers
@@ -1783,6 +1789,18 @@ export const doctorsOnDutyHelpers = {
       createdAt: parseDate(d.createdAt),
       updatedAt: parseDate(d.updatedAt),
     }));
+  },
+
+  /** Verifică dacă un medic este în prezent de gardă (perioada curentă, disponibil). */
+  isOnDuty: (doctorName: string): boolean => {
+    const now = new Date().toISOString();
+    const row = db.prepare(`
+      SELECT 1 FROM doctors_on_duty
+      WHERE doctorName = ? AND isAvailable = 1
+        AND weekStartDate <= ? AND weekEndDate >= ?
+      LIMIT 1
+    `).get(doctorName, now, now) as { "1"?: number } | undefined;
+    return !!row;
   },
 
   /** Număr gărzi per medic într-o perioadă (weekStartDate în interval). */

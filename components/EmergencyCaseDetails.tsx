@@ -30,6 +30,8 @@ interface EmergencyCaseDetailsProps {
   emergencyCase: EmergencyCase;
   imagingStudies?: any[];
   stateTransitions?: StateTransitionRow[];
+  /** Numele utilizatorului care efectuează tranzițiile (ex. medic din sesiune). Implicit: "Admin". */
+  performedBy?: string;
 }
 
 const stateLabels: Record<EmergencyState, string> = {
@@ -42,7 +44,7 @@ const stateLabels: Record<EmergencyState, string> = {
   discharge: "Externare",
 };
 
-export const EmergencyCaseDetails = ({ emergencyCase, imagingStudies = [], stateTransitions = [] }: EmergencyCaseDetailsProps) => {
+export const EmergencyCaseDetails = ({ emergencyCase, imagingStudies = [], stateTransitions = [], performedBy = "Admin" }: EmergencyCaseDetailsProps) => {
   const router = useRouter();
   const [activeForm, setActiveForm] = useState<EmergencyState | null>(null);
   const doctor = emergencyCase.assignedDoctorId
@@ -67,7 +69,7 @@ export const EmergencyCaseDetails = ({ emergencyCase, imagingStudies = [], state
       const response = await fetch(`/api/emergency/${emergencyCase.$id}/transition`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newState, performedBy: "Admin", skipReason }),
+        body: JSON.stringify({ newState, performedBy, skipReason }),
       });
       if (response.ok) {
         router.refresh();
