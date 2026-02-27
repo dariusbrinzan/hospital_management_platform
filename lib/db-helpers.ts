@@ -530,6 +530,25 @@ export const appointmentHelpers = {
     }));
   },
 
+  /** Programări care încep într-un interval (pentru reminder-uri). Returnează id, userId, primaryPhysician, schedule, patientName. */
+  getAppointmentsStartingBetween: (startIso: string, endIso: string) => {
+    const rows = db.prepare(`
+      SELECT a.id, a.userId, a.primaryPhysician, a.schedule, p.name as patient_name
+      FROM appointments a
+      JOIN patients p ON a.patientId = p.id
+      WHERE a.schedule >= ? AND a.schedule <= ?
+        AND a.status IN ('scheduled', 'pending')
+      ORDER BY a.schedule ASC
+    `).all(startIso, endIso) as any[];
+    return rows.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      primaryPhysician: r.primaryPhysician,
+      schedule: r.schedule,
+      patientName: r.patient_name || "Pacient",
+    }));
+  },
+
   getById: (id: string) => {
     const apt = db.prepare(`
       SELECT 
@@ -790,6 +809,14 @@ export const notificationHelpers = {
     db.prepare(`UPDATE notifications SET isRead = 1 WHERE userId = ? AND isRead = 0`).run(userId);
   },
 
+  /** Verifică dacă există deja o notificare reminder pentru această programare (evită duplicate). */
+  hasReminderSent: (appointmentId: string, type: string) => {
+    const r = db.prepare(
+      `SELECT 1 FROM notifications WHERE appointmentId = ? AND type = ? LIMIT 1`
+    ).get(appointmentId, type) as { "1"?: number } | undefined;
+    return !!r;
+  },
+
   getById: (id: string) => {
     const notif = db.prepare("SELECT * FROM notifications WHERE id = ?").get(id) as any;
     if (!notif) return null;
@@ -869,6 +896,14 @@ export const doctorNotificationHelpers = {
   markAsReadByAppointmentId: (doctorName: string, appointmentId: string) => {
     const key = normalizeDoctorNameForStorage(doctorName);
     db.prepare(`UPDATE doctor_notifications SET isRead = 1 WHERE doctorName = ? AND appointmentId = ?`).run(key, appointmentId);
+  },
+
+  /** Verifică dacă medicul a primit deja reminder pentru această programare (evită duplicate). */
+  hasReminderSent: (appointmentId: string, type: string) => {
+    const r = db.prepare(
+      `SELECT 1 FROM doctor_notifications WHERE appointmentId = ? AND type = ? LIMIT 1`
+    ).get(appointmentId, type) as { "1"?: number } | undefined;
+    return !!r;
   },
 };
 

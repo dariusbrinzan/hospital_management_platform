@@ -103,6 +103,8 @@ export const NotificationsDropdown = ({
       case "analysis_results_ready":
         return "/assets/icons/file-text.svg";
       case "appointment_reminder":
+      case "appointment_reminder_1h":
+      case "appointment_reminder_24h":
         return "/assets/icons/calendar.svg";
       case "appointment_created":
         return "/assets/icons/clock.svg";
@@ -126,6 +128,8 @@ export const NotificationsDropdown = ({
       case "analysis_results_ready":
         return "text-blue-600";
       case "appointment_reminder":
+      case "appointment_reminder_1h":
+      case "appointment_reminder_24h":
         return "text-yellow-600";
       case "appointment_created":
         return "text-gray-600";

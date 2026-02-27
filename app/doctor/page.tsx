@@ -18,7 +18,7 @@ export default async function DoctorDashboardPage() {
               Programările mele
             </CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-400">
-              Programări totale: {appointments.totalCount} · confirmate:{" "}
+              Azi: {appointments.documents.filter((apt: any) => apt.status !== "cancelled" && new Date(apt.schedule).toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10)).length} programări · total: {appointments.totalCount} · confirmate:{" "}
               {appointments.scheduledCount} · în așteptare: {appointments.pendingCount} · anulate:{" "}
               {appointments.cancelledCount}
             </CardDescription>

@@ -137,18 +137,26 @@ export const DoctorNotificationsDropdown = () => {
               >
                 <Link
                   href={
-                    notification.appointmentId
-                      ? `/doctor/messages?appointmentId=${notification.appointmentId}`
-                      : "/doctor/messages"
+                    notification.type === "appointment_reminder_1h" || notification.type === "appointment_reminder_24h"
+                      ? "/doctor"
+                      : notification.appointmentId
+                        ? `/doctor/messages?appointmentId=${notification.appointmentId}`
+                        : "/doctor/messages"
                   }
                   className="flex items-start gap-3 w-full"
                 >
                   <Image
-                    src="/assets/icons/file-text.svg"
+                    src={
+                      notification.type === "appointment_reminder_1h" || notification.type === "appointment_reminder_24h"
+                        ? "/assets/icons/calendar.svg"
+                        : "/assets/icons/file-text.svg"
+                    }
                     height={20}
                     width={20}
-                    alt="mesaj"
-                    className="mt-0.5 flex-shrink-0 text-blue-600"
+                    alt={notification.type?.startsWith("appointment_reminder") ? "reminder" : "mesaj"}
+                    className={`mt-0.5 flex-shrink-0 ${
+                      notification.type?.startsWith("appointment_reminder") ? "text-amber-600 dark:text-amber-400" : "text-blue-600"
+                    }`}
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
