@@ -13,6 +13,14 @@ const Home = async ({ searchParams }: SearchParamProps) => {
   const isAdmin = searchParams?.admin === "true";
   const isDoctor = searchParams?.doctor === "true";
 
+  // Nu permite niciodată email/parolă în URL (securitate)
+  if (searchParams?.email != null || searchParams?.password != null) {
+    const safe: string[] = [];
+    if (isAdmin) safe.push("admin=true");
+    if (isDoctor) safe.push("doctor=true");
+    redirect(safe.length ? `/?${safe.join("&")}` : "/");
+  }
+
   if (isAdmin && (await getAdminSession())) redirect("/admin");
   if (isDoctor && (await getDoctorSession())) redirect("/doctor");
 

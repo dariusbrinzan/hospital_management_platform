@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
+import { useState, useMemo, useEffect } from "react";
 import {
   HOSPITAL_FLOORS,
   BUILDING_DIMENSIONS,
@@ -8,9 +9,12 @@ import {
   getAllRooms,
   type Room,
   type RoomCategory,
-  type FloorPlan,
-  type Corridor,
 } from "@/lib/hospital-map";
+
+const HospitalMapLeaflet = dynamic(
+  () => import("./HospitalMapLeaflet").then((m) => m.HospitalMapLeaflet),
+  { ssr: false }
+);
 
 const CAT_FILL: Record<RoomCategory, string> = {
   reception: "#D1FAE5",
@@ -81,10 +85,9 @@ type HospitalMapProps = {
 export function HospitalMap({ initialFloor, highlightRoomId, initialSearch }: HospitalMapProps) {
   const [floor, setFloor] = useState(initialFloor ?? 0);
   const [selected, setSelected] = useState<Room | null>(null);
-  const [hovered, setHovered] = useState<string | null>(null);
   const [query, setQuery] = useState(initialSearch ?? "");
   const [fromAppointment, setFromAppointment] = useState<Room | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
+  const [categoryFilter, setCategoryFilter] = useState<RoomCategory | null>(null);
 
   useEffect(() => {
     if (highlightRoomId == null || highlightRoomId === "") return;
@@ -109,7 +112,24 @@ export function HospitalMap({ initialFloor, highlightRoomId, initialSearch }: Ho
   }, [initialSearch]);
 
   const plan = HOSPITAL_FLOORS.find((f) => f.number === floor) || HOSPITAL_FLOORS[0];
-  const { w: BW, h: BH } = BUILDING_DIMENSIONS;
+
+  const floorStats = useMemo(() => {
+    const byCat: Partial<Record<RoomCategory, number>> = {};
+    plan.rooms.forEach((r) => {
+      byCat[r.category] = (byCat[r.category] ?? 0) + 1;
+    });
+    const parts: string[] = [];
+    (Object.keys(CAT_LABEL) as RoomCategory[]).forEach((cat) => {
+      const n = byCat[cat];
+      if (n && n > 0) parts.push(n > 1 ? `${n} ${CAT_LABEL[cat]}` : CAT_LABEL[cat]);
+    });
+    return parts.join(" · ");
+  }, [plan.rooms]);
+
+  const roomsFiltered = useMemo(() => {
+    if (!categoryFilter) return plan.rooms;
+    return plan.rooms.filter((r) => r.category === categoryFilter);
+  }, [plan.rooms, categoryFilter]);
 
   const searchResults = useMemo(() => {
     if (!query.trim()) return [];
@@ -120,18 +140,6 @@ export function HospitalMap({ initialFloor, highlightRoomId, initialSearch }: Ho
     setSelected(room);
     setFloor(room.floor);
     setQuery("");
-  };
-
-  const doorIndicator = (room: Room) => {
-    const ds = room.doorSide || "bottom";
-    const dw = Math.min(Math.max(room.w * 0.28, 14), 22);
-    const dh = 5;
-    let dx = 0, dy = 0, rw = dw, rh = dh;
-    if (ds === "bottom") { dx = room.x + (room.w - dw) / 2; dy = room.y + room.h - 2; }
-    else if (ds === "top") { dx = room.x + (room.w - dw) / 2; dy = room.y - 2; }
-    else if (ds === "left") { dx = room.x - 1; dy = room.y + (room.h - dw) / 2; rw = dh; rh = dw; }
-    else { dx = room.x + room.w - 1; dy = room.y + (room.h - dw) / 2; rw = dh; rh = dw; }
-    return { dx, dy, rw, rh };
   };
 
   return (
@@ -219,161 +227,94 @@ export function HospitalMap({ initialFloor, highlightRoomId, initialSearch }: Ho
         ))}
       </div>
 
-      {/* Blueprint SVG */}
+      {/* Harta interactivă (Leaflet) */}
       <div className="rounded-xl border border-dark-200 bg-white shadow-sm">
         <div className="border-b border-dark-200 px-5 py-3">
           <h2 className="text-base font-semibold text-dark-700">{plan.name}</h2>
           <p className="text-xs text-dark-500">{plan.label}</p>
+          <p className="mt-1.5 text-xs text-dark-600">
+            <span className="font-medium">Pe acest etaj:</span> {floorStats}
+          </p>
+          <p className="mt-0.5 text-xs text-dark-400">
+            Plan interactiv · Zoom cu scroll, deplasare cu mouse · Click pe cameră pentru detalii
+          </p>
         </div>
-        <div className="relative overflow-auto p-4" style={{ background: "#FAFBFC" }}>
-          <svg
-            ref={svgRef}
-            viewBox={`0 0 ${BW} ${BH}`}
-            className="mx-auto block w-full"
-            style={{ maxHeight: "600px", minHeight: "420px" }}
+        <div className="p-4">
+          <HospitalMapLeaflet
+            plan={plan}
+            selectedId={selected?.id ?? null}
+            highlightRoomId={highlightRoomId ?? null}
+            onSelectRoom={selectRoom}
+            selectedRoom={selected}
+            buildingW={BUILDING_DIMENSIONS.w}
+            buildingH={BUILDING_DIMENSIONS.h}
+          />
+        </div>
+
+        {/* Legendă + Filtru categorii (click pe categorie filtrează lista) */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-dark-200 px-5 py-3">
+          <span className="text-xs font-medium text-dark-500">Legendă / Filtru:</span>
+          <button
+            type="button"
+            onClick={() => setCategoryFilter(null)}
+            className={`rounded-md px-2 py-0.5 text-xs font-medium transition-colors ${categoryFilter === null ? "bg-dark-200 text-dark-800" : "text-dark-500 hover:bg-gray-100"}`}
           >
-            {/* Background grid */}
-            <defs>
-              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E5E7EB" strokeWidth="0.5" />
-              </pattern>
-            </defs>
-            <rect width={BW} height={BH} fill="url(#grid)" />
-
-            {/* Building outline — dreptunghi */}
-            <rect x="22" y="28" width={BW - 44} height={BH - 56} fill="none" stroke="#374151" strokeWidth="2.5" rx="5" />
-
-            {/* Corridors */}
-            {plan.corridors.map((c, i) => (
-              <g key={`cor-${i}`}>
-                <rect x={c.x} y={c.y} width={c.w} height={c.h} fill="#F9FAFB" stroke="#D1D5DB" strokeWidth="1" strokeDasharray="6 3" rx="2" />
-                {c.label && (
-                  <text x={c.x + c.w / 2} y={c.y + c.h / 2 + 4} textAnchor="middle" fontSize="11" fill="#9CA3AF" fontWeight="500" letterSpacing="1">
-                    {c.label.toUpperCase()}
-                  </text>
-                )}
-              </g>
-            ))}
-
-            {/* Rooms */}
-            {plan.rooms.map((room) => {
-              const isHov = hovered === room.id;
-              const isSel = selected?.id === room.id;
-              const fill = CAT_FILL[room.category];
-              const stroke = CAT_STROKE[room.category];
-              const door = doorIndicator(room);
-              const labelFits = room.w >= 80 && room.h >= 50;
-              const doctorFits = room.w >= 100 && room.h >= 70 && !!room.doctor;
-
-              return (
-                <g
-                  key={room.id}
-                  className="cursor-pointer"
-                  onClick={() => selectRoom(room)}
-                  onMouseEnter={() => setHovered(room.id)}
-                  onMouseLeave={() => setHovered(null)}
-                >
-                  {/* Room fill */}
-                  <rect
-                    x={room.x}
-                    y={room.y}
-                    width={room.w}
-                    height={room.h}
-                    fill={isSel ? stroke : isHov ? `${stroke}22` : fill}
-                    stroke={stroke}
-                    strokeWidth={isSel ? 3 : isHov ? 2 : 1.5}
-                    rx="3"
-                  />
-                  {/* Door indicator */}
-                  <rect
-                    x={door.dx}
-                    y={door.dy}
-                    width={door.rw}
-                    height={door.rh}
-                    fill="#FCD34D"
-                    rx="1"
-                  />
-                  {/* Room number (always visible) */}
-                  <text
-                    x={room.x + 6}
-                    y={room.y + 14}
-                    fontSize="10"
-                    fontWeight="700"
-                    fill={isSel ? "#FFFFFF" : stroke}
-                    className="pointer-events-none select-none"
-                  >
-                    {room.roomNumber}
-                  </text>
-                  {/* Room name */}
-                  {labelFits && (
-                    <text
-                      x={room.x + room.w / 2}
-                      y={room.y + room.h / 2 + (doctorFits ? -4 : 2)}
-                      textAnchor="middle"
-                      fontSize="10"
-                      fontWeight="600"
-                      fill={isSel ? "#FFFFFF" : "#374151"}
-                      className="pointer-events-none select-none"
-                    >
-                      {room.name.length > 20 ? room.name.slice(0, 18) + "…" : room.name}
-                    </text>
-                  )}
-                  {/* Doctor name */}
-                  {doctorFits && (
-                    <text
-                      x={room.x + room.w / 2}
-                      y={room.y + room.h / 2 + 12}
-                      textAnchor="middle"
-                      fontSize="9"
-                      fill={isSel ? "#D1FAE5" : "#059669"}
-                      fontWeight="500"
-                      className="pointer-events-none select-none"
-                    >
-                      {room.doctor}
-                    </text>
-                  )}
-                  {/* Small rooms: just icon text */}
-                  {!labelFits && (
-                    <text
-                      x={room.x + room.w / 2}
-                      y={room.y + room.h / 2 + 5}
-                      textAnchor="middle"
-                      fontSize="9"
-                      fill={isSel ? "#FFFFFF" : "#374151"}
-                      className="pointer-events-none select-none"
-                    >
-                      {room.category === "elevator" ? "▲▼" : room.category === "stairs" ? "╱╲" : room.category === "restroom" ? "WC" : ""}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-
-            {/* Title */}
-            <text x={BW / 2} y={24} textAnchor="middle" fontSize="14" fontWeight="700" fill="#374151">
-              {plan.name}
-            </text>
-            <text x={BW - 30} y={BH - 10} textAnchor="end" fontSize="9" fill="#9CA3AF">
-              Spital eHealth.ro — Plan etaj
-            </text>
-          </svg>
-        </div>
-
-        {/* Legendă */}
-        <div className="flex flex-wrap gap-x-4 gap-y-1.5 border-t border-dark-200 px-5 py-3">
+            Toate
+          </button>
           {(Object.keys(CAT_FILL) as RoomCategory[])
             .filter((cat) => plan.rooms.some((r) => r.category === cat))
             .map((cat) => (
-              <div key={cat} className="flex items-center gap-1.5">
-                <span className="inline-block h-3 w-3 rounded-sm border" style={{ background: CAT_FILL[cat], borderColor: CAT_STROKE[cat] }} />
-                <span className="text-xs text-dark-600">{CAT_LABEL[cat]}</span>
-              </div>
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategoryFilter((prev) => (prev === cat ? null : cat))}
+                className={`flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs transition-colors ${
+                  categoryFilter === cat ? "ring-1 ring-offset-1" : "hover:bg-gray-100"
+                }`}
+                style={
+                  categoryFilter === cat
+                    ? { background: CAT_FILL[cat], borderColor: CAT_STROKE[cat], ringColor: CAT_STROKE[cat] }
+                    : undefined
+                }
+              >
+                <span className="inline-block h-2.5 w-2.5 rounded-sm border" style={{ background: CAT_FILL[cat], borderColor: CAT_STROKE[cat] }} />
+                <span className="text-dark-600">{CAT_LABEL[cat]}</span>
+              </button>
             ))}
-          <div className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-4 rounded-sm" style={{ background: "#FCD34D" }} />
-            <span className="text-xs text-dark-600">Ușă</span>
+        </div>
+
+        {/* Listă camere pe etaj — click pentru a localiza pe hartă */}
+        <div className="border-t border-dark-200 px-5 py-3">
+          <p className="mb-2 text-xs font-medium text-dark-500">
+            Camere pe acest etaj {categoryFilter ? `(filtru: ${CAT_LABEL[categoryFilter]})` : ""} — click pentru a localiza
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {roomsFiltered.map((room) => (
+              <button
+                key={room.id}
+                type="button"
+                onClick={() => selectRoom(room)}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all ${
+                  selected?.id === room.id ? "text-white shadow-sm" : "bg-gray-100 text-dark-700 hover:bg-gray-200"
+                }`}
+                style={selected?.id === room.id ? { background: CAT_STROKE[room.category] } : undefined}
+              >
+                <span className="font-mono font-semibold">{room.roomNumber}</span>
+                <span className="max-w-[120px] truncate">{room.name}</span>
+                {room.doctor && <span className="hidden sm:inline text-dark-500">· {room.doctor.split(" ").slice(-1)[0]}</span>}
+              </button>
+            ))}
           </div>
         </div>
+
+        {/* Contacte utile (parter) */}
+        {floor === 0 && (
+          <div className="border-t border-dark-200 bg-gray-50/80 px-5 py-2.5">
+            <p className="text-xs font-medium text-dark-600">
+              Contacte utile: Recepție ext. 100 · Urgențe 24/7 ext. 111 · Farmacie ext. 201
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Panel detalii */}
