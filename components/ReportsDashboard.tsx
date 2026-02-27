@@ -54,6 +54,10 @@ export function ReportsDashboard() {
     lines.push("Medic,Număr");
     data.appointmentsByDoctor.forEach((r) => lines.push(`${r.name},${r.count}`));
     lines.push("");
+    lines.push("Gărzi și contribuție (350 lei/gardă)");
+    lines.push("Medic,Număr gărzi,Sumă (lei)");
+    (data.guardPaymentsByDoctor ?? []).forEach((r) => lines.push(`${r.doctorName},${r.guardsCount},${r.amountLei}`));
+    lines.push("");
     lines.push("Urgențe pe zile");
     lines.push("Data,Număr");
     data.emergenciesByDay.forEach((r) => lines.push(`${r.date},${r.count}`));
@@ -161,6 +165,58 @@ export function ReportsDashboard() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+          </section>
+
+          <section className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">
+              Contribuție gărzi (plată 350 lei/gardă)
+            </h2>
+            <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
+              Număr gărzi efectuate per medic în perioada selectată și suma de plată.
+            </p>
+            {(data.guardPaymentsByDoctor?.length ?? 0) > 0 ? (
+              <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60">
+                      <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                        Medic
+                      </th>
+                      <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                        Nr. gărzi
+                      </th>
+                      <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                        Sumă (lei)
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.guardPaymentsByDoctor!.map((r) => (
+                      <tr
+                        key={r.doctorName}
+                        className="border-b border-slate-100 last:border-0 dark:border-slate-800"
+                      >
+                        <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-slate-100">
+                          {r.doctorName}
+                        </td>
+                        <td className="px-3 py-2.5 text-right text-slate-700 dark:text-slate-300">
+                          {r.guardsCount}
+                        </td>
+                        <td className="px-3 py-2.5 text-right font-medium text-slate-900 dark:text-slate-100">
+                          {r.amountLei.toLocaleString("ro-RO")} lei
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="border-t border-slate-200 bg-slate-50 px-3 py-2.5 text-right text-sm font-semibold dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
+                  Total:{" "}
+                  {(data.guardPaymentsByDoctor ?? []).reduce((s, r) => s + r.amountLei, 0).toLocaleString("ro-RO")} lei
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 dark:text-slate-400">Nicio gardă înregistrată în perioada selectată.</p>
+            )}
           </section>
 
           <section className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">

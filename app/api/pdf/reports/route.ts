@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
       appointmentsByDoctor: data.appointmentsByDoctor,
       emergenciesByDay: data.emergenciesByDay,
       imagingByDay: data.imagingByDay,
+      guardPaymentsByDoctor: data.guardPaymentsByDoctor,
     };
     const buffer = generateReportsPDF(pdfData);
     const fileName = `rapoarte-${period}-zile-${new Date().toISOString().slice(0, 10)}.pdf`;

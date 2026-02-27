@@ -35,6 +35,8 @@ import {
   doctorsOnDutyHelpers,
   problemReportsHelpers,
   imagingStudyHelpers,
+  consumableRequestsHelpers,
+  internalTransportHelpers,
 } from "@/lib/db-helpers";
 import { formatDateTime, formatDoctorDisplayName } from "@/lib/utils";
 import { Doctors } from "@/constants";
@@ -624,6 +626,50 @@ function buildAdminDynamicReply(dynamicIntent: string): string {
       }
     }
 
+    case "admin_reports_dashboard": {
+      return (
+        "Rapoarte (Dashboard):\n\n" +
+        "• Grafice: programări pe zile, ocupare medici, urgențe și imagistică pe zile.\n" +
+        "• Contribuție gărzi: nr. gărzi per medic, 350 lei/gardă, total de plată.\n" +
+        "• Export CSV: toate datele în format tabelar.\n" +
+        "• Export PDF: raport complet (programări, medici, urgențe, imagistică, gărzi).\n" +
+        "Perioadă: 7, 30 sau 90 zile. Secțiunea Rapoarte din meniu."
+      );
+    }
+
+    case "admin_lab_import": {
+      return (
+        "Import analize:\n\n" +
+        "În secțiunea Import analize poți încărca fișiere CSV/Excel cu rezultate de laborator. " +
+        "Verifici asistența pacientului și maparea coloanelor (parametru, valoare, unitate, data) înainte de import."
+      );
+    }
+
+    case "admin_logistics": {
+      const consumablePending = consumableRequestsHelpers.getAll(undefined, "pending");
+      const transportPending = internalTransportHelpers.getAll("pending");
+
+      let reply =
+        "Logistică:\n\n" +
+        `Cereri consumabile în așteptare: ${consumablePending.length}\n` +
+        `Cereri transport intern în așteptare: ${transportPending.length}\n\n`;
+
+      if (consumablePending.length > 0) {
+        reply += "Consumabile recente (primele 3):\n";
+        consumablePending.slice(0, 3).forEach((r: any, idx: number) => {
+          reply += `${idx + 1}. ${r.department} - ${r.requestedBy} (${r.priority})\n`;
+        });
+      }
+      if (transportPending.length > 0) {
+        reply += "\nTransport intern recent (primele 3):\n";
+        transportPending.slice(0, 3).forEach((r: any, idx: number) => {
+          reply += `${idx + 1}. ${r.patientName}: ${r.fromLocation} → ${r.toLocation} (${r.transportType})\n`;
+        });
+      }
+      reply += "\nAprobare/onorare din secțiunea Logistică.";
+      return reply;
+    }
+
     case "admin_stats": {
       const allApt = appointmentHelpers.getAll();
       const patients = patientHelpers.getAll();
@@ -662,6 +708,9 @@ function buildAdminDynamicReply(dynamicIntent: string): string {
   }
 }
 
+/** Delay „se gândește” 3–4 secunde. */
+const CHAT_THINKING_DELAY_MS = 3500;
+
 // ─── POST handler ──────────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
@@ -673,6 +722,8 @@ export async function POST(request: NextRequest) {
     if (!message) {
       return NextResponse.json({ reply: "Scrie ceva și îți răspund." });
     }
+
+    await new Promise((r) => setTimeout(r, CHAT_THINKING_DELAY_MS));
 
     const { reply: baseReply, dynamicIntent } = getReply(message, context);
 
@@ -689,6 +740,22 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           reply: baseReply + "\n\nTe rog să te autentifici ca administrator.",
         });
+      }
+      if (dynamicIntent === "admin_guard_payments") {
+        const { getGuardPaymentsByDoctor } = await import("@/lib/actions/reports.actions");
+        const payments = await getGuardPaymentsByDoctor("30");
+        if (payments.length === 0) {
+          return NextResponse.json({
+            reply: "În ultimele 30 zile nu există gărzi înregistrate. Gărzi se plătesc 350 lei/gardă. Raportul complet este în Rapoarte → Contribuție gărzi.",
+          });
+        }
+        const total = payments.reduce((s, p) => s + p.amountLei, 0);
+        let reply = "Contribuție gărzi (ultimele 30 zile, 350 lei/gardă):\n\n";
+        payments.forEach((p, idx) => {
+          reply += `${idx + 1}. ${p.doctorName}: ${p.guardsCount} gărzi = ${p.amountLei.toLocaleString("ro-RO")} lei\n`;
+        });
+        reply += `\nTotal de plată: ${total.toLocaleString("ro-RO")} lei.\n\nDetalii și export PDF/CSV în Rapoarte.`;
+        return NextResponse.json({ reply });
       }
       const dynamicReply = buildAdminDynamicReply(dynamicIntent);
       return NextResponse.json({ reply: dynamicReply || baseReply });

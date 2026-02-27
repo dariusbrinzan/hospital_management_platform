@@ -1221,6 +1221,7 @@ export interface ReportsPDFData {
   appointmentsByDoctor: Array<{ name: string; count: number }>;
   emergenciesByDay: Array<{ date: string; count: number }>;
   imagingByDay: Array<{ date: string; count: number }>;
+  guardPaymentsByDoctor?: Array<{ doctorName: string; guardsCount: number; amountLei: number }>;
 }
 
 export function generateReportsPDF(data: ReportsPDFData): Buffer {
@@ -1308,6 +1309,29 @@ export function generateReportsPDF(data: ReportsPDFData): Buffer {
   });
   if (data.imagingByDay.length > 25) {
     doc.text(`... și încă ${data.imagingByDay.length - 25} zile`, margin + 5, yPos);
+    yPos += 6;
+  }
+  yPos += 5;
+  checkPageBreak();
+
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("5. Gărzi și contribuție lunară (350 lei/gardă)", margin, yPos);
+  yPos += 8;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  const guardPayments = data.guardPaymentsByDoctor ?? [];
+  if (guardPayments.length > 0) {
+    guardPayments.forEach((r) => {
+      checkPageBreak(6);
+      doc.text(`${r.doctorName}: ${r.guardsCount} gărzi = ${r.amountLei.toLocaleString("ro-RO")} lei`, margin + 5, yPos);
+      yPos += 6;
+    });
+    const totalLei = guardPayments.reduce((s, r) => s + r.amountLei, 0);
+    doc.text(`Total contribuție gărzi: ${totalLei.toLocaleString("ro-RO")} lei`, margin + 5, yPos);
+    yPos += 6;
+  } else {
+    doc.text("Nicio gardă înregistrată în perioada selectată.", margin + 5, yPos);
     yPos += 6;
   }
 

@@ -11,7 +11,7 @@ const WELCOME_MESSAGES: Record<string, string> = {
   doctor:
     "Bună! Sunt asistentul eHealth pentru medici. Poți întreba despre programări, pacienți, mesaje, consultații, statistici sau profil. Cu ce te pot ajuta?",
   admin:
-    "Bună! Sunt asistentul eHealth pentru administrare. Poți întreba despre programări, pacienți, urgențe, ATI, internări, medicamente, echipamente, ambulanțe sau rapoarte. Cu ce te pot ajuta?",
+    "Bună! Sunt asistentul eHealth pentru administrare. Poți întreba despre: programări, pacienți, urgențe, medici de gardă și plată gărzi (350 lei), spitalizări, medicamente, imagistică, import analize, rapoarte (grafice, PDF/CSV), raportări probleme, logistică (consumabile, transport intern) sau statistici. Cu ce te pot ajuta?",
   guest:
     "Bună! Sunt asistentul eHealth. Autentifică-te pentru a primi informații personalizate.",
 };
@@ -134,7 +134,7 @@ export function ChatBot() {
             )}
             {loading && (
               <div className="flex justify-start">
-                <div className="rounded-2xl bg-gray-100 px-3 py-2 text-14-regular text-dark-500">
+                <div className="rounded-2xl bg-gray-100 px-3 py-2 text-14-regular text-dark-500 animate-pulse">
                   Se gândește...
                 </div>
               </div>

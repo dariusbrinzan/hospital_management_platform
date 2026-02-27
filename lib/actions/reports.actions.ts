@@ -1,8 +1,11 @@
 "use server";
 
-import { appointmentHelpers, emergencyHelpers, imagingStudyHelpers } from "../db-helpers";
+import { appointmentHelpers, doctorsOnDutyHelpers, emergencyHelpers, imagingStudyHelpers } from "../db-helpers";
 
 export type ReportPeriod = "7" | "30" | "90";
+
+/** Plată per gardă (lei) – folosit doar în acest modul. */
+const GUARD_PAY_PER_SHIFT_LEI = 350;
 
 function getDateRange(period: ReportPeriod): { start: Date; end: Date } {
   const end = new Date();
@@ -76,13 +79,27 @@ export async function getImagingByDay(period: ReportPeriod) {
   return imagingStudyHelpers.getCountByDayInRange(startStr, endStr);
 }
 
+/** Gărzi efectuate per medic în perioadă și contribuția lunară (plată 350 lei/gardă). */
+export async function getGuardPaymentsByDoctor(period: ReportPeriod): Promise<
+  Array<{ doctorName: string; guardsCount: number; amountLei: number }>
+> {
+  const { start, end } = getDateRange(period);
+  const byDoctor = doctorsOnDutyHelpers.getGuardCountByDoctorInPeriod(start, end);
+  return byDoctor.map(({ doctorName, guardsCount }) => ({
+    doctorName,
+    guardsCount,
+    amountLei: guardsCount * GUARD_PAY_PER_SHIFT_LEI,
+  }));
+}
+
 /** Date rapoarte pentru export CSV/PDF */
 export async function getReportsData(period: ReportPeriod) {
-  const [byDay, byDoctor, emergenciesByDay, imagingByDay] = await Promise.all([
+  const [byDay, byDoctor, emergenciesByDay, imagingByDay, guardPayments] = await Promise.all([
     getAppointmentsByDay(period),
     getAppointmentsByDoctor(period),
     getEmergenciesByDay(period),
     getImagingByDay(period),
+    getGuardPaymentsByDoctor(period),
   ]);
   return {
     period,
@@ -90,5 +107,6 @@ export async function getReportsData(period: ReportPeriod) {
     appointmentsByDoctor: byDoctor,
     emergenciesByDay,
     imagingByDay,
+    guardPaymentsByDoctor: guardPayments,
   };
 }

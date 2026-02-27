@@ -1750,6 +1750,19 @@ export const doctorsOnDutyHelpers = {
     }));
   },
 
+  /** Număr gărzi per medic într-o perioadă (weekStartDate în interval). */
+  getGuardCountByDoctorInPeriod: (start: Date, end: Date): Array<{ doctorName: string; guardsCount: number }> => {
+    const startStr = start.toISOString();
+    const endStr = end.toISOString();
+    const rows = db.prepare(`
+      SELECT doctorName, COUNT(*) as cnt
+      FROM doctors_on_duty
+      WHERE weekStartDate >= ? AND weekStartDate <= ?
+      GROUP BY doctorName
+    `).all(startStr, endStr) as { doctorName: string; cnt: number }[];
+    return rows.map((r) => ({ doctorName: r.doctorName, guardsCount: r.cnt }));
+  },
+
   // Calculează workload-ul pentru fiecare medic
   calculateWorkload: (doctorName: string) => {
     const now = new Date().toISOString();
