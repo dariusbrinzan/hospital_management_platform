@@ -1,8 +1,19 @@
 import { AdminDashboardSection } from "@/components/AdminDashboardSection";
 import { getAdminDashboardSnippets } from "@/lib/actions/dashboard.actions";
 import { formatDateTime } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, AlertCircle, Users, BarChart3 } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Calendar,
+  AlertCircle,
+  Users,
+  BarChart3,
+  Pill,
+  Building2,
+  ScanSearch,
+  FileDown,
+  FileWarning,
+  Package,
+} from "lucide-react";
 
 function fmt(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -36,17 +47,19 @@ const AdminPage = async () => {
   const data = await getAdminDashboardSnippets();
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 pb-12 pt-6 sm:px-6 lg:gap-10 lg:px-8">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 sm:text-2xl">
-          Panou Administrator
-        </h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          Rezumat rapid din fiecare secțiune. Folosiți linkurile „Vezi tot” pentru detalii.
-        </p>
-      </header>
-
-      {/* KPI cards */}
+    <div className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+      <section className="space-y-6">
+        <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardHeader className="space-y-1 pb-4">
+            <CardTitle className="text-xl text-slate-900 dark:text-slate-100">
+              Panou Administrator
+            </CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400">
+              Rezumat rapid din fiecare secțiune. Folosiți linkurile „Vezi tot” pentru detalii.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-6 pb-6">
+            {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
           <CardContent className="flex items-center gap-3 p-4">
@@ -95,9 +108,10 @@ const AdminPage = async () => {
           </CardContent>
         </Card>
       </div>
+          </CardContent>
+        </Card>
 
-      <div className="space-y-6">
-        <AdminDashboardSection title="Programări" href="/admin/appointments" icon="📅">
+        <AdminDashboardSection title="Programări" href="/admin/appointments" icon={<Calendar className="size-5 shrink-0 opacity-80" />}>
           <div className="space-y-3">
             <p className="text-slate-700 dark:text-slate-300">
               <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.appointments.scheduledCount}</strong>{" "}
@@ -140,7 +154,7 @@ const AdminPage = async () => {
           </div>
         </AdminDashboardSection>
 
-        <AdminDashboardSection title="Urgențe" href="/admin/emergency" icon="🚨">
+        <AdminDashboardSection title="Urgențe" href="/admin/emergency" icon={<AlertCircle className="size-5 shrink-0 opacity-80" />}>
           <div className="space-y-3">
             <p className="text-slate-700 dark:text-slate-300">
               <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.emergency.total}</strong> cazuri în sistem.
@@ -182,7 +196,7 @@ const AdminPage = async () => {
           </div>
         </AdminDashboardSection>
 
-        <AdminDashboardSection title="Medicamente" href="/admin/medications" icon="💊">
+        <AdminDashboardSection title="Medicamente" href="/admin/medications" icon={<Pill className="size-5 shrink-0 opacity-80" />}>
           <div className="space-y-3">
             {data.medications.lowStockCount > 0 ? (
               <>
@@ -222,7 +236,7 @@ const AdminPage = async () => {
           </div>
         </AdminDashboardSection>
 
-        <AdminDashboardSection title="Pacienți" href="/admin/patients" icon="👥">
+        <AdminDashboardSection title="Pacienți" href="/admin/patients" icon={<Users className="size-5 shrink-0 opacity-80" />}>
           <div className="space-y-3">
             <p className="text-slate-700 dark:text-slate-300">
               <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.patients.total}</strong> pacienți înregistrați.
@@ -245,7 +259,7 @@ const AdminPage = async () => {
           </div>
         </AdminDashboardSection>
 
-        <AdminDashboardSection title="Spitalizări" href="/admin/hospitalizations" icon="🏥">
+        <AdminDashboardSection title="Spitalizări" href="/admin/hospitalizations" icon={<Building2 className="size-5 shrink-0 opacity-80" />}>
           <div className="space-y-3">
             <p className="text-slate-700 dark:text-slate-300">
               <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.hospitalizations.activeCount}</strong>{" "}
@@ -280,7 +294,7 @@ const AdminPage = async () => {
           </div>
         </AdminDashboardSection>
 
-        <AdminDashboardSection title="Imagistică" href="/admin/imaging" icon="🩻">
+        <AdminDashboardSection title="Imagistică" href="/admin/imaging" icon={<ScanSearch className="size-5 shrink-0 opacity-80" />}>
           <div className="space-y-3">
             <p className="text-slate-700 dark:text-slate-300">
               <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.imaging.upcomingCount}</strong>{" "}
@@ -319,19 +333,19 @@ const AdminPage = async () => {
           </div>
         </AdminDashboardSection>
 
-        <AdminDashboardSection title="Import analize" href="/admin/lab-import" icon="📋">
+        <AdminDashboardSection title="Import analize" href="/admin/lab-import" icon={<FileDown className="size-5 shrink-0 opacity-80" />}>
           <p className="text-slate-600 dark:text-slate-400">
             Încărcați rezultate analize din fișiere (CSV/Excel). Verificați asistența pacientului și maparea coloanelor înainte de import.
           </p>
         </AdminDashboardSection>
 
-        <AdminDashboardSection title="Rapoarte" href="/admin/reports" icon="📊">
+        <AdminDashboardSection title="Rapoarte" href="/admin/reports" icon={<BarChart3 className="size-5 shrink-0 opacity-80" />}>
           <p className="text-slate-600 dark:text-slate-400">
             Generați rapoarte per perioadă: programări, urgente, imagistică. Export PDF/Excel disponibil în secțiune.
           </p>
         </AdminDashboardSection>
 
-        <AdminDashboardSection title="Raportări probleme" href="/admin/problem-reports" icon="📝">
+        <AdminDashboardSection title="Raportări probleme" href="/admin/problem-reports" icon={<FileWarning className="size-5 shrink-0 opacity-80" />}>
           <div className="space-y-3">
             <p className="text-slate-700 dark:text-slate-300">
               <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.problemReports.newCount}</strong>{" "}
@@ -364,7 +378,7 @@ const AdminPage = async () => {
           </div>
         </AdminDashboardSection>
 
-        <AdminDashboardSection title="Logistică" href="/admin/logistics" icon="📦">
+        <AdminDashboardSection title="Logistică" href="/admin/logistics" icon={<Package className="size-5 shrink-0 opacity-80" />}>
           <div className="space-y-4">
             <p className="text-slate-700 dark:text-slate-300">
               <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.logistics.consumablePending}</strong>{" "}
@@ -434,7 +448,7 @@ const AdminPage = async () => {
             )}
           </div>
         </AdminDashboardSection>
-      </div>
+      </section>
     </div>
   );
 };

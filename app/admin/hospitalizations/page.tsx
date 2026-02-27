@@ -5,6 +5,7 @@ import { AdminPageLayout } from "@/components/AdminPageLayout";
 import { HospitalRoomsDashboard } from "@/components/HospitalRoomsDashboard";
 import { AdmissionForm } from "@/components/forms/AdmissionForm";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 const HospitalizationsPage = async ({ searchParams }: SearchParamProps) => {
   await requireAdmin();
@@ -16,41 +17,45 @@ const HospitalizationsPage = async ({ searchParams }: SearchParamProps) => {
 
   return (
     <AdminPageLayout
-      title="Management spitalizări"
-      description="Săli, paturi și pacienți internați"
+      title="Spitalizări"
+      description="Săli, paturi și pacienți internați. Adăugați internări noi sau verificați ocuparea."
     >
-      <section className="admin-section-card">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <Card className="overflow-hidden border-slate-200/80 shadow-sm dark:border-slate-800">
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="admin-section-title">Dashboard Spitalizări</h2>
-            <p className="admin-section-desc">
-              Gestionați sălile, paturile și pacienții internați
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+              {showForm ? "Internare nouă" : "Dashboard spitalizări"}
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {showForm
+                ? "Completați formularul pentru a interna un pacient."
+                : "Gestionați sălile, paturile și pacienții internați."}
             </p>
           </div>
           {!showForm ? (
-            <Button asChild className="shad-primary-btn w-fit">
+            <Button asChild className="w-fit rounded-lg bg-teal-600 hover:bg-teal-700">
               <Link href="/admin/hospitalizations?new=true">+ Internare nouă</Link>
             </Button>
           ) : (
-            <Button asChild variant="outline" className="shad-gray-btn w-fit">
+            <Button asChild variant="outline" className="w-fit rounded-lg border-slate-300 dark:border-slate-600">
               <Link href="/admin/hospitalizations">← Înapoi</Link>
             </Button>
           )}
-        </div>
-
+        </CardHeader>
         {showForm ? (
-          <div className="mt-6">
-            <h3 className="text-16-semibold text-dark-900 mb-4">Internare pacient nou</h3>
+          <CardContent>
             <AdmissionForm />
-          </div>
+          </CardContent>
         ) : (
-          <HospitalRoomsDashboard
-            rooms={allRooms}
-            patients={allAdmissions}
-            departments={departments}
-          />
+          <CardContent className="pt-0">
+            <HospitalRoomsDashboard
+              rooms={allRooms}
+              patients={allAdmissions}
+              departments={departments}
+            />
+          </CardContent>
         )}
-      </section>
+      </Card>
     </AdminPageLayout>
   );
 };

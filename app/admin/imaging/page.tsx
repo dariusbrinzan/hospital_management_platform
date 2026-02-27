@@ -1,10 +1,20 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/actions/auth.actions";
 import { getModalities, getUpcomingStudies } from "@/lib/actions/imaging.actions";
 import { getPatientById } from "@/lib/actions/patient.actions";
 import { formatDateTime } from "@/lib/utils";
 import { ImagingBookingForm } from "@/components/ImagingBookingForm";
 import { AdminPageLayout } from "@/components/AdminPageLayout";
-import Link from "next/link";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+
+const tableBase =
+  "w-full text-sm border-collapse rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700";
+const tableHeadRow = "border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60";
+const tableHeadCell =
+  "px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300";
+const tableCell =
+  "border-b border-slate-100 px-3 py-2.5 text-slate-700 last:border-0 dark:border-slate-800 dark:text-slate-300";
+const tableCellMuted = "text-slate-500 dark:text-slate-400";
 
 export const dynamic = "force-dynamic";
 
@@ -23,78 +33,104 @@ export default async function AdminImagingPage({ searchParams }: SearchParamProp
 
   return (
     <AdminPageLayout
-      title="🩻 Investigații imagistice"
+      title="Investigații imagistice"
       description="Programări RMN, CT, Ecografie, Radiologie — pacienți ambulatori sau din urgențe."
     >
-      <div className="rounded-lg border border-green-200 bg-green-50/60 p-4 text-14-regular text-dark-700 dark:border-green-800 dark:bg-green-950/30 dark:text-dark-200">
-        <p className="font-medium text-dark-900 dark:text-dark-100">Fluxuri programări imagistică</p>
-        <ul className="mt-2 list-inside list-disc space-y-1 text-dark-600 dark:text-dark-300">
-          <li><strong>Direct (aici):</strong> programare pentru orice pacient (căutare pacienți mai jos).</li>
-          <li><strong>Din programări:</strong> medicii pot programa imagistică din panoul Doctor → Imagistică (sursă „Programare”).</li>
-          <li><strong>Din urgențe:</strong> pentru pacienți din urgențe, deschide cazul în <Link href="/admin/emergency" className="text-green-700 underline hover:text-green-800 dark:text-green-400 dark:hover:text-green-300">Urgențe</Link> și adaugă investigații imagistice din detaliile cazului.</li>
-        </ul>
-      </div>
-
-      <section>
-        <h2 className="text-18-semibold text-dark-900 mb-2">Modalități disponibile</h2>
-        <p className="text-14-regular text-dark-600 mb-4">
-          Sloturi și durate per modalitate. Formularul de mai jos creează programări cu sursă „Direct”.
-        </p>
-          <ul className="flex flex-wrap gap-2">
-            {modalities.map((m: any) => (
-              <li
-                key={m.$id}
-                className="rounded-lg border border-dark-200 bg-white px-4 py-2 text-14-regular text-dark-700"
-              >
-                {m.name}
-                <span className="ml-1 text-dark-500">({m.slotDurationMinutes} min)</span>
+      <div className="space-y-6">
+        <Card className="border-teal-200/80 bg-teal-50/60 dark:border-teal-800 dark:bg-teal-950/20">
+          <CardContent className="p-4">
+            <p className="font-medium text-slate-900 dark:text-slate-100">Fluxuri programări imagistică</p>
+            <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-slate-700 dark:text-slate-300">
+              <li><strong>Direct (aici):</strong> programare pentru orice pacient (căutare pacienți mai jos).</li>
+              <li><strong>Din programări:</strong> medicii pot programa imagistică din panoul Doctor → Imagistică (sursă „Programare”).</li>
+              <li>
+                <strong>Din urgențe:</strong> deschide cazul în{" "}
+                <Link href="/admin/emergency" className="text-teal-700 underline hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300">
+                  Urgențe
+                </Link>{" "}
+                și adaugă investigații din detaliile cazului.
               </li>
-            ))}
-          </ul>
-      </section>
+            </ul>
+          </CardContent>
+        </Card>
 
-      <ImagingBookingForm
+        <Card className="overflow-hidden border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardHeader>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Modalități disponibile</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Sloturi și durate per modalitate. Formularul de mai jos creează programări cu sursă „Direct”.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ul className="flex flex-wrap gap-2">
+              {modalities.map((m: any) => (
+                <li
+                  key={m.$id}
+                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                >
+                  {m.name}
+                  <span className="ml-1 text-slate-500 dark:text-slate-400">({m.slotDurationMinutes} min)</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+
+        <ImagingBookingForm
           modalities={modalities}
           initialPatient={initialPatientForForm}
         />
 
-      <section className="rounded-lg border border-dark-200 bg-white p-6">
-        <h2 className="text-18-semibold text-dark-900 mb-4">Programări viitoare (toate sursele)</h2>
-          {!upcoming || upcoming.length === 0 ? (
-            <p className="text-14-regular text-dark-600">Nu există programări imagistice în perioada următoare.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-14-regular">
-                <thead>
-                  <tr className="border-b border-dark-200 text-left text-dark-600">
-                    <th className="pb-2 pr-4">Pacient</th>
-                    <th className="pb-2 pr-4">Modalitate</th>
-                    <th className="pb-2 pr-4">Data și ora</th>
-                    <th className="pb-2 pr-4">Status</th>
-                    <th className="pb-2 pr-4">Sursă</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {upcoming.map((s: any) => (
-                    <tr key={s.$id} className="border-b border-dark-100">
-                      <td className="py-2 pr-4 text-dark-800">{s.patientName || s.patientId || "—"}</td>
-                      <td className="py-2 pr-4">{s.modalityName || s.modalityId}</td>
-                      <td className="py-2 pr-4">
-                        {s.scheduledAt ? formatDateTime(s.scheduledAt).dateTime : "—"}
-                      </td>
-                      <td className="py-2 pr-4">{s.status}</td>
-                      <td className="py-2 pr-4">
-                        {s.sourceType === "emergency" && "Urgență"}
-                        {s.sourceType === "appointment" && "Programare"}
-                        {s.sourceType === "direct" && "Direct"}
-                      </td>
+        <Card className="overflow-hidden border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardHeader>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Programări viitoare (toate sursele)</h2>
+          </CardHeader>
+          <CardContent className="p-0">
+            {!upcoming || upcoming.length === 0 ? (
+              <p className="px-4 py-8 text-sm text-slate-500 dark:text-slate-400">
+                Nu există programări imagistice în perioada următoare.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className={tableBase}>
+                  <thead>
+                    <tr className={tableHeadRow}>
+                      <th className={tableHeadCell}>Pacient</th>
+                      <th className={tableHeadCell}>Modalitate</th>
+                      <th className={tableHeadCell}>Data și ora</th>
+                      <th className={tableHeadCell}>Status</th>
+                      <th className={tableHeadCell}>Sursă</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-      </section>
+                  </thead>
+                  <tbody>
+                    {upcoming.map((s: any) => (
+                      <tr key={s.$id}>
+                        <td className={tableCell + " font-medium text-slate-900 dark:text-slate-100"}>
+                          {s.patientName || s.patientId || "—"}
+                        </td>
+                        <td className={tableCell + " " + tableCellMuted}>{s.modalityName || s.modalityId}</td>
+                        <td className={tableCell + " " + tableCellMuted}>
+                          {s.scheduledAt ? formatDateTime(s.scheduledAt).dateTime : "—"}
+                        </td>
+                        <td className={tableCell}>
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            {s.status}
+                          </span>
+                        </td>
+                        <td className={tableCell + " " + tableCellMuted}>
+                          {s.sourceType === "emergency" && "Urgență"}
+                          {s.sourceType === "appointment" && "Programare"}
+                          {s.sourceType === "direct" && "Direct"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </AdminPageLayout>
   );
 }

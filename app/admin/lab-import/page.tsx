@@ -1,39 +1,28 @@
-import Image from "next/image";
-import Link from "next/link";
 import { requireAdmin } from "@/lib/actions/auth.actions";
 import { LabImportForm } from "@/components/LabImportForm";
+import { AdminPageLayout } from "@/components/AdminPageLayout";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLabImportPage() {
   await requireAdmin();
   return (
-    <div className="mx-auto flex max-w-4xl flex-col space-y-8">
-      <header className="admin-header">
-        <Link href="/admin" className="cursor-pointer">
-          <Image
-            src="/assets/icons/logo-full.svg"
-            height={32}
-            width={200}
-            alt="eHealth.ro logo"
-            className="h-8 w-fit"
-          />
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link href="/admin" className="text-14-medium text-dark-600 hover:text-dark-700">
-            ← Înapoi la Dashboard
-          </Link>
-          <h1 className="text-16-semibold">Import rezultate laborator (CSV)</h1>
-        </div>
-      </header>
-
-      <main className="admin-main">
-        <p className="mb-6 text-14-regular text-dark-600">
-          Încarcă un fișier CSV cu coloane: <strong>testName</strong> (obligatoriu), testCategory, resultValue, unit, referenceRange, status, notes.
-          Rezultatele vor fi legate de pacientul selectat și opțional de o programare.
-        </p>
-        <LabImportForm />
-      </main>
-    </div>
+    <AdminPageLayout
+      title="Import rezultate laborator"
+      description="Încărcați un fișier CSV cu rezultate analize. Coloane: testName (obligatoriu), testCategory, resultValue, unit, referenceRange, status, notes."
+    >
+      <Card className="overflow-hidden border-slate-200/80 shadow-sm dark:border-slate-800">
+        <CardHeader>
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Fișier CSV</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Rezultatele vor fi legate de pacientul selectat și opțional de o programare. Verificați maparea coloanelor înainte de import.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <LabImportForm />
+        </CardContent>
+      </Card>
+    </AdminPageLayout>
   );
 }

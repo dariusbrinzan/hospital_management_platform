@@ -23,15 +23,15 @@ export function AdminPageLayout({ title, description, backHref = "/admin", child
             />
           </Link>
           <div className="min-w-0">
-            <h1 className="text-16-semibold truncate text-dark-900 sm:text-18-bold">{title}</h1>
+            <h1 className="truncate text-xl font-semibold text-slate-900 sm:text-2xl dark:text-slate-100">{title}</h1>
             {description && (
-              <p className="mt-0.5 truncate text-14-regular text-dark-600">{description}</p>
+              <p className="mt-0.5 truncate text-sm text-slate-600 dark:text-slate-400">{description}</p>
             )}
           </div>
         </div>
         <Link
           href={backHref}
-          className="text-14-medium text-dark-600 hover:text-dark-700 focus-visible:outline focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 rounded-md"
+          className="rounded-md text-sm font-medium text-teal-600 hover:text-teal-700 focus-visible:outline focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 dark:text-teal-400 dark:hover:text-teal-300"
         >
           ← Înapoi la Dashboard
         </Link>

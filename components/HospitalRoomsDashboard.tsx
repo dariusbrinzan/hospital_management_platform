@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { Card, CardContent, CardHeader } from "./ui/card";
 import { HospitalRoomCard } from "./HospitalRoomCard";
 import { HospitalAdmissionModal } from "./HospitalAdmissionModal";
+import { DoorOpen, BedDouble, Users, Percent } from "lucide-react";
 
 interface HospitalRoomsDashboardProps {
   rooms: HospitalRoom[];
@@ -23,90 +25,119 @@ export const HospitalRoomsDashboard = ({ rooms, patients, departments }: Hospita
   const [selectedPatient, setSelectedPatient] = useState<HospitalAdmission | null>(null);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
 
-  // Filtrează sălile după departament
-  const filteredRooms = selectedDepartment === "all"
-    ? rooms
-    : rooms.filter((r) => r.department === selectedDepartment);
+  const filteredRooms =
+    selectedDepartment === "all"
+      ? rooms
+      : rooms.filter((r) => r.department === selectedDepartment);
 
-  // Grupează pacienții pe săli
   const patientsByRoom = patients.reduce((acc, patient) => {
-    if (!acc[patient.roomId]) {
-      acc[patient.roomId] = [];
-    }
+    if (!acc[patient.roomId]) acc[patient.roomId] = [];
     acc[patient.roomId].push(patient);
     return acc;
   }, {} as Record<string, HospitalAdmission[]>);
 
-  // Statistici generale
   const totalRooms = rooms.length;
   const totalBeds = rooms.reduce((sum, r) => sum + r.maxCapacity, 0);
   const occupiedBeds = rooms.reduce((sum, r) => sum + r.currentOccupancy, 0);
   const occupancyRate = totalBeds > 0 ? ((occupiedBeds / totalBeds) * 100).toFixed(1) : "0";
 
+  const tabs = [
+    { id: "all", label: "Toate", count: rooms.length },
+    ...departments.map((dept) => ({
+      id: dept,
+      label: DEPARTMENT_LABELS[dept] || dept,
+      count: rooms.filter((r) => r.department === dept).length,
+    })),
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Statistici */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-dark-200 p-4">
-          <p className="text-12-regular text-dark-500">Total Săli</p>
-          <p className="text-24-bold text-dark-900">{totalRooms}</p>
-        </div>
-        <div className="bg-white rounded-lg border border-dark-200 p-4">
-          <p className="text-12-regular text-dark-500">Total Paturi</p>
-          <p className="text-24-bold text-dark-900">{totalBeds}</p>
-        </div>
-        <div className="bg-white rounded-lg border border-dark-200 p-4">
-          <p className="text-12-regular text-dark-500">Paturi Ocupate</p>
-          <p className="text-24-bold text-dark-900">{occupiedBeds}</p>
-        </div>
-        <div className="bg-white rounded-lg border border-dark-200 p-4">
-          <p className="text-12-regular text-dark-500">Rata Ocupare</p>
-          <p className="text-24-bold text-dark-900">{occupancyRate}%</p>
-        </div>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-400">
+              <DoorOpen className="size-5" />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{totalRooms}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Total săli</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400">
+              <BedDouble className="size-5" />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{totalBeds}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Total paturi</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+              <Users className="size-5" />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{occupiedBeds}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Paturi ocupate</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-400">
+              <Percent className="size-5" />
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{occupancyRate}%</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Rata ocupare</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Filtru departament */}
-      <div className="bg-white rounded-lg border border-dark-200 p-4">
-        <label className="text-14-semibold text-dark-700 mb-2 block">Filtrează după secție:</label>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setSelectedDepartment("all")}
-            className={`px-4 py-2 rounded-lg text-13-medium transition ${
-              selectedDepartment === "all"
-                ? "bg-green-500 text-white"
-                : "bg-gray-100 text-dark-600 hover:bg-gray-200"
-            }`}
-          >
-            Toate ({rooms.length})
-          </button>
-          {departments.map((dept) => {
-            const deptRooms = rooms.filter((r) => r.department === dept);
-            return (
+      <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+        <CardHeader>
+          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+            Filtrează după secție
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Selectați o secție pentru a vedea doar sălile din acel departament.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((tab) => (
               <button
-                key={dept}
-                onClick={() => setSelectedDepartment(dept)}
-                className={`px-4 py-2 rounded-lg text-13-medium transition ${
-                  selectedDepartment === dept
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-100 text-dark-600 hover:bg-gray-200"
+                key={tab.id}
+                type="button"
+                onClick={() => setSelectedDepartment(tab.id)}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                  selectedDepartment === tab.id
+                    ? "bg-teal-600 text-white hover:bg-teal-700"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                 }`}
               >
-                {DEPARTMENT_LABELS[dept] || dept} ({deptRooms.length})
+                {tab.label} ({tab.count})
               </button>
-            );
-          })}
-        </div>
-      </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Grid săli */}
       {filteredRooms.length === 0 ? (
-        <div className="bg-white rounded-lg border border-dark-200 p-8 text-center">
-          <p className="text-16-regular text-dark-600">
-            Nu există săli pentru secția selectată.
-          </p>
-        </div>
+        <Card className="border-slate-200/80 dark:border-slate-800">
+          <CardContent className="py-12 text-center">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Nu există săli pentru secția selectată.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredRooms.map((room) => (
             <HospitalRoomCard
               key={room.$id}
@@ -118,7 +149,6 @@ export const HospitalRoomsDashboard = ({ rooms, patients, departments }: Hospita
         </div>
       )}
 
-      {/* Modal detalii pacient */}
       {selectedPatient && (
         <HospitalAdmissionModal
           admission={selectedPatient}

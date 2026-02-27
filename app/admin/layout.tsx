@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getAdminSession } from "@/lib/actions/auth.actions";
-import { Doctors } from "@/constants";
-import { AdminLayoutSidebar } from "@/components/AdminLayoutSidebar";
+import { AdminLayoutClient } from "@/components/AdminLayoutClient";
 
 export default async function AdminLayout({
   children,
@@ -13,10 +12,5 @@ export default async function AdminLayout({
     redirect("/?admin=true");
   }
 
-  return (
-    <div className="flex min-h-screen bg-gray-50">
-      <AdminLayoutSidebar doctors={Doctors} />
-      <main className="min-w-0 flex-1 flex flex-col">{children}</main>
-    </div>
-  );
+  return <AdminLayoutClient>{children}</AdminLayoutClient>;
 }

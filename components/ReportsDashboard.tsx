@@ -76,21 +76,21 @@ export function ReportsDashboard() {
 
   if (loading && !data) {
     return (
-      <div className="flex items-center justify-center rounded-lg border border-dark-200 bg-white py-16">
-        <p className="text-dark-600">Se încarcă datele...</p>
+      <div className="flex items-center justify-center rounded-xl border border-slate-200 bg-white py-16 dark:border-slate-800 dark:bg-slate-900">
+        <p className="text-sm text-slate-600 dark:text-slate-400">Se încarcă datele...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-dark-200 bg-white p-4">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-center gap-3">
-          <label className="text-14-medium text-dark-700">Perioadă:</label>
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Perioadă:</label>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value as ReportPeriod)}
-            className="rounded-md border border-dark-200 px-3 py-2 text-sm"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           >
             {PERIODS.map((p) => (
               <option key={p.value} value={p.value}>
@@ -99,12 +99,12 @@ export function ReportsDashboard() {
             ))}
           </select>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={exportCSV}
             disabled={!data}
-            className="admin-nav-link rounded-lg px-4 py-2"
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
           >
             Export CSV
           </button>
@@ -112,7 +112,7 @@ export function ReportsDashboard() {
             type="button"
             onClick={exportPDF}
             disabled={!data}
-            className="admin-nav-link admin-nav-link--primary rounded-lg px-4 py-2"
+            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
           >
             Export PDF rapoarte
           </button>
@@ -120,7 +120,7 @@ export function ReportsDashboard() {
             href={`/api/pdf/appointments?days=${period}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="admin-nav-link rounded-lg px-4 py-2"
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
           >
             Export PDF programări
           </a>
@@ -129,8 +129,8 @@ export function ReportsDashboard() {
 
       {data && (
         <>
-          <section className="rounded-lg border border-dark-200 bg-white p-6">
-            <h2 className="mb-4 text-18-semibold text-dark-900">Programări pe zile</h2>
+          <section className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Programări pe zile</h2>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.appointmentsByDay} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -144,8 +144,8 @@ export function ReportsDashboard() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-dark-200 bg-white p-6">
-            <h2 className="mb-4 text-18-semibold text-dark-900">Ocupare medici</h2>
+          <section className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Ocupare medici</h2>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -163,8 +163,8 @@ export function ReportsDashboard() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-dark-200 bg-white p-6">
-            <h2 className="mb-4 text-18-semibold text-dark-900">Urgențe și imagistică pe zile</h2>
+          <section className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Urgențe și imagistică pe zile</h2>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart

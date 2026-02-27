@@ -35,7 +35,7 @@ export const PatientSearchInput = ({ defaultValue }: { defaultValue: string }) =
       defaultValue={defaultValue}
       placeholder="Caută după nume, email, telefon sau CNP..."
       onChange={(e) => handleSearch(e.target.value)}
-      className="w-full rounded-md border border-dark-200 bg-white px-4 py-3 text-[16px] text-dark-700 placeholder:text-dark-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
     />
   );
 };

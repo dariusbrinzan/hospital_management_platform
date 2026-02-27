@@ -21,7 +21,7 @@ interface Doctor {
 const ADMIN_NAV = [
   { href: "/admin", label: "Dashboard", icon: "🏠" },
   { href: "/admin/appointments", label: "Programări", icon: "📅" },
-  { href: "/admin/emergency", label: "Urgente", icon: "🚨", primary: true },
+  { href: "/admin/emergency", label: "Urgențe", icon: "🚨", primary: true },
   { href: "/admin/medications", label: "Medicamente", icon: "💊" },
   { href: "/admin/patients", label: "Pacienți", icon: "👥" },
   { href: "/admin/hospitalizations", label: "Spitalizări", icon: "🏥" },
@@ -81,7 +81,7 @@ export function AdminLayoutSidebar({ doctors }: AdminLayoutSidebarProps) {
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
-        className={`fixed bottom-4 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-white shadow-lg hover:bg-green-600 lg:hidden ${mobileOpen ? "invisible" : ""}`}
+        className={`fixed bottom-4 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg hover:bg-teal-700 lg:hidden ${mobileOpen ? "invisible" : ""}`}
         aria-label="Deschide meniul"
       >
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -91,18 +91,18 @@ export function AdminLayoutSidebar({ doctors }: AdminLayoutSidebarProps) {
 
       <aside
         className={`
-          fixed left-0 top-0 z-50 flex h-full w-72 flex-shrink-0 flex-col overflow-y-auto border-r border-dark-200 bg-white shadow-lg
-          transition-transform duration-200 ease-out lg:sticky lg:z-auto lg:translate-x-0 lg:shadow-none
+          fixed left-0 top-0 z-50 flex h-full w-72 flex-shrink-0 flex-col overflow-y-auto border-r border-slate-200 bg-white shadow-lg
+          transition-transform duration-200 ease-out lg:sticky lg:z-auto lg:translate-x-0 lg:shadow-none dark:border-slate-800 dark:bg-slate-900
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
         <div className="flex flex-col p-4 lg:p-5">
           <div className="flex items-center justify-between pb-3 lg:hidden">
-            <span className="text-16-semibold text-dark-900">Meniul</span>
+            <span className="text-base font-semibold text-slate-900 dark:text-slate-100">Meniul</span>
             <button
               type="button"
               onClick={() => setMobileOpen(false)}
-              className="rounded-lg p-2 text-dark-500 hover:bg-dark-100"
+              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
               aria-label="Închide meniul"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -114,7 +114,7 @@ export function AdminLayoutSidebar({ doctors }: AdminLayoutSidebarProps) {
           <Link
             href="/admin"
             onClick={() => setMobileOpen(false)}
-            className="mb-4 flex items-center gap-3 rounded-lg focus-visible:outline focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+            className="mb-4 flex items-center gap-3 rounded-lg focus-visible:outline focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
           >
             <Image
               src="/assets/icons/logo-full.svg"
@@ -125,8 +125,10 @@ export function AdminLayoutSidebar({ doctors }: AdminLayoutSidebarProps) {
             />
           </Link>
 
-          <div className="mb-4 rounded-lg border border-dark-200 bg-dark-50 px-3 py-2">
-            <p className="text-12-semibold text-dark-500">Panou Administrator</p>
+          <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Panou Administrator
+            </p>
           </div>
 
           <nav className="flex flex-col gap-0.5" aria-label="Navigare administrator">
@@ -139,16 +141,16 @@ export function AdminLayoutSidebar({ doctors }: AdminLayoutSidebarProps) {
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
                   className={`
-                    flex items-center gap-3 rounded-lg px-3 py-2.5 text-14-medium transition-colors
-                    focus-visible:outline focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2
+                    flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors
+                    focus-visible:outline focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2
                     ${isActive
                       ? item.primary
-                        ? "bg-green-500 text-white hover:bg-green-600"
-                        : "bg-green-50 text-green-800 hover:bg-green-100"
-                      : "text-dark-700 hover:bg-dark-100"}
+                        ? "bg-teal-600 text-white hover:bg-teal-700"
+                        : "bg-teal-50 text-teal-800 hover:bg-teal-100 dark:bg-teal-950/30 dark:text-teal-300 dark:hover:bg-teal-900/40"
+                      : "text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"}
                   `}
                 >
-                  <span className="flex h-6 w-6 items-center justify-center text-base" aria-hidden>
+                  <span className="flex size-6 items-center justify-center text-base leading-none" aria-hidden>
                     {item.icon}
                   </span>
                   <span>{item.label}</span>
@@ -158,14 +160,14 @@ export function AdminLayoutSidebar({ doctors }: AdminLayoutSidebarProps) {
           </nav>
 
           {showDashboardFilters && (
-            <div className="mt-6 space-y-4 border-t border-dark-200 pt-4">
-              <h3 className="text-12-semibold uppercase tracking-wide text-dark-500">
+            <div className="mt-6 space-y-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 Filtre dashboard
               </h3>
               <div>
-                <label className="mb-1.5 block text-12-semibold text-dark-600">Specializare</label>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Specializare</label>
                 <Select value={selectedSpecialty || "all"} onValueChange={handleSpecialtyChange}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full rounded-lg border-slate-300 dark:border-slate-600">
                     <SelectValue placeholder="Specializare">
                       {!selectedSpecialty || selectedSpecialty === "all" ? "Toate" : selectedSpecialty}
                     </SelectValue>
@@ -179,13 +181,13 @@ export function AdminLayoutSidebar({ doctors }: AdminLayoutSidebarProps) {
                 </Select>
               </div>
               <div>
-                <label className="mb-1.5 block text-12-semibold text-dark-600">Medic</label>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-600 dark:text-slate-400">Medic</label>
                 <Select
                   value={selectedDoctor}
                   onValueChange={handleDoctorChange}
                   disabled={!selectedSpecialty || selectedSpecialty === "all"}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full rounded-lg border-slate-300 dark:border-slate-600">
                     <SelectValue placeholder="Medic">
                       {selectedDoctor === "all" || !selectedDoctor ? "Toți doctorii" : selectedDoctor}
                     </SelectValue>

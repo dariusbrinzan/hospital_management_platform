@@ -17,7 +17,7 @@ export function AdminDashboardSection({ title, href, icon, children }: AdminDash
     <Card className="overflow-hidden border-slate-200/80 shadow-sm transition hover:shadow-md dark:border-slate-800">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-slate-100 py-4 dark:border-slate-800">
         <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
-          {icon && <span className="flex size-6 items-center justify-center text-base leading-none">{icon}</span>}
+          {icon && (typeof icon === "string" ? <span className="flex size-6 items-center justify-center text-base leading-none" aria-hidden>{icon}</span> : <span className="flex shrink-0 items-center text-slate-600 dark:text-slate-400">{icon}</span>)}
           {title}
         </h2>
         <Link
