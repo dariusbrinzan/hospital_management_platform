@@ -12,8 +12,8 @@ const MedicationsPage = async () => {
 
   return (
     <AdminPageLayout
-      title="Management stocuri medicamente"
-      description="Gestionați stocurile de medicamente și tratamente"
+      title="Medicamente"
+      description="Stocuri pe locații (farmacie, urgențe, ATI). Reaprovizionare și alerte stoc scăzut."
     >
       <MedicationStockDashboard
         allStocks={allStocks}

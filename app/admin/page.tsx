@@ -1,13 +1,15 @@
 import { AdminDashboardSection } from "@/components/AdminDashboardSection";
 import { getAdminDashboardSnippets } from "@/lib/actions/dashboard.actions";
 import { formatDateTime } from "@/lib/utils";
+import { Card, CardContent } from "@/components/ui/card";
+import { Calendar, AlertCircle, Users, BarChart3 } from "lucide-react";
 
 function fmt(iso: string | null | undefined): string {
   if (!iso) return "—";
   try {
     return formatDateTime(iso).dateTime;
   } catch {
-    return iso;
+    return String(iso);
   }
 }
 
@@ -16,336 +18,424 @@ function fmtDate(iso: string | null | undefined): string {
   try {
     return formatDateTime(iso).dateOnly;
   } catch {
-    return iso;
+    return String(iso);
   }
 }
+
+const tableBase =
+  "w-full text-sm border-collapse rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700";
+const tableHeadRow =
+  "border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60";
+const tableHeadCell =
+  "px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300";
+const tableCell =
+  "border-b border-slate-100 px-3 py-2.5 text-slate-700 last:border-0 dark:border-slate-800 dark:text-slate-300";
+const tableCellMuted = "text-slate-500 dark:text-slate-400";
 
 const AdminPage = async () => {
   const data = await getAdminDashboardSnippets();
 
   return (
-    <>
-      <div className="border-b border-dark-200 bg-white px-4 py-4 sm:px-6">
-        <h1 className="text-20-semibold text-dark-900 sm:text-24-bold">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 pb-12 pt-6 sm:px-6 lg:gap-10 lg:px-8">
+      <header className="flex flex-col gap-1">
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100 sm:text-2xl">
           Panou Administrator
         </h1>
-        <p className="mt-1 text-14-regular text-dark-600">
-          Rezumat rapid din fiecare secțiune. Derulați pentru a vedea toate.
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Rezumat rapid din fiecare secțiune. Folosiți linkurile „Vezi tot” pentru detalii.
         </p>
+      </header>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-400">
+              <Calendar className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                {data.appointments.scheduledCount + data.appointments.pendingCount + data.appointments.cancelledCount}
+              </p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Programări</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+              <AlertCircle className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{data.emergency.total}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Urgențe</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400">
+              <Users className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{data.patients.total}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Pacienți</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-400">
+              <BarChart3 className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{data.problemReports.total}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Raportări</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
-        <div className="mx-auto max-w-4xl space-y-6">
-          <AdminDashboardSection title="Programări" href="/admin/appointments" icon="🏠">
-            <div className="space-y-3">
-              <p className="text-dark-700">
-                <strong>{data.appointments.scheduledCount}</strong> confirmate ·{" "}
-                <strong>{data.appointments.pendingCount}</strong> în așteptare ·{" "}
-                <strong>{data.appointments.cancelledCount}</strong> anulate
-              </p>
-              {data.appointments.recent.length > 0 && (
-                <div className="overflow-hidden rounded-lg border border-dark-200 text-13-regular">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-dark-200 bg-dark-50 text-left">
-                        <th className="px-3 py-2 font-medium text-dark-700">Pacient</th>
-                        <th className="px-3 py-2 font-medium text-dark-700">Data / oră</th>
-                        <th className="px-3 py-2 font-medium text-dark-700">Doctor</th>
-                        <th className="px-3 py-2 font-medium text-dark-700">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.appointments.recent.map((a, i) => (
-                        <tr key={i} className="border-b border-dark-100 last:border-0">
-                          <td className="px-3 py-2 text-dark-800">{a.patientName}</td>
-                          <td className="px-3 py-2 text-dark-600">{fmt(a.schedule)}</td>
-                          <td className="px-3 py-2 text-dark-600">{a.primaryPhysician}</td>
-                          <td className="px-3 py-2">
-                            <span className="rounded px-1.5 py-0.5 text-12-medium bg-dark-100 text-dark-700">
-                              {a.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </AdminDashboardSection>
-
-          <AdminDashboardSection title="Urgente" href="/admin/emergency" icon="🚨">
-            <div className="space-y-3">
-              <p className="text-dark-700">
-                <strong>{data.emergency.total}</strong> cazuri în sistem.
-              </p>
-              {data.emergency.recent.length > 0 ? (
-                <div className="overflow-hidden rounded-lg border border-dark-200 text-13-regular">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-dark-200 bg-dark-50 text-left">
-                        <th className="px-3 py-2 font-medium text-dark-700">Pacient</th>
-                        <th className="px-3 py-2 font-medium text-dark-700">Triage</th>
-                        <th className="px-3 py-2 font-medium text-dark-700">Stare</th>
-                        <th className="px-3 py-2 font-medium text-dark-700">Sosire</th>
-                        <th className="px-3 py-2 font-medium text-dark-700">Motiv</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.emergency.recent.map((c) => (
-                        <tr key={c.$id} className="border-b border-dark-100 last:border-0">
-                          <td className="px-3 py-2 text-dark-800">{c.patientName ?? "—"}</td>
-                          <td className="px-3 py-2">
-                            <span className="rounded px-1.5 py-0.5 text-12-medium bg-amber-100 text-amber-800">
-                              {c.triageLevel}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-dark-600">{c.currentState}</td>
-                          <td className="px-3 py-2 text-dark-600">{fmt(c.arrivalTime)}</td>
-                          <td className="max-w-[180px] truncate px-3 py-2 text-dark-600" title={c.chiefComplaint}>
-                            {c.chiefComplaint}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-dark-500">Niciun caz recent.</p>
-              )}
-            </div>
-          </AdminDashboardSection>
-
-          <AdminDashboardSection title="Medicamente" href="/admin/medications" icon="💊">
-            <div className="space-y-3">
-              {data.medications.lowStockCount > 0 ? (
-                <>
-                  <p className="text-dark-700">
-                    <strong>{data.medications.lowStockCount}</strong> stocuri sub nivelul minim.
-                  </p>
-                  <div className="overflow-hidden rounded-lg border border-dark-200 text-13-regular">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-dark-200 bg-dark-50 text-left">
-                          <th className="px-3 py-2 font-medium text-dark-700">Medicament</th>
-                          <th className="px-3 py-2 font-medium text-dark-700">Locație</th>
-                          <th className="px-3 py-2 font-medium text-dark-700">Cantitate</th>
-                          <th className="px-3 py-2 font-medium text-dark-700">Minim</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.medications.items.map((s, i) => (
-                          <tr key={i} className="border-b border-dark-100 last:border-0">
-                            <td className="px-3 py-2 text-dark-800">{s.medicationName}</td>
-                            <td className="px-3 py-2 text-dark-600">{s.location}</td>
-                            <td className="px-3 py-2 text-dark-600">
-                              {s.quantity} {s.unit ? ` ${s.unit}` : ""}
-                            </td>
-                            <td className="px-3 py-2 text-dark-600">{s.minimumStockLevel}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              ) : (
-                <p>Toate stocurile sunt peste nivelul minim.</p>
-              )}
-            </div>
-          </AdminDashboardSection>
-
-          <AdminDashboardSection title="Pacienți" href="/admin/patients" icon="👥">
-            <div className="space-y-3">
-              <p className="text-dark-700">
-                <strong>{data.patients.total}</strong> pacienți înregistrați.
-              </p>
-              {data.patients.recent.length > 0 && (
-                <ul className="space-y-1.5 rounded-lg border border-dark-200 bg-dark-50/50 px-3 py-2 text-13-regular">
-                  {data.patients.recent.map((p, i) => (
-                    <li key={i} className="flex justify-between gap-2">
-                      <span className="text-dark-800 font-medium">{p.name}</span>
-                      <span className="text-dark-500 shrink-0">înregistrat {fmtDate(p.createdAt)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </AdminDashboardSection>
-
-          <AdminDashboardSection title="Spitalizări" href="/admin/hospitalizations" icon="🏥">
-            <div className="space-y-3">
-              <p className="text-dark-700">
-                <strong>{data.hospitalizations.activeCount}</strong> internări active (nedescărcate).
-              </p>
-              {data.hospitalizations.recent.length > 0 && (
-                <div className="overflow-hidden rounded-lg border border-dark-200 text-13-regular">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-dark-200 bg-dark-50 text-left">
-                        <th className="px-3 py-2 font-medium text-dark-700">Pacient</th>
-                        <th className="px-3 py-2 font-medium text-dark-700">Cameră</th>
-                        <th className="px-3 py-2 font-medium text-dark-700">Secție</th>
-                        <th className="px-3 py-2 font-medium text-dark-700">Data internării</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.hospitalizations.recent.map((a, i) => (
-                        <tr key={i} className="border-b border-dark-100 last:border-0">
-                          <td className="px-3 py-2 text-dark-800">{a.patientName}</td>
-                          <td className="px-3 py-2 text-dark-600">{a.roomNumber}</td>
-                          <td className="px-3 py-2 text-dark-600">{a.department}</td>
-                          <td className="px-3 py-2 text-dark-600">{fmtDate(a.admissionDate)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </AdminDashboardSection>
-
-          <AdminDashboardSection title="Imagistică" href="/admin/imaging" icon="🩻">
-            <div className="space-y-3">
-              <p className="text-dark-700">
-                <strong>{data.imaging.upcomingCount}</strong> programări în curând.
-              </p>
-              {data.imaging.recent.length > 0 ? (
-                <div className="overflow-hidden rounded-lg border border-dark-200 text-13-regular">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-dark-200 bg-dark-50 text-left">
-                        <th className="px-3 py-2 font-medium text-dark-700">Pacient</th>
-                        <th className="px-3 py-2 font-medium text-dark-700">Modalitate</th>
-                        <th className="px-3 py-2 font-medium text-dark-700">Programat</th>
-                        <th className="px-3 py-2 font-medium text-dark-700">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.imaging.recent.map((s, i) => (
-                        <tr key={i} className="border-b border-dark-100 last:border-0">
-                          <td className="px-3 py-2 text-dark-800">{s.patientName}</td>
-                          <td className="px-3 py-2 text-dark-600">{s.modalityName}</td>
-                          <td className="px-3 py-2 text-dark-600">{fmt(s.scheduledAt)}</td>
-                          <td className="px-3 py-2">
-                            <span className="rounded px-1.5 py-0.5 text-12-medium bg-dark-100 text-dark-700">
-                              {s.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-dark-500">Nicio programare în curând.</p>
-              )}
-            </div>
-          </AdminDashboardSection>
-
-          <AdminDashboardSection title="Import analize" href="/admin/lab-import" icon="📋">
-            <p className="text-dark-600">
-              Încărcați rezultate analize din fișiere (CSV/Excel). Verificați asistența pacientului și maparea coloanelor înainte de import.
+      <div className="space-y-6">
+        <AdminDashboardSection title="Programări" href="/admin/appointments" icon="📅">
+          <div className="space-y-3">
+            <p className="text-slate-700 dark:text-slate-300">
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.appointments.scheduledCount}</strong>{" "}
+              confirmate ·{" "}
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.appointments.pendingCount}</strong>{" "}
+              în așteptare ·{" "}
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.appointments.cancelledCount}</strong>{" "}
+              anulate
             </p>
-          </AdminDashboardSection>
+            {data.appointments.recent.length > 0 ? (
+              <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+                <table className={tableBase}>
+                  <thead>
+                    <tr className={tableHeadRow}>
+                      <th className={tableHeadCell}>Pacient</th>
+                      <th className={tableHeadCell}>Data / oră</th>
+                      <th className={tableHeadCell}>Doctor</th>
+                      <th className={tableHeadCell}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.appointments.recent.map((a, i) => (
+                      <tr key={`apt-${i}-${a.patientName}-${a.schedule}`}>
+                        <td className={tableCell + " font-medium text-slate-900 dark:text-slate-100"}>{a.patientName}</td>
+                        <td className={tableCell + " " + tableCellMuted}>{fmt(a.schedule)}</td>
+                        <td className={tableCell + " " + tableCellMuted}>{a.primaryPhysician}</td>
+                        <td className={tableCell}>
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            {a.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-slate-500 dark:text-slate-400">Nicio programare recentă.</p>
+            )}
+          </div>
+        </AdminDashboardSection>
 
-          <AdminDashboardSection title="Rapoarte" href="/admin/reports" icon="📊">
-            <p className="text-dark-600">
-              Generați rapoarte per perioadă: programări, urgente, imagistică. Export PDF/Excel disponibil în secțiune.
+        <AdminDashboardSection title="Urgențe" href="/admin/emergency" icon="🚨">
+          <div className="space-y-3">
+            <p className="text-slate-700 dark:text-slate-300">
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.emergency.total}</strong> cazuri în sistem.
             </p>
-          </AdminDashboardSection>
+            {data.emergency.recent.length > 0 ? (
+              <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+                <table className={tableBase}>
+                  <thead>
+                    <tr className={tableHeadRow}>
+                      <th className={tableHeadCell}>Pacient</th>
+                      <th className={tableHeadCell}>Triaj</th>
+                      <th className={tableHeadCell}>Stare</th>
+                      <th className={tableHeadCell}>Sosire</th>
+                      <th className={tableHeadCell}>Motiv</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.emergency.recent.map((c) => (
+                      <tr key={c.$id}>
+                        <td className={tableCell + " font-medium text-slate-900 dark:text-slate-100"}>{c.patientName ?? "—"}</td>
+                        <td className={tableCell}>
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+                            {c.triageLevel}
+                          </span>
+                        </td>
+                        <td className={tableCell + " " + tableCellMuted}>{c.currentState}</td>
+                        <td className={tableCell + " " + tableCellMuted}>{fmt(c.arrivalTime)}</td>
+                        <td className={tableCell + " max-w-[180px] truncate " + tableCellMuted} title={c.chiefComplaint}>
+                          {c.chiefComplaint}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-slate-500 dark:text-slate-400">Niciun caz recent.</p>
+            )}
+          </div>
+        </AdminDashboardSection>
 
-          <AdminDashboardSection title="Raportări probleme" href="/admin/problem-reports" icon="📝">
-            <div className="space-y-3">
-              <p className="text-dark-700">
-                <strong>{data.problemReports.newCount}</strong> raportări noi din{" "}
-                <strong>{data.problemReports.total}</strong> total.
-              </p>
-              {data.problemReports.recent.length > 0 ? (
-                <ul className="space-y-2">
-                  {data.problemReports.recent.map((r) => (
-                    <li key={r.id} className="rounded-lg border border-dark-200 bg-dark-50/50 px-3 py-2 text-13-regular">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium text-dark-800">{r.subject}</span>
-                        <span className="rounded px-1.5 py-0.5 text-12-medium bg-dark-100 text-dark-600">{r.status}</span>
-                        <span className="text-dark-500">{fmt(r.createdAt)}</span>
-                      </div>
-                      {r.descriptionSnippet && (
-                        <p className="mt-1 text-dark-600 line-clamp-2">{r.descriptionSnippet}</p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-dark-500">Niciun raport recent.</p>
-              )}
-            </div>
-          </AdminDashboardSection>
+        <AdminDashboardSection title="Medicamente" href="/admin/medications" icon="💊">
+          <div className="space-y-3">
+            {data.medications.lowStockCount > 0 ? (
+              <>
+                <p className="text-slate-700 dark:text-slate-300">
+                  <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.medications.lowStockCount}</strong>{" "}
+                  stocuri sub nivelul minim.
+                </p>
+                <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+                  <table className={tableBase}>
+                    <thead>
+                      <tr className={tableHeadRow}>
+                        <th className={tableHeadCell}>Medicament</th>
+                        <th className={tableHeadCell}>Locație</th>
+                        <th className={tableHeadCell}>Cantitate</th>
+                        <th className={tableHeadCell}>Minim</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.medications.items.map((s, i) => (
+                        <tr key={`med-${i}-${s.medicationName}-${s.location}`}>
+                          <td className={tableCell + " font-medium text-slate-900 dark:text-slate-100"}>{s.medicationName}</td>
+                          <td className={tableCell + " " + tableCellMuted}>{s.location}</td>
+                          <td className={tableCell + " " + tableCellMuted}>
+                            {s.quantity}
+                            {s.unit ? ` ${s.unit}` : ""}
+                          </td>
+                          <td className={tableCell + " " + tableCellMuted}>{s.minimumStockLevel}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <p className="text-slate-500 dark:text-slate-400">Toate stocurile sunt peste nivelul minim.</p>
+            )}
+          </div>
+        </AdminDashboardSection>
 
-          <AdminDashboardSection title="Logistică" href="/admin/logistics" icon="📦">
-            <div className="space-y-4">
-              <p className="text-dark-700">
-                <strong>{data.logistics.consumablePending}</strong> cereri consumabile în așteptare ·{" "}
-                <strong>{data.logistics.transportPending}</strong> cereri transport în așteptare
-              </p>
-              {data.logistics.recentConsumable.length > 0 && (
-                <div>
-                  <p className="mb-1.5 text-12-semibold uppercase tracking-wide text-dark-500">Cereri consumabile recente</p>
-                  <div className="overflow-hidden rounded-lg border border-dark-200 text-13-regular">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-dark-200 bg-dark-50 text-left">
-                          <th className="px-3 py-2 font-medium text-dark-700">Secție</th>
-                          <th className="px-3 py-2 font-medium text-dark-700">Solicitant</th>
-                          <th className="px-3 py-2 font-medium text-dark-700">Prioritate</th>
-                          <th className="px-3 py-2 font-medium text-dark-700">Data</th>
+        <AdminDashboardSection title="Pacienți" href="/admin/patients" icon="👥">
+          <div className="space-y-3">
+            <p className="text-slate-700 dark:text-slate-300">
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.patients.total}</strong> pacienți înregistrați.
+            </p>
+            {data.patients.recent.length > 0 ? (
+              <ul className="space-y-1.5 rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/30">
+                {data.patients.recent.map((p, i) => (
+                  <li
+                    key={`patient-${i}-${p.name}-${p.createdAt}`}
+                    className="flex justify-between gap-2 text-sm"
+                  >
+                    <span className="font-medium text-slate-800 dark:text-slate-200">{p.name}</span>
+                    <span className={tableCellMuted + " shrink-0"}>înregistrat {fmtDate(p.createdAt)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-slate-500 dark:text-slate-400">Niciun pacient recent.</p>
+            )}
+          </div>
+        </AdminDashboardSection>
+
+        <AdminDashboardSection title="Spitalizări" href="/admin/hospitalizations" icon="🏥">
+          <div className="space-y-3">
+            <p className="text-slate-700 dark:text-slate-300">
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.hospitalizations.activeCount}</strong>{" "}
+              internări active (nedescărcate).
+            </p>
+            {data.hospitalizations.recent.length > 0 ? (
+              <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+                <table className={tableBase}>
+                  <thead>
+                    <tr className={tableHeadRow}>
+                      <th className={tableHeadCell}>Pacient</th>
+                      <th className={tableHeadCell}>Cameră</th>
+                      <th className={tableHeadCell}>Secție</th>
+                      <th className={tableHeadCell}>Data internării</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.hospitalizations.recent.map((a, i) => (
+                      <tr key={`hosp-${i}-${a.patientName}-${a.admissionDate}`}>
+                        <td className={tableCell + " font-medium text-slate-900 dark:text-slate-100"}>{a.patientName}</td>
+                        <td className={tableCell + " " + tableCellMuted}>{a.roomNumber}</td>
+                        <td className={tableCell + " " + tableCellMuted}>{a.department}</td>
+                        <td className={tableCell + " " + tableCellMuted}>{fmtDate(a.admissionDate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-slate-500 dark:text-slate-400">Nicio internare recentă.</p>
+            )}
+          </div>
+        </AdminDashboardSection>
+
+        <AdminDashboardSection title="Imagistică" href="/admin/imaging" icon="🩻">
+          <div className="space-y-3">
+            <p className="text-slate-700 dark:text-slate-300">
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.imaging.upcomingCount}</strong>{" "}
+              programări în curând.
+            </p>
+            {data.imaging.recent.length > 0 ? (
+              <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+                <table className={tableBase}>
+                  <thead>
+                    <tr className={tableHeadRow}>
+                      <th className={tableHeadCell}>Pacient</th>
+                      <th className={tableHeadCell}>Modalitate</th>
+                      <th className={tableHeadCell}>Programat</th>
+                      <th className={tableHeadCell}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.imaging.recent.map((s, i) => (
+                      <tr key={`img-${i}-${s.patientName}-${s.scheduledAt}`}>
+                        <td className={tableCell + " font-medium text-slate-900 dark:text-slate-100"}>{s.patientName}</td>
+                        <td className={tableCell + " " + tableCellMuted}>{s.modalityName}</td>
+                        <td className={tableCell + " " + tableCellMuted}>{fmt(s.scheduledAt)}</td>
+                        <td className={tableCell}>
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            {s.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-slate-500 dark:text-slate-400">Nicio programare în curând.</p>
+            )}
+          </div>
+        </AdminDashboardSection>
+
+        <AdminDashboardSection title="Import analize" href="/admin/lab-import" icon="📋">
+          <p className="text-slate-600 dark:text-slate-400">
+            Încărcați rezultate analize din fișiere (CSV/Excel). Verificați asistența pacientului și maparea coloanelor înainte de import.
+          </p>
+        </AdminDashboardSection>
+
+        <AdminDashboardSection title="Rapoarte" href="/admin/reports" icon="📊">
+          <p className="text-slate-600 dark:text-slate-400">
+            Generați rapoarte per perioadă: programări, urgente, imagistică. Export PDF/Excel disponibil în secțiune.
+          </p>
+        </AdminDashboardSection>
+
+        <AdminDashboardSection title="Raportări probleme" href="/admin/problem-reports" icon="📝">
+          <div className="space-y-3">
+            <p className="text-slate-700 dark:text-slate-300">
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.problemReports.newCount}</strong>{" "}
+              raportări noi din{" "}
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.problemReports.total}</strong> total.
+            </p>
+            {data.problemReports.recent.length > 0 ? (
+              <ul className="space-y-2">
+                {data.problemReports.recent.map((r) => (
+                  <li
+                    key={r.id}
+                    className="rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/30"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium text-slate-800 dark:text-slate-200">{r.subject}</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                        {r.status}
+                      </span>
+                      <span className={tableCellMuted + " text-xs"}>{fmt(r.createdAt)}</span>
+                    </div>
+                    {r.descriptionSnippet && (
+                      <p className="mt-1 line-clamp-2 text-slate-600 dark:text-slate-400">{r.descriptionSnippet}</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-slate-500 dark:text-slate-400">Niciun raport recent.</p>
+            )}
+          </div>
+        </AdminDashboardSection>
+
+        <AdminDashboardSection title="Logistică" href="/admin/logistics" icon="📦">
+          <div className="space-y-4">
+            <p className="text-slate-700 dark:text-slate-300">
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.logistics.consumablePending}</strong>{" "}
+              cereri consumabile în așteptare ·{" "}
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.logistics.transportPending}</strong>{" "}
+              cereri transport în așteptare
+            </p>
+            {data.logistics.recentConsumable.length > 0 && (
+              <div>
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Cereri consumabile recente
+                </p>
+                <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+                  <table className={tableBase}>
+                    <thead>
+                      <tr className={tableHeadRow}>
+                        <th className={tableHeadCell}>Secție</th>
+                        <th className={tableHeadCell}>Solicitant</th>
+                        <th className={tableHeadCell}>Prioritate</th>
+                        <th className={tableHeadCell}>Data</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.logistics.recentConsumable.map((r, i) => (
+                        <tr key={`cons-${i}-${r.department}-${r.createdAt}`}>
+                          <td className={tableCell + " font-medium text-slate-900 dark:text-slate-100"}>{r.department}</td>
+                          <td className={tableCell + " " + tableCellMuted}>{r.requestedBy}</td>
+                          <td className={tableCell + " " + tableCellMuted}>{r.priority}</td>
+                          <td className={tableCell + " " + tableCellMuted}>{fmt(r.createdAt)}</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {data.logistics.recentConsumable.map((r, i) => (
-                          <tr key={i} className="border-b border-dark-100 last:border-0">
-                            <td className="px-3 py-2 text-dark-800">{r.department}</td>
-                            <td className="px-3 py-2 text-dark-600">{r.requestedBy}</td>
-                            <td className="px-3 py-2 text-dark-600">{r.priority}</td>
-                            <td className="px-3 py-2 text-dark-600">{fmt(r.createdAt)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-              {data.logistics.recentTransport.length > 0 && (
-                <div>
-                  <p className="mb-1.5 text-12-semibold uppercase tracking-wide text-dark-500">Cereri transport recente</p>
-                  <div className="overflow-hidden rounded-lg border border-dark-200 text-13-regular">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-dark-200 bg-dark-50 text-left">
-                          <th className="px-3 py-2 font-medium text-dark-700">Pacient</th>
-                          <th className="px-3 py-2 font-medium text-dark-700">De la → La</th>
-                          <th className="px-3 py-2 font-medium text-dark-700">Tip</th>
-                          <th className="px-3 py-2 font-medium text-dark-700">Data</th>
+              </div>
+            )}
+            {data.logistics.recentTransport.length > 0 && (
+              <div>
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Cereri transport recente
+                </p>
+                <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+                  <table className={tableBase}>
+                    <thead>
+                      <tr className={tableHeadRow}>
+                        <th className={tableHeadCell}>Pacient</th>
+                        <th className={tableHeadCell}>De la → La</th>
+                        <th className={tableHeadCell}>Tip</th>
+                        <th className={tableHeadCell}>Data</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.logistics.recentTransport.map((r, i) => (
+                        <tr key={`trans-${i}-${r.patientName}-${r.createdAt}`}>
+                          <td className={tableCell + " font-medium text-slate-900 dark:text-slate-100"}>{r.patientName}</td>
+                          <td className={tableCell + " " + tableCellMuted}>
+                            {r.fromLocation} → {r.toLocation}
+                          </td>
+                          <td className={tableCell + " " + tableCellMuted}>{r.transportType}</td>
+                          <td className={tableCell + " " + tableCellMuted}>{fmt(r.createdAt)}</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {data.logistics.recentTransport.map((r, i) => (
-                          <tr key={i} className="border-b border-dark-100 last:border-0">
-                            <td className="px-3 py-2 text-dark-800">{r.patientName}</td>
-                            <td className="px-3 py-2 text-dark-600">{r.fromLocation} → {r.toLocation}</td>
-                            <td className="px-3 py-2 text-dark-600">{r.transportType}</td>
-                            <td className="px-3 py-2 text-dark-600">{fmt(r.createdAt)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-            </div>
-          </AdminDashboardSection>
-        </div>
+              </div>
+            )}
+          </div>
+        </AdminDashboardSection>
       </div>
-    </>
+    </div>
   );
 };
 

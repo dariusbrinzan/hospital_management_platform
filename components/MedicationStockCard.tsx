@@ -1,7 +1,9 @@
 "use client";
 
 import { Button } from "./ui/button";
+import { Card, CardContent, CardFooter } from "./ui/card";
 import { formatDateTime } from "@/lib/utils";
+import { MapPin } from "lucide-react";
 
 type MedicationStockWithPartialMed = Omit<MedicationStock, "medication"> & { medication?: Partial<Medication> | null };
 
@@ -18,103 +20,104 @@ const locationLabels: Record<string, string> = {
 };
 
 export const MedicationStockCard = ({ stock, onRestock }: MedicationStockCardProps) => {
-  const isLowStock = (stock.availableQuantity || 0) <= stock.minimumStockLevel;
-  const stockPercentage = stock.maximumStockLevel > 0
-    ? ((stock.quantity / stock.maximumStockLevel) * 100)
-    : 0;
+  const isLowStock = (stock.availableQuantity ?? 0) <= stock.minimumStockLevel;
+  const stockPercentage =
+    stock.maximumStockLevel > 0 ? (stock.quantity / stock.maximumStockLevel) * 100 : 0;
 
   return (
-    <div className={`rounded-lg border p-6 shadow-sm ${
-      isLowStock
-        ? "border-red-200 bg-red-50"
-        : stockPercentage > 80
-        ? "border-green-200 bg-green-50"
-        : "border-dark-200 bg-white"
-    }`}>
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h3 className="text-18-semibold text-dark-900 mb-1">
-            {stock.medication?.name || "Medicament necunoscut"}
-          </h3>
-          {stock.medication?.genericName && (
-            <p className="text-14-regular text-dark-600 mb-1">
-              {stock.medication.genericName}
+    <Card
+      className={`overflow-hidden border-2 shadow-sm transition dark:border-slate-800 ${
+        isLowStock
+          ? "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
+          : stockPercentage > 80
+            ? "border-emerald-200/80 bg-white dark:border-emerald-800/50 dark:bg-slate-900"
+            : "border-slate-200/80 bg-white dark:bg-slate-900"
+      }`}
+    >
+      <CardContent className="space-y-3 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+              {stock.medication?.name || "Medicament necunoscut"}
+            </h3>
+            {stock.medication?.genericName && (
+              <p className="text-sm text-slate-600 dark:text-slate-400">{stock.medication.genericName}</p>
+            )}
+            {stock.medication?.strength && (
+              <p className="text-xs text-slate-500 dark:text-slate-500">{stock.medication.strength}</p>
+            )}
+            <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <MapPin className="size-3.5" />
+              {locationLabels[stock.location] || stock.location}
             </p>
+          </div>
+          {isLowStock && (
+            <span className="shrink-0 rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+              Stoc scăzut
+            </span>
           )}
-          {stock.medication?.strength && (
-            <p className="text-12-regular text-dark-500 mb-2">
-              {stock.medication.strength}
-            </p>
-          )}
-          <p className="text-12-regular text-dark-500">
-            📍 {locationLabels[stock.location] || stock.location}
-          </p>
         </div>
-        {isLowStock && (
-          <span className="px-3 py-1 rounded-full text-12-semibold text-red-700 bg-red-100 border border-red-200">
-            Stoc Scăzut
-          </span>
-        )}
-      </div>
 
-      {/* Informații stoc */}
-      <div className="space-y-2 mb-4">
-        <div className="flex justify-between items-center">
-          <span className="text-14-semibold text-dark-700">Cantitate Totală:</span>
-          <span className="text-16-bold text-dark-900">{stock.quantity} {stock.medication?.unit || ""}</span>
+        <div className="space-y-2 rounded-lg border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/50">
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-600 dark:text-slate-400">Cantitate totală</span>
+            <span className="font-semibold text-slate-900 dark:text-slate-100">
+              {stock.quantity} {stock.medication?.unit || ""}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-600 dark:text-slate-400">Rezervată</span>
+            <span className="text-slate-700 dark:text-slate-300">
+              {stock.reservedQuantity ?? 0} {stock.medication?.unit || ""}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-600 dark:text-slate-400">Disponibilă</span>
+            <span
+              className={`font-semibold ${isLowStock ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"}`}
+            >
+              {stock.availableQuantity ?? 0} {stock.medication?.unit || ""}
+            </span>
+          </div>
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-14-semibold text-dark-700">Rezervată:</span>
-          <span className="text-14-regular text-dark-600">{stock.reservedQuantity} {stock.medication?.unit || ""}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-14-semibold text-dark-700">Disponibilă:</span>
-          <span className={`text-16-bold ${
-            isLowStock ? "text-red-700" : "text-green-700"
-          }`}>
-            {stock.availableQuantity || 0} {stock.medication?.unit || ""}
-          </span>
-        </div>
-        
-        {/* Progress bar */}
-        <div className="mt-3">
-          <div className="flex justify-between text-12-regular text-dark-500 mb-1">
+
+        <div>
+          <div className="mb-1 flex justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Min: {stock.minimumStockLevel}</span>
             <span>Max: {stock.maximumStockLevel}</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
             <div
-              className={`h-2 rounded-full ${
+              className={`h-full rounded-full ${
                 isLowStock
-                  ? "bg-red-500"
+                  ? "bg-amber-500"
                   : stockPercentage > 80
-                  ? "bg-green-500"
-                  : "bg-blue-500"
+                    ? "bg-emerald-500"
+                    : "bg-teal-500"
               }`}
               style={{ width: `${Math.min(stockPercentage, 100)}%` }}
             />
           </div>
         </div>
-      </div>
 
-      {/* Ultima reaprovizionare */}
-      {stock.lastRestockedDate && (
-        <div className="mb-4 text-12-regular text-dark-500">
-          <p>Ultima reaprovizionare: {formatDateTime(stock.lastRestockedDate).dateOnly}</p>
-          {stock.lastRestockedQuantity && (
-            <p>Cantitate: +{stock.lastRestockedQuantity} {stock.medication?.unit || ""}</p>
-          )}
-        </div>
-      )}
-
-      {/* Acțiuni */}
-      <Button
-        onClick={onRestock}
-        className="w-full shad-primary-btn"
-        size="sm"
-      >
-        Reaprovizionează
-      </Button>
-    </div>
+        {stock.lastRestockedDate && (
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Ultima reaprovizionare: {formatDateTime(stock.lastRestockedDate).dateOnly}
+            {stock.lastRestockedQuantity != null && (
+              <> · +{stock.lastRestockedQuantity} {stock.medication?.unit || ""}</>
+            )}
+          </p>
+        )}
+      </CardContent>
+      <CardFooter className="p-4 pt-0">
+        <Button
+          onClick={onRestock}
+          className="w-full rounded-lg bg-teal-600 hover:bg-teal-700"
+          size="sm"
+        >
+          Reaprovizionează
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
