@@ -160,6 +160,34 @@ try {
   db.pragma("foreign_keys = ON");
 }
 
+// Migrare: coloane reviewed pentru lab_results și imaging_studies (rezultate de văzut/semnat de medic)
+try {
+  const lrExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='lab_results';").get();
+  if (lrExists) {
+    const lrInfo = db.prepare("PRAGMA table_info(lab_results)").all() as any[];
+    if (!lrInfo.some((c: any) => c.name === "reviewedByDoctor")) {
+      db.exec(`
+        ALTER TABLE lab_results ADD COLUMN reviewedByDoctor TEXT;
+        ALTER TABLE lab_results ADD COLUMN reviewedAt TEXT;
+        ALTER TABLE lab_results ADD COLUMN noteForPatient TEXT;
+      `);
+    }
+  }
+  const isExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='imaging_studies';").get();
+  if (isExists) {
+    const isInfo = db.prepare("PRAGMA table_info(imaging_studies)").all() as any[];
+    if (!isInfo.some((c: any) => c.name === "reviewedByDoctor")) {
+      db.exec(`
+        ALTER TABLE imaging_studies ADD COLUMN reviewedByDoctor TEXT;
+        ALTER TABLE imaging_studies ADD COLUMN reviewedAt TEXT;
+        ALTER TABLE imaging_studies ADD COLUMN noteForPatient TEXT;
+      `);
+    }
+  }
+} catch (err) {
+  console.error("Migration lab_results/imaging_studies reviewed:", err);
+}
+
 // Creează tabelele dacă nu există
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (

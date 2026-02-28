@@ -17,6 +17,8 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/StatusBadge";
+import { MedicalLetterButton } from "@/components/MedicalLetterButton";
+import { ConcediuMedicalButton } from "@/components/ConcediuMedicalButton";
 
 const calculateAge = (birthDate: Date | string) => {
   const birth = new Date(birthDate);
@@ -271,6 +273,25 @@ export default async function DoctorPatientDetailsPage({
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Istoric medical personal</p>
                 <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{patient.pastMedicalHistory || "-"}</p>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+            <CardHeader className="pb-3">
+              <CardTitle>Documente pentru pacient</CardTitle>
+              <CardDescription>Scrisoare medicală sau concediu medical — PDF descărcabil</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center gap-4">
+              <MedicalLetterButton
+                patientId={params.patientId}
+                patientName={patient.name}
+                defaultDoctorName={doctorName}
+              />
+              <ConcediuMedicalButton
+                patientId={params.patientId}
+                patientName={patient.name}
+                defaultDoctorName={doctorName}
+              />
             </CardContent>
           </Card>
 

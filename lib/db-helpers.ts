@@ -1298,6 +1298,9 @@ export const imagingStudyHelpers = {
       updatedAt: parseDate(s.updatedAt),
       patientName: s.patient_name,
       modalityName: s.modality_name,
+      reviewedByDoctor: s.reviewedByDoctor ?? null,
+      reviewedAt: s.reviewedAt ? parseDate(s.reviewedAt) : null,
+      noteForPatient: s.noteForPatient ?? null,
     };
   },
 
@@ -1424,9 +1427,26 @@ export const imagingStudyHelpers = {
 
   updateStatus: (id: string, status: string, resultNotes?: string | null) => {
     const now = new Date().toISOString();
+    const before = imagingStudyHelpers.getById(id);
     db.prepare(`
       UPDATE imaging_studies SET status = ?, resultNotes = ?, updatedAt = ? WHERE id = ?
     `).run(status, resultNotes ?? null, now, id);
+    if (status === "completed" && before) {
+      try {
+        const doctorToNotify = before.orderedBy ?? (() => {
+          const p = patientHelpers.getById(before.patientId) as { primaryPhysician?: string } | null;
+          return p?.primaryPhysician ?? null;
+        })();
+        if (doctorToNotify) {
+          doctorNotificationHelpers.create({
+            doctorName: doctorToNotify,
+            type: "imaging_result",
+            title: "Rezultat imagistică finalizat",
+            message: `Studiu imagistică finalizat${before.patientName ? ` — ${before.patientName}` : ""}. Verificați Rezultate noi.`,
+          });
+        }
+      } catch (_) { /* ignore */ }
+    }
     return imagingStudyHelpers.getById(id);
   },
 
@@ -1440,6 +1460,47 @@ export const imagingStudyHelpers = {
       ORDER BY day
     `).all(startIso, endIso) as { day: string; count: number }[];
     return rows.map((r) => ({ date: r.day, count: r.count }));
+  },
+
+  /** Studii imagistică finalizate (completed) pentru pacienții medicului, nesemnate. */
+  getUnreviewedForDoctor: (doctorName: string, limit = 80) => {
+    const rows = db.prepare(`
+      SELECT s.*, p.name as patient_name, m.name as modality_name
+      FROM imaging_studies s
+      LEFT JOIN patients p ON s.patientId = p.id
+      LEFT JOIN imaging_modalities m ON s.modalityId = m.id
+      WHERE (s.orderedBy = ? OR s.patientId IN (
+        SELECT DISTINCT patientId FROM appointments WHERE primaryPhysician = ?
+      ))
+        AND s.status = 'completed'
+        AND (s.reviewedByDoctor IS NULL OR s.reviewedByDoctor = '')
+      ORDER BY s.updatedAt DESC
+      LIMIT ?
+    `).all(doctorName, doctorName, limit) as any[];
+    return rows.map((s) => ({
+      $id: s.id,
+      patientId: s.patientId,
+      modalityId: s.modalityId,
+      scheduledAt: parseDate(s.scheduledAt),
+      status: s.status,
+      sourceType: s.sourceType,
+      sourceId: s.sourceId,
+      orderedBy: s.orderedBy,
+      reason: s.reason,
+      resultNotes: s.resultNotes,
+      createdAt: parseDate(s.createdAt),
+      updatedAt: parseDate(s.updatedAt),
+      patientName: s.patient_name,
+      modalityName: s.modality_name,
+    }));
+  },
+
+  markReviewed: (id: string, doctorName: string, noteForPatient?: string | null) => {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE imaging_studies SET reviewedByDoctor = ?, reviewedAt = ?, noteForPatient = ?, updatedAt = ? WHERE id = ?
+    `).run(doctorName, now, noteForPatient ?? null, now, id);
+    return imagingStudyHelpers.getById(id);
   },
 };
 
@@ -2669,6 +2730,19 @@ export const labResultHelpers = {
       now
     );
 
+    try {
+      const mr = db.prepare("SELECT doctorName, patientId FROM medical_records WHERE id = ?").get(labResult.medicalRecordId) as { doctorName: string; patientId: string } | undefined;
+      if (mr?.doctorName) {
+        const p = patientHelpers.getById(mr.patientId) as { name: string } | null;
+        doctorNotificationHelpers.create({
+          doctorName: mr.doctorName,
+          type: "lab_result",
+          title: "Rezultat analiză nou",
+          message: `Rezultat nou: ${labResult.testName}${p ? ` — ${p.name}` : ""}. Verificați Rezultate noi.`,
+        });
+      }
+    } catch (_) { /* ignore */ }
+
     return labResultHelpers.getById(id);
   },
 
@@ -2688,6 +2762,9 @@ export const labResultHelpers = {
       notes: l.notes,
       performedDate: parseDate(l.performedDate),
       createdAt: parseDate(l.createdAt),
+      reviewedByDoctor: l.reviewedByDoctor ?? null,
+      reviewedAt: l.reviewedAt ? parseDate(l.reviewedAt) : null,
+      noteForPatient: l.noteForPatient ?? null,
     };
   },
 
@@ -2762,6 +2839,50 @@ export const labResultHelpers = {
       doctorName: l.doctorName,
       visitDate: parseDate(l.visitDate),
     }));
+  },
+
+  /** Rezultate lab pentru pacienții unui medic, nesemnate (reviewedByDoctor IS NULL), recente (performedDate în ultimele 90 zile). */
+  getUnreviewedForDoctor: (doctorName: string, limitDays = 90) => {
+    const since = new Date();
+    since.setDate(since.getDate() - limitDays);
+    const sinceStr = since.toISOString();
+    const rows = db.prepare(`
+      SELECT lr.*, mr.patientId
+      FROM lab_results lr
+      JOIN medical_records mr ON lr.medicalRecordId = mr.id
+      WHERE mr.patientId IN (SELECT DISTINCT patientId FROM appointments WHERE primaryPhysician = ?)
+        AND (lr.reviewedByDoctor IS NULL OR lr.reviewedByDoctor = '')
+        AND lr.performedDate >= ?
+      ORDER BY lr.performedDate DESC
+      LIMIT 100
+    `).all(doctorName, sinceStr) as any[];
+    const patientIds = [...new Set(rows.map((r) => r.patientId))];
+    const patients = patientIds.length ? (db.prepare("SELECT id, name FROM patients WHERE id IN (" + patientIds.map(() => "?").join(",") + ")").all(...patientIds) as any[]) : [];
+    const patientMap = new Map(patients.map((p) => [p.id, p.name]));
+    return rows.map((l) => ({
+      $id: l.id,
+      medicalRecordId: l.medicalRecordId,
+      appointmentId: l.appointmentId,
+      testName: l.testName,
+      testCategory: l.testCategory,
+      resultValue: l.resultValue,
+      unit: l.unit,
+      referenceRange: l.referenceRange,
+      status: l.status,
+      notes: l.notes,
+      performedDate: parseDate(l.performedDate),
+      createdAt: parseDate(l.createdAt),
+      patientId: l.patientId,
+      patientName: patientMap.get(l.patientId) ?? "Pacient",
+    }));
+  },
+
+  markReviewed: (id: string, doctorName: string, noteForPatient?: string | null) => {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE lab_results SET reviewedByDoctor = ?, reviewedAt = ?, noteForPatient = ? WHERE id = ?
+    `).run(doctorName, now, noteForPatient ?? null, id);
+    return labResultHelpers.getById(id);
   },
 };
 

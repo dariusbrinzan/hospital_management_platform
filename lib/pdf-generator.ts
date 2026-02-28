@@ -1388,6 +1388,83 @@ export function generateMedicalLetterPDF(data: MedicalLetterPDFData): Buffer {
   return Buffer.from(doc.output("arraybuffer"));
 }
 
+// ========== CONCEDIU MEDICAL ==========
+export interface SickLeavePDFData {
+  patient: { name: string; birthDate?: string; identificationNumber?: string };
+  doctor: { name: string; specialty?: string };
+  date: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  recommendations?: string;
+}
+
+export function generateSickLeavePDF(data: SickLeavePDFData): Buffer {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  const contentWidth = pageWidth - 2 * margin;
+  let yPos = 20;
+
+  const addWrapped = (text: string, fontSize: number = 10) => {
+    doc.setFontSize(fontSize);
+    doc.setFont("helvetica", "normal");
+    const lines = doc.splitTextToSize(text, contentWidth);
+    doc.text(lines, margin, yPos);
+    yPos += lines.length * (fontSize * 0.4 + 2);
+  };
+
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text("CONCEDIU MEDICAL", pageWidth / 2, yPos, { align: "center" });
+  yPos += 14;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Data eliberării: ${formatDateTime(data.date).dateOnly}`, margin, yPos);
+  yPos += 6;
+  doc.text(`Pacient: ${data.patient.name}`, margin, yPos);
+  yPos += 6;
+  if (data.patient.birthDate) {
+    doc.text(`Data nașterii: ${formatDateTime(data.patient.birthDate).dateOnly}`, margin, yPos);
+    yPos += 6;
+  }
+  if (data.patient.identificationNumber) {
+    doc.text(`CNP: ${data.patient.identificationNumber}`, margin, yPos);
+    yPos += 6;
+  }
+  doc.text(`Medic: ${data.doctor.name}${data.doctor.specialty ? ` (${data.doctor.specialty})` : ""}`, margin, yPos);
+  yPos += 10;
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Perioadă concediu medical:", margin, yPos);
+  yPos += 6;
+  doc.setFont("helvetica", "normal");
+  doc.text(`Din data de ${formatDateTime(data.startDate).dateOnly} până la data de ${formatDateTime(data.endDate).dateOnly} (inclusiv).`, margin, yPos);
+  yPos += 10;
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Motiv / Diagnostic:", margin, yPos);
+  yPos += 6;
+  doc.setFont("helvetica", "normal");
+  addWrapped(data.reason);
+  yPos += 6;
+
+  if (data.recommendations && data.recommendations.trim()) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Recomandări:", margin, yPos);
+    yPos += 6;
+    doc.setFont("helvetica", "normal");
+    addWrapped(data.recommendations);
+  }
+
+  yPos += 15;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text("Document emis în baza consultației medicale. Pacientul este îndreptățit la concediu medical pentru perioada indicată.", margin, yPos);
+  return Buffer.from(doc.output("arraybuffer"));
+}
+
 // ========== LISTĂ PROGRAMĂRI (export) ==========
 export interface AppointmentsListPDFData {
   title: string;
