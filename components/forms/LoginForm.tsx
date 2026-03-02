@@ -58,16 +58,19 @@ export const LoginForm = () => {
   return (
     <Form {...form}>
       <form method="post" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <section className="mb-12 space-y-4">
-          <h1 className="header">Bine ai revenit 👋</h1>
-          <p className="text-dark-600">
-            Prima platformă de management spital din România. Conectează-te pentru a accesa contul tău și programările tale.
+        <section className="space-y-2">
+          <p className="text-sm font-medium text-teal-600 dark:text-teal-400">Autentificare</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
+            Bine ai revenit 👋
+          </h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Conectează-te pentru a accesa contul tău și programările tale.
           </p>
         </section>
 
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-            <p className="text-14-regular text-red-600">{error}</p>
+          <div className="rounded-xl border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30 p-4">
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           </div>
         )}
 
@@ -76,15 +79,16 @@ export const LoginForm = () => {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel className="text-slate-700 dark:text-slate-300">Email</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="dbrinzan@gmail.com"
+                  placeholder="exemplu@email.com"
                   type="email"
+                  className="rounded-xl border-slate-200 dark:border-slate-700 focus-visible:ring-teal-500"
                   {...field}
                 />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-red-600 dark:text-red-400" />
             </FormItem>
           )}
         />
@@ -94,20 +98,23 @@ export const LoginForm = () => {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Parolă</FormLabel>
+              <FormLabel className="text-slate-700 dark:text-slate-300">Parolă</FormLabel>
               <FormControl>
                 <Input
                   type="password"
                   placeholder="Introduceți parola"
+                  className="rounded-xl border-slate-200 dark:border-slate-700 focus-visible:ring-teal-500"
                   {...field}
                 />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-red-600 dark:text-red-400" />
             </FormItem>
           )}
         />
 
-        <SubmitButton isLoading={isLoading}>Începe</SubmitButton>
+        <SubmitButton isLoading={isLoading} className="w-full rounded-xl bg-teal-600 text-white hover:bg-teal-700 shadow-sm">
+          Începe
+        </SubmitButton>
       </form>
     </Form>
   );

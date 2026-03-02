@@ -6,14 +6,10 @@ import type { ChatContext } from "@/lib/chatbot-rules";
 type Message = { role: "user" | "bot"; text: string };
 
 const WELCOME_MESSAGES: Record<string, string> = {
-  patient:
-    "Bună! Sunt asistentul eHealth. Întreabă-mă despre: programare nouă, programări (anulare, reprogramare), istoric medical, rețete, analize medicale, calendar, profil (alergii, vaccinări), hartă spital, mesaje, raportare problemă, notificări sau descărcare PDF/raport consultație. Cu ce te pot ajuta?",
-  doctor:
-    "Bună! Sunt asistentul eHealth pentru medici. Poți întreba despre: programări (adăugare consultație, anulare), calendar, pacienți (detalii, contact, analize), consultații și rapoarte PDF, rețete emise, imagistică (ordonare investigații), rezultate analize, videoconferință, mesaje, profil sau statistici. Cu ce te pot ajuta?",
-  admin:
-    "Bună! Sunt asistentul eHealth pentru administrare. Poți întreba despre: programări, pacienți, urgențe, medici de gardă și plată gărzi (350 lei), spitalizări, medicamente, imagistică, import analize, rapoarte (grafice, PDF/CSV), raportări probleme, logistică (consumabile, transport intern) sau statistici. Cu ce te pot ajuta?",
-  guest:
-    "Bună! Sunt asistentul eHealth. Autentifică-te pentru a primi informații personalizate.",
+  patient: "Bună ziua! Cu ce vă pot ajuta?",
+  doctor: "Bună ziua! Cu ce vă pot ajuta?",
+  admin: "Bună ziua! Cu ce vă pot ajuta?",
+  guest: "Bună ziua! Cu ce vă pot ajuta?",
 };
 
 export function ChatBot() {

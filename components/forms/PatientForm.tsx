@@ -80,16 +80,19 @@ export const PatientForm = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 space-y-6">
-        <section className="mb-12 space-y-4">
-          <h1 className="header">Bună ziua 👋</h1>
-          <p className="text-dark-600">
-            Prima platformă de management spital din România. Gestionare programări, înregistrări pacienți și multe altele.
+        <section className="space-y-2">
+          <p className="text-sm font-medium text-teal-600 dark:text-teal-400">Înregistrare</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
+            Bună ziua 👋
+          </h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Creează un cont pentru programări și acces la serviciile noastre.
           </p>
         </section>
 
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-            <p className="text-14-regular text-red-600">{error}</p>
+          <div className="rounded-xl border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30 p-4">
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           </div>
         )}
 
@@ -98,7 +101,7 @@ export const PatientForm = () => {
           control={form.control}
           name="name"
           label="Nume complet"
-          placeholder="Darius Brinzan"
+          placeholder="Ex: Maria Popescu"
           iconSrc="/assets/icons/user.svg"
           iconAlt="user"
         />
@@ -108,7 +111,7 @@ export const PatientForm = () => {
           control={form.control}
           name="email"
           label="Email"
-          placeholder="dbrinzan@gmail.com"
+          placeholder="exemplu@email.com"
           iconSrc="/assets/icons/email.svg"
           iconAlt="email"
         />
@@ -118,23 +121,25 @@ export const PatientForm = () => {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Parolă</FormLabel>
+              <FormLabel className="text-slate-700 dark:text-slate-300">Parolă</FormLabel>
               <FormControl>
-                <div className="flex rounded-md border border-dark-200 bg-white">
+                <div className="flex rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
                   <Input
                     type="password"
                     placeholder="Minim 6 caractere"
                     {...field}
-                    className="shad-input border-0"
+                    className="border-0 focus-visible:ring-teal-500 bg-transparent"
                   />
                 </div>
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-red-600 dark:text-red-400" />
             </FormItem>
           )}
         />
 
-        <SubmitButton isLoading={isLoading}>Începe</SubmitButton>
+        <SubmitButton isLoading={isLoading} className="w-full rounded-xl bg-teal-600 text-white hover:bg-teal-700 shadow-sm">
+          Creează cont
+        </SubmitButton>
       </form>
     </Form>
   );

@@ -49,20 +49,20 @@ export const PasskeyModal = () => {
 
   return (
     <AlertDialog open={true} onOpenChange={(open) => !open && closeModal()}>
-      <AlertDialogContent className="shad-alert-dialog">
+      <AlertDialogContent className="auth-modal-dialog">
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-start justify-between">
+          <AlertDialogTitle className="flex items-start justify-between text-slate-900 dark:text-slate-100">
             Acces administrator
-            <Image
-              src="/assets/icons/close.svg"
-              alt="close"
-              width={20}
-              height={20}
+            <button
+              type="button"
               onClick={closeModal}
-              className="cursor-pointer"
-            />
+              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+              aria-label="Închide"
+            >
+              <Image src="/assets/icons/close.svg" alt="" width={20} height={20} />
+            </button>
           </AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDescription className="text-slate-600 dark:text-slate-400">
             Parola de acces administrator (4 cifre). Doar roluri administrative.
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -72,16 +72,16 @@ export const PasskeyModal = () => {
             value={passkey}
             onChange={(value) => setPasskey(value)}
           >
-            <InputOTPGroup className="shad-otp">
-              <InputOTPSlot className="shad-otp-slot" index={0} />
-              <InputOTPSlot className="shad-otp-slot" index={1} />
-              <InputOTPSlot className="shad-otp-slot" index={2} />
-              <InputOTPSlot className="shad-otp-slot" index={3} />
+            <InputOTPGroup className="auth-otp-group">
+              <InputOTPSlot className="auth-otp-slot" index={0} />
+              <InputOTPSlot className="auth-otp-slot" index={1} />
+              <InputOTPSlot className="auth-otp-slot" index={2} />
+              <InputOTPSlot className="auth-otp-slot" index={3} />
             </InputOTPGroup>
           </InputOTP>
 
           {error && (
-            <p className="shad-error text-14-regular mt-4 flex justify-center">
+            <p className="mt-4 flex justify-center text-sm text-red-600 dark:text-red-400">
               {error}
             </p>
           )}
@@ -90,7 +90,7 @@ export const PasskeyModal = () => {
           <AlertDialogAction
             onClick={validatePasskey}
             disabled={passkey.replace(/\D/g, "").length !== 4 || loading}
-            className="shad-primary-btn w-full"
+            className="w-full rounded-xl bg-teal-600 text-white hover:bg-teal-700"
           >
             {loading ? "Se verifică…" : "Introdu parola de acces"}
           </AlertDialogAction>

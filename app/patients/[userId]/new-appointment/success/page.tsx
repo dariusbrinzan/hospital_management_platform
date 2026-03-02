@@ -1,10 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Doctors } from "@/constants";
 import { getAppointment } from "@/lib/actions/appointment.actions";
 import { formatDateTime } from "@/lib/utils";
+import { Calendar, User } from "lucide-react";
 
 const RequestSuccess = async ({
   searchParams,
@@ -12,15 +15,13 @@ const RequestSuccess = async ({
 }: SearchParamProps) => {
   const appointmentId = (searchParams?.appointmentId as string) || "";
   const appointment = await getAppointment(appointmentId);
-
-  const doctor = Doctors.find(
-    (doctor) => doctor.name === appointment.primaryPhysician
-  );
+  if (!appointment) redirect(`/patients/${userId}/dashboard`);
+  const doctor = Doctors.find((d) => d.name === appointment.primaryPhysician);
 
   return (
-    <div className=" flex h-screen max-h-screen px-[5%]">
-      <div className="success-img">
-        <Link href="/">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-teal-50/30 px-4 py-10 dark:from-slate-950 dark:via-slate-900 dark:to-teal-950/20">
+      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-8">
+        <Link href="/" className="self-start">
           <Image
             src="/assets/icons/logo-full.svg"
             height={1000}
@@ -30,56 +31,57 @@ const RequestSuccess = async ({
           />
         </Link>
 
-        <section className="flex flex-col items-center">
+        <div className="flex flex-col items-center gap-6 text-center">
           <Image
             src="/assets/gifs/success.gif"
-            height={300}
-            width={280}
+            height={240}
+            width={220}
             alt="success"
+            className="rounded-2xl"
           />
-          <h2 className="header mb-6 max-w-[600px] text-center">
-            Cererea dvs. de <span className="text-green-500">programare</span> a
-            fost trimisă cu succes!
-          </h2>
-        </section>
-
-        <section className="request-details">
-          <p>Detalii programare solicitată: </p>
-          <div className="flex items-center gap-3">
-            <Image
-              src={doctor?.image!}
-              alt="doctor"
-              width={100}
-              height={100}
-              className="size-6"
-            />
-            <p className="whitespace-nowrap">{doctor?.name}</p>
+          <div>
+            <p className="text-sm font-medium text-teal-600 dark:text-teal-400">Programare înregistrată</p>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
+              Cererea de programare a fost trimisă cu succes
+            </h1>
           </div>
-          <div className="flex gap-2">
-            <Image
-              src="/assets/icons/calendar.svg"
-              height={24}
-              width={24}
-              alt="calendar"
-            />
-            <p> {formatDateTime(appointment.schedule).dateTime}</p>
-          </div>
-        </section>
+        </div>
 
-        <div className="flex gap-4">
-          <Button variant="outline" className="shad-primary-btn" asChild>
-            <Link href={`/patients/${userId}/dashboard`}>
-              Programările mele
-            </Link>
+        <Card className="w-full border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardContent className="p-6">
+            <p className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
+              Detalii programare
+            </p>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+              <div className="flex items-center gap-2">
+                {doctor?.image && (
+                  <Image src={doctor.image} alt="" width={32} height={32} className="size-8 rounded-full object-cover" />
+                )}
+                {!doctor?.image && (
+                  <div className="flex size-8 items-center justify-center rounded-full bg-teal-100 text-teal-600 dark:bg-teal-900/50 dark:text-teal-400">
+                    <User className="size-4" />
+                  </div>
+                )}
+                <span className="font-medium text-slate-800 dark:text-slate-200">{doctor?.name}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="size-4 shrink-0" />
+                <span>{formatDateTime(appointment.schedule).dateTime}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex w-full flex-wrap justify-center gap-3">
+          <Button asChild className="rounded-xl bg-teal-600 text-white shadow-sm hover:bg-teal-700">
+            <Link href={`/patients/${userId}/dashboard`}>Programările mele</Link>
           </Button>
-          <Button variant="outline" className="shad-primary-btn" asChild>
-            <Link href={`/patients/${userId}/new-appointment`}>
-              Programare nouă
-            </Link>
+          <Button asChild variant="outline" className="rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+            <Link href={`/patients/${userId}/new-appointment`}>Programare nouă</Link>
           </Button>
         </div>
 
-        <p className="copyright">© 2026 eHealth.ro</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">© 2026 eHealth.ro</p>
       </div>
     </div>
   );

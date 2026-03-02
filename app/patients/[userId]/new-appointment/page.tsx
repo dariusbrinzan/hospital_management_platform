@@ -9,7 +9,7 @@ const Appointment = async ({ params: { userId } }: SearchParamProps) => {
   const doctorRatings = doctorReviewHelpers.getAllAverageRatings();
 
   return (
-    <div className="relative flex min-h-screen">
+    <div className="relative flex min-h-screen bg-slate-50 dark:bg-slate-950">
       <section className="remove-scrollbar container my-auto relative z-10">
         <div className="sub-container max-w-[860px] flex-1 justify-between md:pr-[410px]">
           <Image
@@ -28,7 +28,7 @@ const Appointment = async ({ params: { userId } }: SearchParamProps) => {
             doctorRatings={doctorRatings}
           />
 
-          <p className="copyright mt-10 py-12">© 2026 eHealth.ro</p>
+          <p className="mt-10 py-12 text-sm text-slate-500 dark:text-slate-400">© 2026 eHealth.ro</p>
         </div>
       </section>
 

@@ -66,6 +66,13 @@ export const logoutPatient = async () => {
   }
 };
 
+/** Delogare și redirect la /register (pentru a permite înregistrarea unui cont nou). */
+export const logoutPatientAndGoToRegister = async () => {
+  const cookieStore = await cookies();
+  cookieStore.delete("patient_session");
+  redirect("/register");
+};
+
 // GET CURRENT SESSION
 export const getCurrentSession = async () => {
   try {

@@ -7,6 +7,7 @@ import { PasskeyModal } from "@/components/PasskeyModal";
 import { DoctorCodeModalWrapper } from "@/components/DoctorCodeModalWrapper";
 import { LogoLink } from "@/components/LogoLink";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { getAdminSession, getDoctorSession } from "@/lib/actions/auth.actions";
 
 const Home = async ({ searchParams }: SearchParamProps) => {
@@ -25,39 +26,41 @@ const Home = async ({ searchParams }: SearchParamProps) => {
   if (isDoctor && (await getDoctorSession())) redirect("/doctor");
 
   return (
-    <div className="flex h-screen max-h-screen">
+    <div className="flex h-screen max-h-screen bg-slate-50 dark:bg-slate-950">
       {isAdmin && <PasskeyModal />}
       {isDoctor && <DoctorCodeModalWrapper />}
 
       <section className="remove-scrollbar container my-auto">
-        <div className="sub-container max-w-[496px]">
+        <div className="sub-container max-w-[480px]">
           <LogoLink />
 
-          <LoginForm />
+          <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+            <CardContent className="p-6 sm:p-8">
+              <LoginForm />
+            </CardContent>
+          </Card>
 
           <div className="mt-6 text-center">
-            <p className="text-14-regular text-dark-600 mb-4">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
               Nu ai cont?
             </p>
-            <Button asChild className="w-full shad-primary-btn">
+            <Button asChild className="w-full rounded-xl bg-teal-600 text-white hover:bg-teal-700 shadow-sm">
               <Link href="/register">
                 Înregistrează-te ca pacient nou
               </Link>
             </Button>
           </div>
 
-          <div className="text-14-regular mt-20 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
-            <p className="text-dark-500 xl:text-left">
-              © 2026 eHealth.ro
-            </p>
+          <div className="text-sm mt-16 flex flex-col items-center gap-3 sm:flex-row sm:justify-between text-slate-500 dark:text-slate-400">
+            <p className="xl:text-left">© 2026 eHealth.ro</p>
             <div className="flex items-center gap-4 flex-wrap justify-center">
-              <Link href="/faq" className="text-green-500 hover:text-green-600">
+              <Link href="/faq" className="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
                 Întrebări frecvente
               </Link>
-              <Link href="/?doctor=true" className="text-green-500 hover:text-green-600">
+              <Link href="/?doctor=true" className="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
                 Medic
               </Link>
-              <Link href="/?admin=true" className="text-green-500 hover:text-green-600">
+              <Link href="/?admin=true" className="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
                 Administrator
               </Link>
             </div>

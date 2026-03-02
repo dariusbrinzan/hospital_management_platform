@@ -63,14 +63,14 @@ export const DoctorCodeModal = ({ open, onOpenChange }: DoctorCodeModalProps) =>
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="shad-alert-dialog">
+      <AlertDialogContent className="auth-modal-dialog">
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-start justify-between">
+          <AlertDialogTitle className="flex items-start justify-between text-slate-900 dark:text-slate-100">
             Acces medic
             <button
               type="button"
               onClick={closeModal}
-              className="rounded p-1 hover:bg-gray-100"
+              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300"
               aria-label="Închide"
             >
               <Image
@@ -81,7 +81,7 @@ export const DoctorCodeModal = ({ open, onOpenChange }: DoctorCodeModalProps) =>
               />
             </button>
           </AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDescription className="text-slate-600 dark:text-slate-400">
             Introduceți codul unic de 4 cifre pentru a accesa panoul de medic. Veți vedea doar programările și datele dvs.
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -91,16 +91,16 @@ export const DoctorCodeModal = ({ open, onOpenChange }: DoctorCodeModalProps) =>
             value={code}
             onChange={(value) => setCode(value)}
           >
-            <InputOTPGroup className="shad-otp">
-              <InputOTPSlot className="shad-otp-slot" index={0} />
-              <InputOTPSlot className="shad-otp-slot" index={1} />
-              <InputOTPSlot className="shad-otp-slot" index={2} />
-              <InputOTPSlot className="shad-otp-slot" index={3} />
+            <InputOTPGroup className="auth-otp-group">
+              <InputOTPSlot className="auth-otp-slot" index={0} />
+              <InputOTPSlot className="auth-otp-slot" index={1} />
+              <InputOTPSlot className="auth-otp-slot" index={2} />
+              <InputOTPSlot className="auth-otp-slot" index={3} />
             </InputOTPGroup>
           </InputOTP>
 
           {error && (
-            <p className="shad-error text-14-regular mt-4 flex justify-center">
+            <p className="mt-4 flex justify-center text-sm text-red-600 dark:text-red-400">
               {error}
             </p>
           )}
@@ -109,7 +109,7 @@ export const DoctorCodeModal = ({ open, onOpenChange }: DoctorCodeModalProps) =>
           <AlertDialogAction
             onClick={handleSubmit}
             disabled={isLoading || code.replace(/\D/g, "").length !== 4}
-            className="shad-primary-btn w-full"
+            className="w-full rounded-xl bg-teal-600 text-white hover:bg-teal-700"
           >
             {isLoading ? "Se verifică..." : "Intră în panou"}
           </AlertDialogAction>

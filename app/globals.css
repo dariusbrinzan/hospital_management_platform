@@ -326,6 +326,19 @@
     @apply space-y-5 bg-white border-dark-200 shadow-xl outline-none !important;
   }
 
+  /* Auth modals (login medic/admin) – aligned with app teal/slate */
+  .auth-modal-dialog {
+    @apply space-y-5 rounded-2xl border border-slate-200 bg-white shadow-xl outline-none dark:border-slate-800 dark:bg-slate-900 !important;
+  }
+
+  .auth-otp-group {
+    @apply flex w-full justify-between gap-2 !important;
+  }
+
+  .auth-otp-slot {
+    @apply flex size-14 justify-center rounded-xl border border-slate-200 text-2xl font-semibold text-slate-800 focus-visible:ring-2 focus-visible:ring-teal-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 !important;
+  }
+
   .shad-sheet-content button {
     @apply top-2 focus:ring-0 focus:ring-offset-0 focus-visible:border-none focus-visible:outline-none focus-visible:ring-transparent focus-visible:ring-offset-0 !important;
   }
