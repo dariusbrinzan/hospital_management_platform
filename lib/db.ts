@@ -137,6 +137,13 @@ try {
       db.exec(`ALTER TABLE appointments ADD COLUMN appointmentType TEXT NOT NULL DEFAULT 'in_person';`);
       db.pragma("foreign_keys = ON");
     }
+    const hasCheckedInAt = tableInfo.some((col) => col.name === "checkedInAt");
+    if (!hasCheckedInAt) {
+      db.pragma("foreign_keys = OFF");
+      db.exec(`ALTER TABLE appointments ADD COLUMN checkedInAt TEXT;`);
+      db.exec(`ALTER TABLE appointments ADD COLUMN checkInData TEXT;`);
+      db.pragma("foreign_keys = ON");
+    }
   }
 } catch (error) {
   console.error("Migration error:", error);

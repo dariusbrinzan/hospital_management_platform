@@ -10,6 +10,7 @@ import {
   FlaskConical,
   MapPin,
   MessageSquare,
+  PenLine,
   Pill,
   User,
   Bell,
@@ -34,6 +35,7 @@ const navItems = [
   { href: "medication-requests", label: "Cereri medicamente", icon: ClipboardList },
   { href: "lab-results", label: "Analize Medicale", icon: FlaskConical },
   { href: "calendar", label: "Calendar", icon: Calendar },
+  { href: "signature", label: "Semnătură digitală", icon: PenLine },
   { href: "profile", label: "Profil Medical", icon: User },
   { href: "hospital-map", label: "Hartă Spital", icon: MapPin },
   { href: "messages", label: "Mesaje", icon: MessageSquare },
@@ -99,14 +101,18 @@ export function PatientLayoutClient({
             </Link>
             <NotificationsDropdown userId={userId} />
             <ThemeToggle />
-            <div className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/80">
+            <Link
+              href={`${base}/profile`}
+              prefetch={false}
+              className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 transition-colors hover:bg-slate-100 hover:border-teal-200 dark:border-slate-700 dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:hover:border-teal-800"
+            >
               <div className="flex size-8 items-center justify-center rounded-full bg-teal-100 text-teal-600 dark:bg-teal-900/50 dark:text-teal-400">
                 <User className="size-4" />
               </div>
               <span className="max-w-[120px] truncate text-sm font-medium text-slate-700 dark:text-slate-200">
                 {patientName}
               </span>
-            </div>
+            </Link>
             <LogoutButton />
           </div>
         </div>

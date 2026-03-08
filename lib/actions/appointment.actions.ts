@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { Appointment } from "@/types/appwrite.types";
 
-import { appointmentHelpers } from "../db-helpers";
+import { appointmentHelpers, patientHelpers } from "../db-helpers";
 import { formatDateTime, formatDoctorDisplayName, parseStringify } from "../utils";
 import { createNotification } from "./notification.actions";
 import { getAvailableSlots } from "./slots.actions";
 import { processWaitlistForSlot } from "./waitlist.actions";
+import { getDoctorSession } from "./auth.actions";
 
 // CREATE APPOINTMENT
 export const createAppointment = async (
@@ -23,6 +24,72 @@ export const createAppointment = async (
     throw error;
   }
 };
+
+/** Parametri pentru programări recurente (medic bifează opțiunea și perioada). */
+export type CreateRecurringParams = {
+  patientId: string;
+  primaryPhysician: string;
+  firstSchedule: string; // ISO date-time
+  reason: string;
+  note?: string | null;
+  interval: "weekly" | "monthly";
+  endDate?: string | null; // ISO date (inclusiv)
+  count?: number | null; // număr maxim de programări (alternativ la endDate)
+};
+
+/** Creează programări recurente. Doar medicul autentificat (sau admin) poate apela. */
+export async function createRecurringAppointments(params: CreateRecurringParams): Promise<
+  { success: true; created: number; appointmentIds: string[] } | { success: false; error: string }
+> {
+  try {
+    const doctorName = await getDoctorSession();
+    if (!doctorName) {
+      return { success: false, error: "Trebuie să fii autentificat ca medic." };
+    }
+    const patient = patientHelpers.getById(params.patientId);
+    if (!patient?.$id) {
+      return { success: false, error: "Pacientul nu a fost găsit." };
+    }
+    const firstSchedule = new Date(params.firstSchedule);
+    if (Number.isNaN(firstSchedule.getTime())) {
+      return { success: false, error: "Data/oră invalidă." };
+    }
+    const endDate = params.endDate ? new Date(params.endDate) : undefined;
+    const count = params.count ?? (endDate ? 52 : 12);
+    const created = appointmentHelpers.createRecurring(
+      {
+        userId: patient.userId,
+        patientId: patient.$id,
+        primaryPhysician: params.primaryPhysician,
+        reason: params.reason,
+        note: params.note ?? null,
+        appointmentType: "in_person",
+      },
+      firstSchedule,
+      { interval: params.interval, endDate: endDate?.toISOString().slice(0, 10), count }
+    );
+    const suffix = created.length > 1 ? ` (${created.length} programări recurente create.)` : "";
+    for (const apt of created) {
+      createNotification({
+        userId: patient.userId,
+        type: "appointment_created",
+        title: "Programare creată",
+        message: `Ai o programare la ${formatDateTime(apt.schedule).dateTime} cu ${params.primaryPhysician}.${suffix}`,
+        appointmentId: apt.$id,
+      });
+    }
+    revalidatePath("/admin");
+    revalidatePath("/doctor");
+    return {
+      success: true,
+      created: created.length,
+      appointmentIds: created.map((a) => a.$id),
+    };
+  } catch (e: any) {
+    console.error("createRecurringAppointments error:", e);
+    return { success: false, error: e?.message ?? "Eroare la crearea programărilor recurente." };
+  }
+}
 
 // GET RECENT APPOINTMENTS
 export const getRecentAppointmentList = async (doctorName?: string) => {

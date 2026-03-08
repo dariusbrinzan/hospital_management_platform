@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, FileText, Menu, MessageSquare, Pill, ScanSearch, Stethoscope, Users, X, AlertCircle, FileCheck } from "lucide-react";
+import { Calendar, CalendarPlus, FileText, Menu, MessageSquare, Pill, ScanSearch, Stethoscope, Users, X, AlertCircle, FileCheck } from "lucide-react";
 import { useState } from "react";
 
 import { logoutDoctor } from "@/lib/actions/auth.actions";
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/doctor", label: "Programări", icon: Stethoscope },
+  { href: "/doctor/create-appointment", label: "Programare recurentă", icon: CalendarPlus },
   { href: "/doctor/calendar", label: "Calendar", icon: Calendar },
   { href: "/doctor/emergency", label: "Urgențe", icon: AlertCircle },
   { href: "/doctor/patients", label: "Istoric pacienți", icon: Users },

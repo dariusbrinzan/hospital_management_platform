@@ -78,6 +78,48 @@ export function ReportsDashboard() {
     window.open(`/api/pdf/reports?period=${period}`, "_blank");
   };
 
+  const exportExcel = async () => {
+    if (!data) return;
+    try {
+      const XLSX = await import("xlsx");
+      const wb = XLSX.utils.book_new();
+      const sheet1 = XLSX.utils.aoa_to_sheet([
+        ["Programări pe zile"],
+        ["Data", "Număr"],
+        ...data.appointmentsByDay.map((r) => [r.date, r.count]),
+      ]);
+      XLSX.utils.book_append_sheet(wb, sheet1, "Programări pe zile");
+      const sheet2 = XLSX.utils.aoa_to_sheet([
+        ["Ocupare medici"],
+        ["Medic", "Număr"],
+        ...data.appointmentsByDoctor.map((r) => [r.name, r.count]),
+      ]);
+      XLSX.utils.book_append_sheet(wb, sheet2, "Ocupare medici");
+      const sheet3 = XLSX.utils.aoa_to_sheet([
+        ["Gărzi și contribuție (350 lei/gardă)"],
+        ["Medic", "Nr. gărzi", "Sumă (lei)"],
+        ...(data.guardPaymentsByDoctor ?? []).map((r) => [r.doctorName, r.guardsCount, r.amountLei]),
+      ]);
+      XLSX.utils.book_append_sheet(wb, sheet3, "Gărzi");
+      const sheet4 = XLSX.utils.aoa_to_sheet([
+        ["Urgențe pe zile"],
+        ["Data", "Număr"],
+        ...data.emergenciesByDay.map((r) => [r.date, r.count]),
+      ]);
+      XLSX.utils.book_append_sheet(wb, sheet4, "Urgențe");
+      const sheet5 = XLSX.utils.aoa_to_sheet([
+        ["Imagistică pe zile"],
+        ["Data", "Număr"],
+        ...data.imagingByDay.map((r) => [r.date, r.count]),
+      ]);
+      XLSX.utils.book_append_sheet(wb, sheet5, "Imagistică");
+      XLSX.writeFile(wb, `rapoarte-${period}-zile-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (e) {
+      console.error("Export Excel:", e);
+      alert("Export Excel nereușit. Asigurați-vă că pachetul xlsx este instalat (npm install xlsx).");
+    }
+  };
+
   if (loading && !data) {
     return (
       <div className="flex items-center justify-center rounded-xl border border-slate-200 bg-white py-16 dark:border-slate-800 dark:bg-slate-900">
@@ -111,6 +153,14 @@ export function ReportsDashboard() {
             className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
           >
             Export CSV
+          </button>
+          <button
+            type="button"
+            onClick={exportExcel}
+            disabled={!data}
+            className="rounded-lg border border-green-300 bg-white px-4 py-2 text-sm font-medium text-green-800 hover:bg-green-50 dark:border-green-700 dark:bg-slate-800 dark:text-green-300 dark:hover:bg-green-950/30"
+          >
+            Export Excel
           </button>
           <button
             type="button"

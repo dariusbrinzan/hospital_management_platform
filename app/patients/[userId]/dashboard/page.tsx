@@ -8,16 +8,9 @@ import {
   FileText,
   Download,
   MapPin,
-  Mail,
-  Phone,
-  Cake,
-  User,
-  Building2,
-  Shield,
   Pill,
   Heart,
   ClipboardList,
-  Stethoscope,
   Video,
 } from "lucide-react";
 
@@ -31,12 +24,11 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Doctors } from "@/constants";
 import { RescheduleAppointmentButton } from "@/components/RescheduleAppointmentButton";
 import { CancelAppointmentButton } from "@/components/CancelAppointmentButton";
+import { CheckInAppointmentButton } from "@/components/CheckInAppointmentButton";
 import { PastAppointmentsList } from "@/components/PastAppointmentsList";
-import { PatientSignatureCard } from "@/components/PatientSignatureCard";
 import { doctorReviewHelpers } from "@/lib/db-helpers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 
 const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
   const session = await requireAuth();
@@ -67,7 +59,13 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
             <div>
               <p className="text-sm font-medium text-teal-600 dark:text-teal-400">Dashboard</p>
               <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
-                Bun venit, {patient.name}
+                Bun venit,{" "}
+                <Link
+                  href={`/patients/${userId}/profile`}
+                  className="underline decoration-teal-500/60 underline-offset-2 hover:decoration-teal-600 dark:decoration-teal-400 dark:hover:decoration-teal-300"
+                >
+                  {patient.name}
+                </Link>
               </h1>
               <p className="mt-2 max-w-xl text-sm text-slate-600 dark:text-slate-400">
                 Aici poți vedea programările, datele de contact și istoricul medical. Descarcă dosarul PDF pentru o copie locală.
@@ -129,106 +127,8 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
           </Card>
         </section>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* Col 1: Patient info */}
-          <section className="lg:col-span-1">
-            <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                  <User className="size-5 text-teal-600 dark:text-teal-400" />
-                  Informații personale
-                </CardTitle>
-                <CardDescription>Date de contact și asigurare</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-3">
-                  <Mail className="size-4 shrink-0 text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Email</p>
-                    <p className="text-sm text-slate-900 dark:text-slate-100">{patient.email}</p>
-                  </div>
-                </div>
-                <Separator className="bg-slate-100 dark:bg-slate-800" />
-                <div className="flex gap-3">
-                  <Phone className="size-4 shrink-0 text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Telefon</p>
-                    <p className="text-sm text-slate-900 dark:text-slate-100">{patient.phone}</p>
-                  </div>
-                </div>
-                <Separator className="bg-slate-100 dark:bg-slate-800" />
-                <div className="flex gap-3">
-                  <Cake className="size-4 shrink-0 text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Data nașterii</p>
-                    <p className="text-sm text-slate-900 dark:text-slate-100">
-                      {formatDateTime(patient.birthDate).dateOnly}
-                    </p>
-                  </div>
-                </div>
-                <Separator className="bg-slate-100 dark:bg-slate-800" />
-                <div className="flex gap-3">
-                  <User className="size-4 shrink-0 text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Gen</p>
-                    <p className="text-sm text-slate-900 dark:text-slate-100">{patient.gender}</p>
-                  </div>
-                </div>
-                {patient.address && (
-                  <>
-                    <Separator className="bg-slate-100 dark:bg-slate-800" />
-                    <div className="flex gap-3">
-                      <MapPin className="size-4 shrink-0 text-slate-400" />
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Adresă</p>
-                        <p className="text-sm text-slate-900 dark:text-slate-100">{patient.address}</p>
-                      </div>
-                    </div>
-                  </>
-                )}
-                {patient.occupation && (
-                  <>
-                    <Separator className="bg-slate-100 dark:bg-slate-800" />
-                    <div className="flex gap-3">
-                      <Building2 className="size-4 shrink-0 text-slate-400" />
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Ocupație</p>
-                        <p className="text-sm text-slate-900 dark:text-slate-100">{patient.occupation}</p>
-                      </div>
-                    </div>
-                  </>
-                )}
-                <Separator className="bg-slate-100 dark:bg-slate-800" />
-                <div className="flex gap-3">
-                  <Stethoscope className="size-4 shrink-0 text-slate-400" />
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Medic de familie</p>
-                    <p className="text-sm text-slate-900 dark:text-slate-100">{patient.primaryPhysician}</p>
-                  </div>
-                </div>
-                {(patient.insuranceProvider || patient.insurancePolicyNumber) && (
-                  <>
-                    <Separator className="bg-slate-100 dark:bg-slate-800" />
-                    <div className="flex gap-3">
-                      <Shield className="size-4 shrink-0 text-slate-400" />
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Asigurare</p>
-                        <p className="text-sm text-slate-900 dark:text-slate-100">
-                          {patient.insuranceProvider}
-                          {patient.insurancePolicyNumber && ` · ${patient.insurancePolicyNumber}`}
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            <PatientSignatureCard />
-          </section>
-
-          {/* Col 2+3: Appointments */}
-          <section className="space-y-6 lg:col-span-2">
+        <div>
+          <section className="space-y-6">
             <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
               <CardHeader>
                 <CardTitle className="text-slate-900 dark:text-slate-100">Programări viitoare</CardTitle>
@@ -340,46 +240,64 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                                 </div>
                               )}
 
-                              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
-                                <Button variant="outline" size="sm" asChild>
-                                  <Link href={`/patients/${userId}/messages?appointmentId=${appointment.$id}`}>
-                                    Mesaje
-                                  </Link>
-                                </Button>
-                                {(appointment.status === "scheduled" || appointment.status === "pending") &&
-                                  (appointment as any).appointmentType === "video" && (
-                                  <Button variant="outline" size="sm" asChild className="border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-300 dark:hover:bg-teal-900/40">
+                              <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+                                <p className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-500">Acțiuni</p>
+                                <div className="flex flex-col gap-3">
+                                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                                    <Button variant="outline" size="sm" className="h-10 w-full justify-center" asChild>
+                                      <Link href={`/patients/${userId}/messages?appointmentId=${appointment.$id}`}>
+                                        Mesaje
+                                      </Link>
+                                    </Button>
+                                    {(appointment.status === "scheduled" || appointment.status === "pending") &&
+                                      (appointment as any).appointmentType === "video" && (
+                                        <Button variant="outline" size="sm" className="h-10 w-full justify-center border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-300 dark:hover:bg-teal-900/40" asChild>
+                                          <Link
+                                            href={`/video-call?appointmentId=${appointment.$id}`}
+                                            prefetch={false}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                          >
+                                            <Video className="size-4 mr-1.5" />
+                                            Videoconferință
+                                          </Link>
+                                        </Button>
+                                      )}
+                                    {appointment.status !== "cancelled" && (
+                                      <>
+                                        <div className="w-full min-w-0">
+                                          <CheckInAppointmentButton appointment={appointment} />
+                                        </div>
+                                        <div className="w-full min-w-0">
+                                          <RescheduleAppointmentButton appointment={appointment} userId={userId} />
+                                        </div>
+                                        <div className="w-full min-w-0">
+                                          <CancelAppointmentButton appointment={appointment} userId={userId} />
+                                        </div>
+                                      </>
+                                    )}
+                                    {(appointment as any).checkedInAt && (
+                                      <span className="flex items-center justify-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs font-medium text-green-800 dark:border-green-800 dark:bg-green-950/50 dark:text-green-300">
+                                        <CalendarCheck className="size-3.5" />
+                                        Check-in făcut
+                                      </span>
+                                    )}
+                                  </div>
+                                  <Button size="sm" variant="outline" className="h-10 w-full justify-center border-slate-300 bg-slate-50 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800/50 dark:hover:bg-slate-800" asChild>
                                     <Link
-                                      href={`/video-call?appointmentId=${appointment.$id}`}
-                                      prefetch={false}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
+                                      href={
+                                        appointmentRoom
+                                          ? `/patients/${userId}/hospital-map?floor=${appointmentRoom.floor}&roomId=${encodeURIComponent(appointmentRoom.id)}`
+                                          : `/patients/${userId}/hospital-map?search=${encodeURIComponent(appointment.primaryPhysician)}`
+                                    }
                                     >
-                                      <Video className="size-4 mr-1.5" />
-                                      Videoconferință
+                                      <MapPin className="size-4 mr-1.5" />
+                                      {appointmentRoom
+                                        ? `Cabinet ${appointmentRoom.roomNumber}, Etaj ${appointmentRoom.floor} — Vezi pe hartă`
+                                        : "Vezi pe hartă"}
                                     </Link>
                                   </Button>
-                                )}
-                                {appointment.status !== "cancelled" && (
-                                  <>
-                                    <RescheduleAppointmentButton appointment={appointment} userId={userId} />
-                                    <CancelAppointmentButton appointment={appointment} userId={userId} />
-                                  </>
-                                )}
-                                <Button size="sm" asChild className="bg-teal-600 hover:bg-teal-700">
-                                  <Link
-                                    href={
-                                      appointmentRoom
-                                        ? `/patients/${userId}/hospital-map?floor=${appointmentRoom.floor}&roomId=${encodeURIComponent(appointmentRoom.id)}`
-                                        : `/patients/${userId}/hospital-map?search=${encodeURIComponent(appointment.primaryPhysician)}`
-                                    }
-                                  >
-                                    <MapPin className="size-4 mr-1.5" />
-                                    {appointmentRoom
-                                      ? `Cabinet ${appointmentRoom.roomNumber}, Etaj ${appointmentRoom.floor}`
-                                      : "Vezi pe hartă"}
-                                  </Link>
-                                </Button>
+                                </div>
                               </div>
                             </div>
                             <div className="shrink-0">

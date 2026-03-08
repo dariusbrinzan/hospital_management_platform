@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Mail, Phone, Cake, User, MapPin, Building2, Stethoscope, Shield } from "lucide-react";
 import { getPatient, getUser } from "@/lib/actions/patient.actions";
 import { requireAuth } from "@/lib/actions/auth.actions";
 import { allergyHelpers, prescriptionHelpers } from "@/lib/db-helpers";
@@ -9,6 +10,8 @@ import { AllergyManager } from "@/components/profile/AllergyManager";
 import { LifestyleEditor } from "@/components/profile/LifestyleEditor";
 import { ContactInfoEditor } from "@/components/profile/ContactInfoEditor";
 import { CurrentMedicationEditor } from "@/components/profile/CurrentMedicationEditor";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 const ProfilePage = async ({ params: { userId } }: SearchParamProps) => {
   const session = await requireAuth();
@@ -68,9 +71,100 @@ const ProfilePage = async ({ params: { userId } }: SearchParamProps) => {
           </div>
         </div>
 
+        {/* Informații personale – date de contact și asigurare */}
+        <Card className="mb-6 border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
+              <User className="size-5 text-teal-600 dark:text-teal-400" />
+              Informații personale
+            </CardTitle>
+            <CardDescription>Date de contact și asigurare</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-3">
+              <Mail className="size-4 shrink-0 text-slate-400" />
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Email</p>
+                <p className="text-sm text-slate-900 dark:text-slate-100">{patient.email}</p>
+              </div>
+            </div>
+            <Separator className="bg-slate-100 dark:bg-slate-800" />
+            <div className="flex gap-3">
+              <Phone className="size-4 shrink-0 text-slate-400" />
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Telefon</p>
+                <p className="text-sm text-slate-900 dark:text-slate-100">{patient.phone}</p>
+              </div>
+            </div>
+            <Separator className="bg-slate-100 dark:bg-slate-800" />
+            <div className="flex gap-3">
+              <Cake className="size-4 shrink-0 text-slate-400" />
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Data nașterii</p>
+                <p className="text-sm text-slate-900 dark:text-slate-100">{formatDateTime(patient.birthDate).dateOnly}</p>
+              </div>
+            </div>
+            <Separator className="bg-slate-100 dark:bg-slate-800" />
+            <div className="flex gap-3">
+              <User className="size-4 shrink-0 text-slate-400" />
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Gen</p>
+                <p className="text-sm text-slate-900 dark:text-slate-100">{patient.gender}</p>
+              </div>
+            </div>
+            {patient.address && (
+              <>
+                <Separator className="bg-slate-100 dark:bg-slate-800" />
+                <div className="flex gap-3">
+                  <MapPin className="size-4 shrink-0 text-slate-400" />
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Adresă</p>
+                    <p className="text-sm text-slate-900 dark:text-slate-100">{patient.address}</p>
+                  </div>
+                </div>
+              </>
+            )}
+            {patient.occupation && (
+              <>
+                <Separator className="bg-slate-100 dark:bg-slate-800" />
+                <div className="flex gap-3">
+                  <Building2 className="size-4 shrink-0 text-slate-400" />
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Ocupație</p>
+                    <p className="text-sm text-slate-900 dark:text-slate-100">{patient.occupation}</p>
+                  </div>
+                </div>
+              </>
+            )}
+            <Separator className="bg-slate-100 dark:bg-slate-800" />
+            <div className="flex gap-3">
+              <Stethoscope className="size-4 shrink-0 text-slate-400" />
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Medic de familie</p>
+                <p className="text-sm text-slate-900 dark:text-slate-100">{(patient as any).primaryPhysician ?? "—"}</p>
+              </div>
+            </div>
+            {((patient as any).insuranceProvider || (patient as any).insurancePolicyNumber) && (
+              <>
+                <Separator className="bg-slate-100 dark:bg-slate-800" />
+                <div className="flex gap-3">
+                  <Shield className="size-4 shrink-0 text-slate-400" />
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Asigurare</p>
+                    <p className="text-sm text-slate-900 dark:text-slate-100">
+                      {(patient as any).insuranceProvider ?? ""}
+                      {(patient as any).insurancePolicyNumber && ` · ${(patient as any).insurancePolicyNumber}`}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Sections */}
         <div className="space-y-6">
-          {/* Contact Info */}
+          {/* Contact Info (editabil) */}
           <ContactInfoEditor
             patientId={patientId}
             patient={{

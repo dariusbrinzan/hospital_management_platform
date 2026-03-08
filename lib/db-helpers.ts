@@ -392,24 +392,67 @@ export const appointmentHelpers = {
     db.prepare(`
       INSERT INTO appointments (
         id, userId, patientId, schedule, status, primaryPhysician,
-        reason, note, cancellationReason, appointmentType, createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        reason, note, cancellationReason, appointmentType, checkedInAt, checkInData, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       appointment.userId,
       appointment.patient,
       formatDate(appointment.schedule),
-      appointment.status,
+      appointment.status ?? "pending",
       appointment.primaryPhysician,
       appointment.reason,
       appointment.note || null,
       null,
       appointmentType,
+      null,
+      null,
       now,
       now
     );
 
     return { $id: id, ...appointment, createdAt: now, updatedAt: now };
+  },
+
+  /** Check-in digital: setează checkedInAt și opțional checkInData (JSON string). */
+  updateCheckIn: (id: string, checkInData?: string | null) => {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE appointments SET checkedInAt = ?, checkInData = ?, updatedAt = ? WHERE id = ?
+    `).run(now, checkInData ?? null, now, id);
+    return appointmentHelpers.getById(id);
+  },
+
+  /**
+   * Creează programări recurente: prima dată + interval (săptămânal/lunar) până la endDate sau număr maxim.
+   * Returnează lista de programări create.
+   */
+  createRecurring: (
+    template: { userId: string; patientId: string; primaryPhysician: string; reason: string; note?: string | null; appointmentType?: "in_person" | "video" },
+    firstSchedule: Date,
+    options: { interval: "weekly" | "monthly"; endDate?: string; count?: number }
+  ) => {
+    const created: any[] = [];
+    const count = options.count ?? 52;
+    const endDate = options.endDate ? new Date(options.endDate) : null;
+    let current = new Date(firstSchedule);
+    const interval = options.interval === "monthly" ? "month" : "week";
+    let n = 0;
+    while (n < count) {
+      if (endDate && current > endDate) break;
+      const apt = appointmentHelpers.create({
+        ...template,
+        patient: template.patientId,
+        schedule: current,
+        status: "pending",
+        appointmentType: template.appointmentType ?? "in_person",
+      });
+      created.push(apt);
+      n++;
+      if (interval === "week") current.setDate(current.getDate() + 7);
+      else current.setMonth(current.getMonth() + 1);
+    }
+    return created;
   },
 
   getAll: () => {
@@ -466,6 +509,8 @@ export const appointmentHelpers = {
       cancellationReason: apt.cancellationReason,
       analysisResults: apt.analysisResults,
       appointmentType: apt.appointmentType === "video" ? "video" : "in_person",
+      checkedInAt: apt.checkedInAt ? parseDate(apt.checkedInAt) : null,
+      checkInData: apt.checkInData ?? null,
       createdAt: parseDate(apt.createdAt),
       updatedAt: parseDate(apt.updatedAt),
       patient: {
@@ -563,6 +608,8 @@ export const appointmentHelpers = {
       cancellationReason: apt.cancellationReason,
       analysisResults: apt.analysisResults,
       appointmentType: apt.appointmentType === "video" ? "video" : "in_person",
+      checkedInAt: apt.checkedInAt ? parseDate(apt.checkedInAt) : null,
+      checkInData: apt.checkInData ?? null,
       createdAt: parseDate(apt.createdAt),
       updatedAt: parseDate(apt.updatedAt),
       patient: {
@@ -680,6 +727,8 @@ export const appointmentHelpers = {
       cancellationReason: apt.cancellationReason,
       analysisResults: apt.analysisResults ?? null,
       appointmentType: apt.appointmentType === "video" ? "video" : "in_person",
+      checkedInAt: apt.checkedInAt ? parseDate(apt.checkedInAt) : null,
+      checkInData: apt.checkInData ?? null,
       createdAt: parseDate(apt.createdAt),
       updatedAt: parseDate(apt.updatedAt),
       patient: {
