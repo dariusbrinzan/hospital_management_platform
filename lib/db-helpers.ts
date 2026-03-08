@@ -5409,6 +5409,159 @@ export const pharmacyDispensingHelpers = {
   },
 };
 
+// Cereri medicamente (pacient → farmacie → dispensare → decontare)
+export const medicationRequestHelpers = {
+  create: (patientId: string, prescriptionId: string) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO medication_requests (id, patientId, prescriptionId, status, requestedAt, createdAt, updatedAt)
+      VALUES (?, ?, ?, 'pending', ?, ?, ?)
+    `).run(id, patientId, prescriptionId, now, now, now);
+    return medicationRequestHelpers.getById(id);
+  },
+  getById: (id: string) => {
+    const r = db.prepare(`
+      SELECT req.*, p.medicationName, p.dosage, p.quantity as prescriptionQuantity, p.instructions,
+             mr.doctorName, mr.visitDate, pat.name as patientName
+      FROM medication_requests req
+      LEFT JOIN prescriptions p ON req.prescriptionId = p.id
+      LEFT JOIN medical_records mr ON p.medicalRecordId = mr.id
+      LEFT JOIN patients pat ON req.patientId = pat.id
+      WHERE req.id = ?
+    `).get(id) as any;
+    if (!r) return null;
+    return {
+      $id: r.id,
+      patientId: r.patientId,
+      patientName: r.patientName,
+      prescriptionId: r.prescriptionId,
+      medicationName: r.medicationName,
+      dosage: r.dosage,
+      prescriptionQuantity: r.prescriptionQuantity,
+      instructions: r.instructions,
+      doctorName: r.doctorName,
+      visitDate: r.visitDate ? parseDate(r.visitDate) : null,
+      status: r.status,
+      requestedAt: parseDate(r.requestedAt),
+      approvedBy: r.approvedBy,
+      approvedAt: r.approvedAt ? parseDate(r.approvedAt) : null,
+      dispensedBy: r.dispensedBy,
+      dispensedAt: r.dispensedAt ? parseDate(r.dispensedAt) : null,
+      decontatAt: r.decontatAt ? parseDate(r.decontatAt) : null,
+      decontatBy: r.decontatBy,
+      decontareType: r.decontareType,
+      rejectedBy: r.rejectedBy,
+      rejectedAt: r.rejectedAt ? parseDate(r.rejectedAt) : null,
+      rejectionReason: r.rejectionReason,
+      notes: r.notes,
+      createdAt: parseDate(r.createdAt),
+      updatedAt: parseDate(r.updatedAt),
+    };
+  },
+  getByPatientId: (patientId: string) => {
+    const rows = db.prepare(`
+      SELECT req.*, p.medicationName, p.dosage, p.quantity as prescriptionQuantity,
+             mr.doctorName, mr.visitDate
+      FROM medication_requests req
+      LEFT JOIN prescriptions p ON req.prescriptionId = p.id
+      LEFT JOIN medical_records mr ON p.medicalRecordId = mr.id
+      WHERE req.patientId = ?
+      ORDER BY req.requestedAt DESC
+    `).all(patientId) as any[];
+    return rows.map((r) => ({
+      $id: r.id,
+      prescriptionId: r.prescriptionId,
+      medicationName: r.medicationName,
+      dosage: r.dosage,
+      prescriptionQuantity: r.prescriptionQuantity,
+      doctorName: r.doctorName,
+      visitDate: r.visitDate ? parseDate(r.visitDate) : null,
+      status: r.status,
+      requestedAt: parseDate(r.requestedAt),
+      approvedAt: r.approvedAt ? parseDate(r.approvedAt) : null,
+      dispensedAt: r.dispensedAt ? parseDate(r.dispensedAt) : null,
+      decontatAt: r.decontatAt ? parseDate(r.decontatAt) : null,
+      decontareType: r.decontareType,
+      rejectionReason: r.rejectionReason,
+    }));
+  },
+  getAll: (status?: string) => {
+    let q = `
+      SELECT req.*, p.medicationName, p.dosage, p.quantity as prescriptionQuantity,
+             mr.doctorName, mr.visitDate, pat.name as patientName
+      FROM medication_requests req
+      LEFT JOIN prescriptions p ON req.prescriptionId = p.id
+      LEFT JOIN medical_records mr ON p.medicalRecordId = mr.id
+      LEFT JOIN patients pat ON req.patientId = pat.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    if (status) { q += " AND req.status = ?"; params.push(status); }
+    q += " ORDER BY req.requestedAt DESC";
+    const rows = db.prepare(q).all(...params) as any[];
+    return rows.map((r) => ({
+      $id: r.id,
+      patientId: r.patientId,
+      patientName: r.patientName,
+      prescriptionId: r.prescriptionId,
+      medicationName: r.medicationName,
+      dosage: r.dosage,
+      prescriptionQuantity: r.prescriptionQuantity,
+      doctorName: r.doctorName,
+      visitDate: r.visitDate ? parseDate(r.visitDate) : null,
+      status: r.status,
+      requestedAt: parseDate(r.requestedAt),
+      approvedBy: r.approvedBy,
+      approvedAt: r.approvedAt ? parseDate(r.approvedAt) : null,
+      dispensedBy: r.dispensedBy,
+      dispensedAt: r.dispensedAt ? parseDate(r.dispensedAt) : null,
+      decontatAt: r.decontatAt ? parseDate(r.decontatAt) : null,
+      decontatBy: r.decontatBy,
+      decontareType: r.decontareType,
+      rejectionReason: r.rejectionReason,
+    }));
+  },
+  updateStatus: (id: string, data: {
+    status: string;
+    approvedBy?: string;
+    dispensedBy?: string;
+    decontatBy?: string;
+    decontareType?: string;
+    rejectedBy?: string;
+    rejectionReason?: string;
+    notes?: string;
+  }) => {
+    const now = new Date().toISOString();
+    const r = medicationRequestHelpers.getById(id);
+    if (!r) return null;
+    const updates: string[] = ["status = ?", "updatedAt = ?"];
+    const values: any[] = [data.status, now];
+    if (data.status === "approved" && data.approvedBy) {
+      updates.push("approvedBy = ?", "approvedAt = ?");
+      values.push(data.approvedBy, now);
+    }
+    if (data.status === "dispensed" && data.dispensedBy) {
+      updates.push("dispensedBy = ?", "dispensedAt = ?");
+      values.push(data.dispensedBy, now);
+    }
+    if (data.status === "decontat") {
+      updates.push("decontatBy = ?", "decontatAt = ?");
+      values.push(data.decontatBy ?? null, now);
+      if (data.decontareType) { updates.push("decontareType = ?"); values.push(data.decontareType); }
+    }
+    if (data.status === "rejected" && data.rejectedBy) {
+      updates.push("rejectedBy = ?", "rejectedAt = ?");
+      values.push(data.rejectedBy, now);
+      if (data.rejectionReason) { updates.push("rejectionReason = ?"); values.push(data.rejectionReason); }
+    }
+    if (data.notes != null) { updates.push("notes = ?"); values.push(data.notes); }
+    values.push(id);
+    db.prepare(`UPDATE medication_requests SET ${updates.join(", ")} WHERE id = ?`).run(...values);
+    return medicationRequestHelpers.getById(id);
+  },
+};
+
 // Medication Interactions
 export const medicationInteractionHelpers = {
   create: (data: { medicationId1: string; medicationId2: string; severity: string; description?: string }) => {

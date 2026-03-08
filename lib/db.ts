@@ -372,6 +372,36 @@ try {
       CREATE INDEX IF NOT EXISTS idx_lab_order_tests_orderId ON lab_order_tests(orderId);
     `);
   }
+  const medReqExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='medication_requests';").get();
+  if (!medReqExists) {
+    db.exec(`
+      CREATE TABLE medication_requests (
+        id TEXT PRIMARY KEY,
+        patientId TEXT NOT NULL,
+        prescriptionId TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        requestedAt TEXT NOT NULL DEFAULT (datetime('now')),
+        approvedBy TEXT,
+        approvedAt TEXT,
+        dispensedBy TEXT,
+        dispensedAt TEXT,
+        decontatAt TEXT,
+        decontatBy TEXT,
+        decontareType TEXT,
+        rejectedBy TEXT,
+        rejectedAt TEXT,
+        rejectionReason TEXT,
+        notes TEXT,
+        createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+        updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (patientId) REFERENCES patients(id),
+        FOREIGN KEY (prescriptionId) REFERENCES prescriptions(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_medication_requests_patientId ON medication_requests(patientId);
+      CREATE INDEX IF NOT EXISTS idx_medication_requests_prescriptionId ON medication_requests(prescriptionId);
+      CREATE INDEX IF NOT EXISTS idx_medication_requests_status ON medication_requests(status);
+    `);
+  }
 } catch (err) {
   console.error("Migration pharmacy/lab tables:", err);
 }
@@ -791,6 +821,32 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_pharmacy_dispensings_patientId ON pharmacy_dispensings(patientId);
   CREATE INDEX IF NOT EXISTS idx_pharmacy_dispensings_prescriptionId ON pharmacy_dispensings(prescriptionId);
   CREATE INDEX IF NOT EXISTS idx_pharmacy_dispensings_dispensedAt ON pharmacy_dispensings(dispensedAt);
+
+  CREATE TABLE IF NOT EXISTS medication_requests (
+    id TEXT PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    prescriptionId TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    requestedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    approvedBy TEXT,
+    approvedAt TEXT,
+    dispensedBy TEXT,
+    dispensedAt TEXT,
+    decontatAt TEXT,
+    decontatBy TEXT,
+    decontareType TEXT,
+    rejectedBy TEXT,
+    rejectedAt TEXT,
+    rejectionReason TEXT,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id),
+    FOREIGN KEY (prescriptionId) REFERENCES prescriptions(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_medication_requests_patientId ON medication_requests(patientId);
+  CREATE INDEX IF NOT EXISTS idx_medication_requests_prescriptionId ON medication_requests(prescriptionId);
+  CREATE INDEX IF NOT EXISTS idx_medication_requests_status ON medication_requests(status);
 
   CREATE TABLE IF NOT EXISTS medication_interactions (
     id TEXT PRIMARY KEY,
