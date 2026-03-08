@@ -1,30 +1,27 @@
 # Tehnologii utilizate în proiect – Material pentru disertație
 
-*Acest document structurează tehnologiile folosite în platforma CarePulse, pentru integrare în capitolul „Tehnologii” / „Stack tehnologic” al lucrării de disertație.*
+*Acest document structurează tehnologiile folosite în platforma CarePulse, pentru integrare în capitolul „Tehnologii” al lucrării de disertație.*
 
 ---
 
-## 1. Arhitectura generală
+## De ce Next.js pentru frontend și backend
 
-Aplicația este o **aplicație web full-stack** cu frontend și backend în același proiect (**monolit**), folosind **Next.js** în mod **App Router**. Logica de business rulează pe server (API routes, Server Actions); baza de date este accesată exclusiv din backend. Autentificarea combină sesiuni bazate pe cookie-uri (pacienți) și coduri de acces (medici), cu date persistate în baza de date locală.
+Am ales **Next.js** ca bază a proiectului pentru că unifică interfața cu utilizatorul (frontend) și logica de pe server (backend) într-o singură aplicație, fără să fie nevoie de un server API separat sau de mai multe proiecte. Astfel, tot ce vede utilizatorul — paginile pentru pacienți, medici și administratori — și tot ce se întâmplă „în spatele cortinei” — salvarea programărilor, verificarea datelor, generarea PDF-urilor, trimiterea notificărilor — trăiește în același cod și se desfășoară în același mediu de rulare.
+
+Pe **frontend**, Next.js vine cu **React** și cu un sistem de rute bazat pe fișiere (App Router): structura folderelor din `app/` devine direct structura site-ului. Paginile pot fi randate pe server când e cazul, ceea ce ajută la încărcare rapidă și la conținut coerent pentru utilizator. Pentru formularele lungi (înregistrare pacient, programare, consultație, triaj) și pentru zonele interactive, am folosit componente React și, unde a fost nevoie, partea de client, fără să separăm proiectul într-o aplicație React și una de API.
+
+Pe **backend**, Next.js oferă două modalități principale de a face lucrurile să se întâmple pe server: **API Routes** și **Server Actions**. API Routes sunt endpoint-uri clasice (de tip „când se apelează această adresă, răspund cu aceste date sau acest fișier”) — le folosim pentru lucruri precum generarea PDF-urilor, job-urile cron pentru reminder-uri sau webhook-urile pentru SMS. Server Actions sunt funcții pe server apelate direct din componente: butonul „Salvează programarea” poate apela o astfel de funcție, care validează datele, le scrie în baza de date și redirecționează utilizatorul, fără să scriem manual un endpoint REST și fără să expunem logică sensibilă în browser. Pentru o aplicație cu multe acțiuni (programări, fișe medicale, urgențe, notificări), acest model reduce codul duplicat și face fluxul mai clar: acțiunea utilizatorului → funcție pe server → baza de date.
+
+**TypeScript** a fost folosit pe tot proiectul pentru că modelele de date (pacient, programare, diagnostic, rețetă, caz de urgență etc.) sunt multe și complexe. Tipurile ajută la scrierea codului fără erori de formă (câmp lipsă, tip greșit) și la refactorizare în siguranță, atât în componentele de interfață cât și în funcțiile de pe server.
+
+În esență, Next.js ne permite să construim o singură aplicație în care interfața și logica de server sunt strâns legate, cu rute clare, cu posibilitatea de a rula cod doar pe server unde e nevoie (acces la baza de date, fișiere, API-uri externe), și cu TypeScript pentru consistența datelor. Aceasta este motivarea principală pentru utilizarea sa atât pe frontend cât și pe backend în această platformă.
 
 ---
 
-## 2. Framework și limbaje
+## Detalii tehnice (referință)
 
-### 2.1. Next.js 14
-- **Rol**: framework React pentru aplicație full-stack (rendering pe server, rute, API).
-- **De ce**: App Router pentru rute bazate pe fișiere, Server Components și Server Actions pentru logică pe server fără API REST explicit pentru multe operațiuni; API Routes pentru endpoint-uri (ex. cron, webhook-uri, PDF). Suport nativ TypeScript și optimizări (bundling, code splitting).
-- **În proiect**: pagini în `app/` (layout-uri pentru pacient, doctor, admin), Server Actions în `lib/actions/`, API routes în `app/api/`.
-
-### 2.2. React 18
-- **Rol**: bibliotecă UI pentru interfața utilizator.
-- **În proiect**: componente în `components/` și în `app/`, hooks pentru formular și stare, Context pentru temă (dark/light).
-
-### 2.3. TypeScript 5
-- **Rol**: limbaj de programare cu tipuri statice peste JavaScript.
-- **De ce**: tipuri pentru modele (pacient, programare, fișă medicală, urgențe etc.), validare la compilare, autocompletare și refactorizare mai sigure. Interfețe și tipuri în `types/` și inline în componente/actions.
-- **În proiect**: tot codul sursă este TypeScript (`.ts`, `.tsx`).
+### Arhitectură
+Aplicația este **full-stack** în același proiect: frontend (React, pagini în `app/`), backend (Server Actions în `lib/actions/`, API routes în `app/api/`). Baza de date este accesată doar pe server; autentificarea folosește cookie-uri și coduri pentru medici.
 
 ---
 
