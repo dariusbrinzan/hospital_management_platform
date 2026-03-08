@@ -40,26 +40,58 @@
 ## 2. Epic (SUA / global)
 
 ### Prezentare generală
-**Epic Systems** este unul dintre cei mai mari furnizori de software EHR din lume, dominant pe **piața din SUA** (multe spitale și rețele de sănătate) și folosit și **internațional**. Oferă un ecosistem integrat: EHR pentru spitale și clinici, **MyChart** (portal pentru pacienți), programări, facturare și cycle de venituri. Este orientat spre **organizații mari** (sisteme de sănătate, spitale, rețele ambulatorii).
+**Epic Systems** este unul dintre cei mai mari furnizori de software EHR din lume, dominant pe **piața din SUA** (peste 60% din spitale; mii de spitale și clinici) și folosit și **internațional**. Oferă peste **40 de module** integrate, grupate în fluxuri clinice, operaționale și financiare. Este orientat spre **organizații mari** (sisteme de sănătate, spitale, rețele ambulatorii).
 
-### Particularități și funcționalități
+### Funcționalități existente (module și capabilități)
 
-- **Programări (Appointment Scheduling)**  
-  Programări **integrate** în EHR: **autoprogramare online** (cu sau fără cont MyChart), suport pentru decizii (secvențiere, nevoi clinice, preferințe pacient), **programări centralizate** pe organizație. Programări specializate: infuzii, reabilitare, proceduri, imagistică, stomatologie. **Notificări automate** când devin disponibile programări mai devreme. Rezultate concrete raportate: creșteri semnificative ale volumului de vizite și economii de costuri prin reducerea timpului personalului.
+#### Programări și acces (Access & Revenue Cycle)
+- **Appointment Scheduling** – programări integrate în EHR: autoprogramare online (cu sau fără cont MyChart), decizie asistată (secvențiere, nevoi clinice, preferințe pacient), programări centralizate pe organizație.
+- Programări **specializate**: infuzii, reabilitare, proceduri, imagistică, stomatologie.
+- **Notificări automate** când devin disponibile programări mai devreme; verificare electronică asigurări.
+- **Revenue cycle**: înregistrare, facturare, gestionare cereri (claims), estimări de preț, opțiuni de plată pentru pacient.
 
-- **Portal pacient (MyChart)**  
-  **MyChart** funcționează ca „ușă digitală”: găsire îngrijiri, înțelegere costuri. **MyChart Central** – un singur login (Epic ID) pentru mai multe organizații. **MyChart Bedside** – pentru pacienți internați (acces la informații și plan de îngrijire la pat). **Monitorizare la distanță** și integrare **wearables**. Instrumente financiare: plăți online, asistență financiară. **Share Everywhere** – partajare fișă medicală cu orice furnizor. **Asistent AI (Emmie)** pentru programări, facturare și management.
+#### Portal pacient – MyChart
+- **Programări**: rezervare și modificare programări, check-in digital, notificări pentru programări mai devreme.
+- **Fișă medicală**: acces la rezultate analize, planuri de îngrijire, informații de sănătate.
+- **Comunicare**: canale multiple de comunicare cu furnizorii.
+- **MyChart Central**: un singur cont (Epic ID) pentru mai multe organizații.
+- **MyChart Bedside**: pentru pacienți internați – acces la informații și plan de îngrijire la pat, în timp real.
+- **Monitorizare la distanță**: integrare wearables și dispozitive.
+- **Instrumente financiare**: plăți online, cereri de asistență financiară.
+- **Share Everywhere**: partajare fișă medicală cu orice furnizor (inclusiv non-Epic), prin link unic.
+- **Asistent AI (Emmie)**: asistent virtual pentru programări, facturare și întrebări despre îngrijire.
 
-- **Acces și revenue cycle**  
-  Gestionare referuri, **estimări de preț**, verificare asigurări electronice, înregistrare și facturare automatizate. Focus puternic pe **optimizare venituri** și eficiență operațională la scară mare.
+#### Documentație clinică – ambulatoriu și spital
+- **EpicCare Ambulatory**: documentație vizite ambulatorii, e-prescribing, vizualizare rezultate; **SmartTools** (SmartPhrases, SmartTexts) pentru documentare rapidă.
+- **EpicCare Inpatient (ClinDoc)**: documentație spital – evaluări, note de evoluție, administrare medicamente, plan externare; charting mobil prin **Rover**.
+- **Hospital Medicine**: fișă unică pacient cu pathway-uri clinice și documentare asistată de AI.
 
-- **Deployment și piață**  
-  Implementări **on-premise** sau **cloud**, la scară enterprise. Folosit în mii de spitale și clinici; cerințe de certificare (ex. ONC în SUA) și conformitate cu reglementările locale.
+#### Urgențe și flux pacienți
+- **ASAP (Emergency Department)**: modul dedicat urgențe: **track board în timp real**, workflow-uri de **triaj**, documentare cu timestamp, alerte pentru stări critice; integrare cu seturi de ordine și best practice advisories; tranziții ED → internare.
+- **Patient Flow**: gestionare flux pacienți, camere, paturi, transporturi.
+
+#### Chirurgie, anestezie, obstetrică
+- **OpTime**: programări operații, documentare cazuri, date perioperatorii.
+- **Anesthesia**: documentare anestezie.
+- **Stork**: obstetrică – documentare prenatală, naștere, postpartum; integrare monitorizare fetală.
+
+#### Laborator, farmacie, imagistică
+- **Beaker**: sistem informatic laborator – urmărire probe, control calitate, livrare automată a rezultatelor în workflow-ul clinicianului.
+- **Willow Pharmacy**: gestionare medicamente – comunicare, inventar, comenzi, verificare, preparare, dispensare, administrare; suport decizie integrat.
+- **Radiant**: sistem informatic radiologie – programări, urmărire imagini, distribuire rezultate, integrare cu sisteme de diagnostic imagistic.
+
+#### Specialități
+- **Beacon**: oncologie – protocoale chimioterapie, dozaje.
+- **Cupid**: cardiologie – diagnostice și proceduri.
+- Alte aplicații pentru nursing, case management, îngrijiri aliate.
+
+#### Mobil și device-uri
+- **Rover**: aplicație mobilă pentru personal – documentare la pat, colectare probe, administrare medicamente, teste point-of-care, comenzi, semnături electronice, captare imagini clinice; pentru transporturi – actualizare locație pacient în timp real.
 
 ### Puncte de diferențiere față de CarePulse
-- Epic acoperă **întreaga organizație** (spital, ambulatoriu, laborator, imagistică) și **revenue cycle**; nu este un produs „light” pentru un singur spital sau clinică mică.
+- Epic acoperă **întreaga organizație** (spital, ambulatoriu, laborator, farmacie, imagistică, urgențe, chirurgie) și **revenue cycle**; oferta este modulară dar la scară enterprise.
+- **ASAP** oferă triaj și track board pentru urgențe, dar nu este evidențiat un workflow tip „state machine” cu consimțământ, plan de îngrijire și dispecerat ambulanțe ca în CarePulse.
 - **MyChart** este un portal pacient foarte dezvoltat (multi-organizație, Bedside, AI); în proiectul tău portalul acoperă profil, programări, istoric, analize, notificări, într-un singur context.
-- Epic nu pune în prim plan (în materialele publice) **workflow dedicat de urgențe** (triaj, state machine, consimțământ, plan de îngrijire) sau **dispecerat ambulanțe**; acestea pot exista în module specializate, dar nu sunt evidențiate ca în CarePulse.
 - **Scalare și cost** – Epic este o investiție mare; platforma ta poate fi poziționată pentru **contexturi mici/medii** sau **prototipare/cercetare**.
 
 ---
@@ -67,27 +99,75 @@
 ## 3. Oracle Health, fosta Cerner (global)
 
 ### Prezentare generală
-**Oracle Health** (fost **Cerner**) este o platformă **EHR și de management spital** de tip **cloud**, parte din ecosistemul **Oracle**. Este folosită în **SUA** (inclusiv Veterans Health Administration), **UK** (NHS), **Australia**, **Middle East** și alte regiuni – deci cu adevărat **globală**. Oferă EHR unificat, **Patient Administration** (acces, programări, înregistrare), **revenue cycle** și instrumente de analiză, cu accent pe **AI** și **automatizare**.
+**Oracle Health** (fost **Cerner**) este o platformă **EHR și de management spital** de tip **cloud**, parte din ecosistemul **Oracle**. Este folosită în **SUA** (inclusiv Veterans Health Administration), **UK** (NHS), **Australia**, **Middle East** și alte regiuni – deci **globală**. Rulare pe **Oracle Cloud Infrastructure (OCI)**; conformă cu certificări (ex. ONC în SUA). Oferă EHR unificat, **Patient Administration**, **portal pacient** (HealtheLife), **revenue cycle** și module pe specialități, cu accent pe **AI** și **automatizare**.
 
-### Particularități și funcționalități
+### Funcționalități existente (module și capabilități)
 
-- **EHR și AI**  
-  EHR **unificat**, alimentat cu **AI încorporate**: automatizare task-uri, **comenzi vocale** și **rezumate generate de AI** pentru eficiență clinică. **Workflow-uri personalizate** care se adaptează la preferințele clinicianilor. Livrare **SaaS** pe cloud (Oracle Cloud Infrastructure – OCI) cu actualizări regulate și conformitate (ex. **ONC Certified** în SUA).
+#### EHR și AI (Clinical Suite)
+- **Foundation EHR**: vedere enterprise asupra informațiilor clinice; workflow-uri referințe, coordonare îngrijiri, **clinical decision support**.
+- **Clinical AI Agent**: soluție **voice-enabled** pentru charting, documentare, gestionare medicamente și comenzi; funcționează pe mai multe dispozitive.
+- **AI încorporate**: automatizare task-uri, reducere intrări repetitive; **rezumate generate de AI** pentru documentare.
+- **Workflow-uri personalizate**: conținut și acțiuni adaptate la comportamentul și preferințele fiecărui clinician.
+- **Clinical intelligence**: suport decizie în timp real, acces la studii peer-reviewed la cerere.
+- **Patient timelines**: acces organizat la informațiile pacientului.
 
-- **Patient Administration (programări și acces)**  
-  **Autoprogramare** și **auto-înregistrare** pentru pacienți; **check-in** self-service. **Workflow-uri ghidate** și automatizare pentru programări și înmatriculare. Interfață **responsive** (desktop și mobil). **Vizibilitate în timp real** asupra disponibilității, fluxului pacienților și utilizării resurselor.
+#### Comunicare și mobil
+- **Care Team Messaging**: mesagerie securizată (HIPAA), inclusiv voce, text și **video conferințe** între membrii echipei.
+- **EHR Nursing Mobility**: integrare cu sisteme nurse call și dispozitive medicale; administrare medicamente, colectare probe la pat.
 
-- **Revenue cycle și operațiuni spital**  
-  Integrare **clinica + financiar**: case management, tranziții de îngrijire, health information management. **Patient accounting** cu reguli de asigurare incorporate și fluxuri de facturare automate. Gestionare contracte pentru **value-based care**.
+#### Patient Administration (programări și acces)
+- **Autoprogramare** și **auto-înregistrare** pentru pacienți; **check-in** self-service.
+- **Workflow-uri ghidate** și automatizare pentru programări și înmatriculare.
+- Interfață **responsive** (desktop și mobil).
+- **Vizibilitate în timp real** asupra disponibilității, fluxului pacienților și utilizării resurselor.
+- **Notificări** legate de programări (confirmări, amintiri).
 
-- **Securitate și infrastructură**  
-  Rulare pe **OCI** cu securitate la nivel enterprise și **scalabilitate globală**; potrivit pentru rețele de spitale și sisteme naționale de sănătate.
+#### Portal pacient (Oracle Health Patient Portal – HealtheLife)
+- **Programări**: rezervare programări noi și existente (self-service); programări **return visit** pentru pacienți cu furnizor stabilit; **reschedule** și **anulare** (cu motiv); dashboard programări viitoare și trecute; posibilitate „favorite” și re-rezervare pentru programări favorite.
+- **Mesagerie**: **mesagerie securizată** cu furnizori/echipe; cereri **refill/renewal** pentru rețete prin mesagerie; **proxy** – reprezentanți autorizați pot trimite mesaje în numele membrilor familiei.
+- **Fișă medicală**: vizualizare, descărcare și partajare date de sănătate (alergii, rezultate analize, semne vitale, vaccinări).
+- **Medicamente**: listă medicamente; cereri refill și renewal.
+- **Facturare**: vizualizare solduri; **plată facturi** online.
+- **Patient diary**: jurnal de sănătate (note zilnice) pentru furnizori.
+- **Profil**: actualizare date personale, asigurări, contacte de urgență.
+- **Preregistrare**: completare documente pre-vizită online.
+- **Unified Consumer Communications**: SMS și mesagerie portal pentru coordonare programări.
+
+#### Video și îngrijire la distanță
+- **Video Visits**: vizite programate sau **on-demand** (televizită).
+
+#### Farmacie
+- **Inpatient Pharmacy**: gestionare medicamente pentru pacienți internați, automatizare.
+- **Outpatient Pharmacy**: tranziții îngrijire, dispensare.
+- **Pharmacy Inventory Management**: gestiune stoc.
+- **Enhanced Medication Dispensing**: dispensare îmbunătățită.
+- **Multum Drug Database**: monitorizare interacțiuni medicamentoase.
+
+#### Laborator
+- **Laboratory Sequence**, **Laboratory Outreach** – fluxuri laborator și outreach.
+
+#### Urgențe (Emergency Medicine)
+- **Emergency Medicine**: documentare urgențe, **tracking pacienți**; **charge capture** (facilitate, profesional E/M, infuzii/injecții); **dashboard-uri operaționale** și raportare; **documentare trauma**.
+
+#### Perioperator
+- **Perioperative management**: gestionare perioada operatorie.
+- **Perioperative Inventory Management**: inventar materiale.
+- **Anesthesia**: modul anestezie.
+
+#### Revenue cycle și operațiuni
+- **Case management**, **tranziții de îngrijire**, **health information management**.
+- **Patient accounting**: reguli de asigurare incorporate, fluxuri de facturare automate.
+- **Gestionare contracte** pentru **value-based care**.
+
+#### Dispozitive și integritate
+- **Device connectivity**: integrare dispozitive medicale; programe de validare dispozitive medicale.
+- **Remote patient monitoring** și **virtual care**.
 
 ### Puncte de diferențiere față de CarePulse
 - Oracle Health este **enterprise / la scară națională** (spitale, rețele, proiecte guvernamentale); nu este orientat spre cabinete mici sau prototipuri.
 - **AI și voice** sunt puncte forte; în proiectul tău accentul este pe **fluxuri explicite** (urgențe, triaj, medici de gardă, ambulanțe, ATI) și pe **documente PDF** generate din EMR.
-- **Patient Administration** acoperă programări și self-service; **nu** sunt puse în evidență în materialele publice **triaj dedicat**, **dispecerat ambulanțe** sau **gestionare camere ATI/spitalizări** în același mod ca în CarePulse.
-- **Deployment** – cloud enterprise; CarePulse poate fi poziționat ca soluție **ușor de implementat** (ex. Next.js, SQLite) pentru mediu academic sau unități mici.
+- **Emergency Medicine** acoperă documentare și tracking în urgențe; nu sunt puse în evidență în materialele publice un **workflow tip state machine** (triaj → consimțământ → plan îngrijire → externare), **dispecerat ambulanțe** sau **gestionare explicită camere ATI** ca în CarePulse.
+- **Deployment** – cloud OCI, enterprise; CarePulse poate fi poziționat ca soluție **ușor de implementat** (ex. Next.js, SQLite) pentru mediu academic sau unități mici.
 
 ---
 
