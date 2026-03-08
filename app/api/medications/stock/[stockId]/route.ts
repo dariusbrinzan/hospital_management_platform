@@ -26,7 +26,7 @@ export async function PATCH(
 ) {
   try {
     const body = await request.json();
-    const { quantity, reservedQuantity, minimumStockLevel, maximumStockLevel } = body;
+    const { quantity, reservedQuantity, minimumStockLevel, maximumStockLevel, reorderQuantity } = body;
 
     const stock = medicationStockHelpers.getById(params.stockId);
     if (!stock) {
@@ -56,6 +56,14 @@ export async function PATCH(
         now,
         params.stockId
       );
+    }
+
+    if (reorderQuantity !== undefined) {
+      const now = new Date().toISOString();
+      const db = (await import("@/lib/db")).default;
+      db.prepare(`
+        UPDATE medication_stock SET reorderQuantity = ?, updatedAt = ? WHERE id = ?
+      `).run(reorderQuantity === null || reorderQuantity === "" ? null : Number(reorderQuantity), now, params.stockId);
     }
 
     const updated = medicationStockHelpers.getById(params.stockId);

@@ -188,6 +188,194 @@ try {
   console.error("Migration lab_results/imaging_studies reviewed:", err);
 }
 
+// Migrare: tabel semnături digitale pacienți
+try {
+  const sigExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='patient_signatures';").get();
+  if (!sigExists) {
+    db.exec(`
+      CREATE TABLE patient_signatures (
+        id TEXT PRIMARY KEY,
+        patientId TEXT NOT NULL,
+        documentType TEXT NOT NULL,
+        documentId TEXT,
+        signatureData TEXT NOT NULL,
+        signedAt TEXT NOT NULL DEFAULT (datetime('now')),
+        createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (patientId) REFERENCES patients(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_patient_signatures_patientId ON patient_signatures(patientId);
+      CREATE INDEX IF NOT EXISTS idx_patient_signatures_documentType ON patient_signatures(documentType);
+      CREATE INDEX IF NOT EXISTS idx_patient_signatures_signedAt ON patient_signatures(signedAt);
+    `);
+  }
+} catch (err) {
+  console.error("Migration patient_signatures:", err);
+}
+
+// Migrare: reorderQuantity pe medication_stock
+try {
+  const msExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='medication_stock';").get();
+  if (msExists) {
+    const info = db.prepare("PRAGMA table_info(medication_stock)").all() as any[];
+    if (!info.some((c) => c.name === "reorderQuantity")) {
+      db.exec("ALTER TABLE medication_stock ADD COLUMN reorderQuantity INTEGER;");
+    }
+  }
+} catch (err) {
+  console.error("Migration medication_stock reorderQuantity:", err);
+}
+
+// Migrare: tabele farmacie avansată și laborator
+try {
+  const batchExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='medication_stock_batches';").get();
+  if (!batchExists) {
+    db.exec(`
+      CREATE TABLE medication_stock_batches (
+        id TEXT PRIMARY KEY,
+        stockId TEXT NOT NULL,
+        batchNumber TEXT NOT NULL,
+        expirationDate TEXT NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 0,
+        receivedAt TEXT NOT NULL DEFAULT (datetime('now')),
+        createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (stockId) REFERENCES medication_stock(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_medication_stock_batches_stockId ON medication_stock_batches(stockId);
+      CREATE INDEX IF NOT EXISTS idx_medication_stock_batches_expiration ON medication_stock_batches(expirationDate);
+    `);
+  }
+  const orderExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='pharmacy_orders';").get();
+  if (!orderExists) {
+    db.exec(`
+      CREATE TABLE pharmacy_orders (
+        id TEXT PRIMARY KEY,
+        orderNumber TEXT NOT NULL UNIQUE,
+        status TEXT NOT NULL DEFAULT 'draft',
+        requestedBy TEXT NOT NULL,
+        requestedAt TEXT NOT NULL DEFAULT (datetime('now')),
+        approvedBy TEXT,
+        approvedAt TEXT,
+        receivedBy TEXT,
+        receivedAt TEXT,
+        notes TEXT,
+        createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+        updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE TABLE pharmacy_order_lines (
+        id TEXT PRIMARY KEY,
+        orderId TEXT NOT NULL,
+        medicationId TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        unitPrice REAL,
+        receivedQuantity INTEGER,
+        createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (orderId) REFERENCES pharmacy_orders(id),
+        FOREIGN KEY (medicationId) REFERENCES medications(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_pharmacy_orders_status ON pharmacy_orders(status);
+      CREATE INDEX IF NOT EXISTS idx_pharmacy_order_lines_orderId ON pharmacy_order_lines(orderId);
+    `);
+  }
+  const dispExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='pharmacy_dispensings';").get();
+  if (!dispExists) {
+    db.exec(`
+      CREATE TABLE pharmacy_dispensings (
+        id TEXT PRIMARY KEY,
+        prescriptionId TEXT NOT NULL,
+        patientId TEXT NOT NULL,
+        medicationId TEXT NOT NULL,
+        stockId TEXT,
+        batchId TEXT,
+        quantity INTEGER NOT NULL,
+        dispensedAt TEXT NOT NULL DEFAULT (datetime('now')),
+        dispensedBy TEXT NOT NULL,
+        notes TEXT,
+        createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (prescriptionId) REFERENCES prescriptions(id),
+        FOREIGN KEY (patientId) REFERENCES patients(id),
+        FOREIGN KEY (medicationId) REFERENCES medications(id),
+        FOREIGN KEY (stockId) REFERENCES medication_stock(id),
+        FOREIGN KEY (batchId) REFERENCES medication_stock_batches(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_pharmacy_dispensings_patientId ON pharmacy_dispensings(patientId);
+      CREATE INDEX IF NOT EXISTS idx_pharmacy_dispensings_prescriptionId ON pharmacy_dispensings(prescriptionId);
+      CREATE INDEX IF NOT EXISTS idx_pharmacy_dispensings_dispensedAt ON pharmacy_dispensings(dispensedAt);
+    `);
+  }
+  const interExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='medication_interactions';").get();
+  if (!interExists) {
+    db.exec(`
+      CREATE TABLE medication_interactions (
+        id TEXT PRIMARY KEY,
+        medicationId1 TEXT NOT NULL,
+        medicationId2 TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        description TEXT,
+        createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (medicationId1) REFERENCES medications(id),
+        FOREIGN KEY (medicationId2) REFERENCES medications(id),
+        UNIQUE(medicationId1, medicationId2)
+      );
+      CREATE INDEX IF NOT EXISTS idx_medication_interactions_med1 ON medication_interactions(medicationId1);
+      CREATE INDEX IF NOT EXISTS idx_medication_interactions_med2 ON medication_interactions(medicationId2);
+    `);
+  }
+  const labTestExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='lab_test_types';").get();
+  if (!labTestExists) {
+    db.exec(`
+      CREATE TABLE lab_test_types (
+        id TEXT PRIMARY KEY,
+        code TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        unit TEXT,
+        referenceRange TEXT,
+        medicationId TEXT,
+        createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (medicationId) REFERENCES medications(id)
+      );
+      CREATE TABLE lab_orders (
+        id TEXT PRIMARY KEY,
+        patientId TEXT NOT NULL,
+        medicalRecordId TEXT,
+        appointmentId TEXT,
+        orderedBy TEXT NOT NULL,
+        orderedAt TEXT NOT NULL DEFAULT (datetime('now')),
+        status TEXT NOT NULL DEFAULT 'pending',
+        priority TEXT NOT NULL DEFAULT 'normal',
+        notes TEXT,
+        createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+        updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (patientId) REFERENCES patients(id),
+        FOREIGN KEY (medicalRecordId) REFERENCES medical_records(id),
+        FOREIGN KEY (appointmentId) REFERENCES appointments(id)
+      );
+      CREATE TABLE lab_order_tests (
+        id TEXT PRIMARY KEY,
+        orderId TEXT NOT NULL,
+        testTypeId TEXT NOT NULL,
+        medicationId TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        resultValue TEXT,
+        resultUnit TEXT,
+        referenceRange TEXT,
+        resultAt TEXT,
+        notes TEXT,
+        createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+        updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (orderId) REFERENCES lab_orders(id),
+        FOREIGN KEY (testTypeId) REFERENCES lab_test_types(id),
+        FOREIGN KEY (medicationId) REFERENCES medications(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_lab_orders_patientId ON lab_orders(patientId);
+      CREATE INDEX IF NOT EXISTS idx_lab_orders_status ON lab_orders(status);
+      CREATE INDEX IF NOT EXISTS idx_lab_order_tests_orderId ON lab_order_tests(orderId);
+    `);
+  }
+} catch (err) {
+  console.error("Migration pharmacy/lab tables:", err);
+}
+
 // Creează tabelele dacă nu există
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -506,6 +694,7 @@ db.exec(`
     reservedQuantity INTEGER NOT NULL DEFAULT 0, -- Cantitate rezervată pentru tratamente active
     minimumStockLevel INTEGER NOT NULL DEFAULT 10, -- Nivel minim de stoc pentru alertă
     maximumStockLevel INTEGER NOT NULL DEFAULT 1000, -- Nivel maxim de stoc
+    reorderQuantity INTEGER, -- Cantitate de comandat la reaprovizionare (dacă NULL, se folosește minimumStockLevel * 2)
     lastRestockedDate TEXT,
     lastRestockedQuantity INTEGER,
     notes TEXT,
@@ -538,6 +727,133 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_medication_transactions_stockId ON medication_transactions(stockId);
   CREATE INDEX IF NOT EXISTS idx_medication_transactions_type ON medication_transactions(transactionType);
   CREATE INDEX IF NOT EXISTS idx_medication_transactions_date ON medication_transactions(transactionDate);
+
+  -- Farmacie avansată: loturi, comenzi, dispensări, interacțiuni
+  CREATE TABLE IF NOT EXISTS medication_stock_batches (
+    id TEXT PRIMARY KEY,
+    stockId TEXT NOT NULL,
+    batchNumber TEXT NOT NULL,
+    expirationDate TEXT NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 0,
+    receivedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (stockId) REFERENCES medication_stock(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_medication_stock_batches_stockId ON medication_stock_batches(stockId);
+  CREATE INDEX IF NOT EXISTS idx_medication_stock_batches_expiration ON medication_stock_batches(expirationDate);
+
+  CREATE TABLE IF NOT EXISTS pharmacy_orders (
+    id TEXT PRIMARY KEY,
+    orderNumber TEXT NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'draft', -- draft, submitted, approved, received, cancelled
+    requestedBy TEXT NOT NULL,
+    requestedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    approvedBy TEXT,
+    approvedAt TEXT,
+    receivedBy TEXT,
+    receivedAt TEXT,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS pharmacy_order_lines (
+    id TEXT PRIMARY KEY,
+    orderId TEXT NOT NULL,
+    medicationId TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    unitPrice REAL,
+    receivedQuantity INTEGER,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (orderId) REFERENCES pharmacy_orders(id),
+    FOREIGN KEY (medicationId) REFERENCES medications(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_pharmacy_orders_status ON pharmacy_orders(status);
+  CREATE INDEX IF NOT EXISTS idx_pharmacy_order_lines_orderId ON pharmacy_order_lines(orderId);
+
+  CREATE TABLE IF NOT EXISTS pharmacy_dispensings (
+    id TEXT PRIMARY KEY,
+    prescriptionId TEXT NOT NULL,
+    patientId TEXT NOT NULL,
+    medicationId TEXT NOT NULL,
+    stockId TEXT,
+    batchId TEXT,
+    quantity INTEGER NOT NULL,
+    dispensedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    dispensedBy TEXT NOT NULL,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (prescriptionId) REFERENCES prescriptions(id),
+    FOREIGN KEY (patientId) REFERENCES patients(id),
+    FOREIGN KEY (medicationId) REFERENCES medications(id),
+    FOREIGN KEY (stockId) REFERENCES medication_stock(id),
+    FOREIGN KEY (batchId) REFERENCES medication_stock_batches(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_pharmacy_dispensings_patientId ON pharmacy_dispensings(patientId);
+  CREATE INDEX IF NOT EXISTS idx_pharmacy_dispensings_prescriptionId ON pharmacy_dispensings(prescriptionId);
+  CREATE INDEX IF NOT EXISTS idx_pharmacy_dispensings_dispensedAt ON pharmacy_dispensings(dispensedAt);
+
+  CREATE TABLE IF NOT EXISTS medication_interactions (
+    id TEXT PRIMARY KEY,
+    medicationId1 TEXT NOT NULL,
+    medicationId2 TEXT NOT NULL,
+    severity TEXT NOT NULL, -- minor, moderate, major, contraindicated
+    description TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (medicationId1) REFERENCES medications(id),
+    FOREIGN KEY (medicationId2) REFERENCES medications(id),
+    UNIQUE(medicationId1, medicationId2)
+  );
+  CREATE INDEX IF NOT EXISTS idx_medication_interactions_med1 ON medication_interactions(medicationId1);
+  CREATE INDEX IF NOT EXISTS idx_medication_interactions_med2 ON medication_interactions(medicationId2);
+
+  -- Laborator axat pe medicamente (TDM, analize pentru monitorizare terapie)
+  CREATE TABLE IF NOT EXISTS lab_test_types (
+    id TEXT PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL, -- blood, urine, tdm, renal, hepatic, other
+    unit TEXT,
+    referenceRange TEXT,
+    medicationId TEXT, -- pentru TDM: medicamentul monitorizat
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (medicationId) REFERENCES medications(id)
+  );
+  CREATE TABLE IF NOT EXISTS lab_orders (
+    id TEXT PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    medicalRecordId TEXT,
+    appointmentId TEXT,
+    orderedBy TEXT NOT NULL,
+    orderedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    status TEXT NOT NULL DEFAULT 'pending', -- pending, in_progress, completed, cancelled
+    priority TEXT NOT NULL DEFAULT 'normal', -- normal, urgent, stat
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id),
+    FOREIGN KEY (medicalRecordId) REFERENCES medical_records(id),
+    FOREIGN KEY (appointmentId) REFERENCES appointments(id)
+  );
+  CREATE TABLE IF NOT EXISTS lab_order_tests (
+    id TEXT PRIMARY KEY,
+    orderId TEXT NOT NULL,
+    testTypeId TEXT NOT NULL,
+    medicationId TEXT, -- legătură TDM
+    status TEXT NOT NULL DEFAULT 'pending', -- pending, in_progress, completed
+    resultValue TEXT,
+    resultUnit TEXT,
+    referenceRange TEXT,
+    resultAt TEXT,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (orderId) REFERENCES lab_orders(id),
+    FOREIGN KEY (testTypeId) REFERENCES lab_test_types(id),
+    FOREIGN KEY (medicationId) REFERENCES medications(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_lab_orders_patientId ON lab_orders(patientId);
+  CREATE INDEX IF NOT EXISTS idx_lab_orders_status ON lab_orders(status);
+  CREATE INDEX IF NOT EXISTS idx_lab_order_tests_orderId ON lab_order_tests(orderId);
 
   -- Tabele pentru Terapie Intensivă (ATI)
   CREATE TABLE IF NOT EXISTS icu_rooms (
@@ -990,6 +1306,21 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_problem_reports_status ON problem_reports(status);
   CREATE INDEX IF NOT EXISTS idx_problem_reports_createdAt ON problem_reports(createdAt);
 
+  -- Semnături digitale pacienți (canvas → base64 PNG)
+  CREATE TABLE IF NOT EXISTS patient_signatures (
+    id TEXT PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    documentType TEXT NOT NULL,
+    documentId TEXT,
+    signatureData TEXT NOT NULL,
+    signedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_patient_signatures_patientId ON patient_signatures(patientId);
+  CREATE INDEX IF NOT EXISTS idx_patient_signatures_documentType ON patient_signatures(documentType);
+  CREATE INDEX IF NOT EXISTS idx_patient_signatures_signedAt ON patient_signatures(signedAt);
+
   -- Operațiuni zilnice și logistică
   CREATE TABLE IF NOT EXISTS consumable_requests (
     id TEXT PRIMARY KEY,
@@ -1126,6 +1457,34 @@ try {
   }
 } catch (error) {
   console.error("Error initializing medications:", error);
+}
+
+// Inițializare tipuri analize laborator (inclusiv TDM - monitorizare terapie)
+try {
+  const labTestCount = db.prepare("SELECT COUNT(*) as count FROM lab_test_types").get() as { count: number } | undefined;
+  if (labTestCount && labTestCount.count === 0) {
+    const now = new Date().toISOString();
+    const testTypes = [
+      { id: "lt-hemo", code: "HEMO", name: "Hemoleucogramă", category: "blood", unit: "-", referenceRange: null },
+      { id: "lt-glucose", code: "GLU", name: "Glicemie", category: "blood", unit: "mg/dL", referenceRange: "70-100" },
+      { id: "lt-creat", code: "CREAT", name: "Creatinină", category: "renal", unit: "mg/dL", referenceRange: "0.7-1.2" },
+      { id: "lt-urea", code: "UREA", name: "Uree", category: "renal", unit: "mg/dL", referenceRange: "15-40" },
+      { id: "lt-alt", code: "ALT", name: "ALAT", category: "hepatic", unit: "U/L", referenceRange: "< 41" },
+      { id: "lt-ast", code: "AST", name: "ASAT", category: "hepatic", unit: "U/L", referenceRange: "< 40" },
+      { id: "lt-vanco", code: "VANCO", name: "Vancomicin nivel seric", category: "tdm", unit: "mg/L", referenceRange: "10-20 (trough)" },
+      { id: "lt-lithium", code: "LI", name: "Litiu seric", category: "tdm", unit: "mmol/L", referenceRange: "0.6-1.2" },
+      { id: "lt-digoxin", code: "DIG", name: "Digoxin nivel seric", category: "tdm", unit: "ng/mL", referenceRange: "0.5-2" },
+      { id: "lt-phenytoin", code: "PHT", name: "Fenitoină nivel seric", category: "tdm", unit: "mg/L", referenceRange: "10-20" },
+    ];
+    testTypes.forEach((t) => {
+      db.prepare(`
+        INSERT INTO lab_test_types (id, code, name, category, unit, referenceRange, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(t.id, t.code, t.name, t.category, t.unit, t.referenceRange, now);
+    });
+  }
+} catch (e) {
+  console.error("Error initializing lab_test_types:", e);
 }
 
 // Inițializare modalități imagistice

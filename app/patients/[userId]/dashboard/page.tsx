@@ -32,6 +32,7 @@ import { Doctors } from "@/constants";
 import { RescheduleAppointmentButton } from "@/components/RescheduleAppointmentButton";
 import { CancelAppointmentButton } from "@/components/CancelAppointmentButton";
 import { PastAppointmentsList } from "@/components/PastAppointmentsList";
+import { PatientSignatureCard } from "@/components/PatientSignatureCard";
 import { doctorReviewHelpers } from "@/lib/db-helpers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -222,6 +223,8 @@ const PatientDashboard = async ({ params: { userId } }: SearchParamProps) => {
                 )}
               </CardContent>
             </Card>
+
+            <PatientSignatureCard />
           </section>
 
           {/* Col 2+3: Appointments */}

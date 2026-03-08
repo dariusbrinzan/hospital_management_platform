@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import { MedicationStockCard } from "./MedicationStockCard";
 import { RestockModal } from "./RestockModal";
+import { BatchesModal } from "./BatchesModal";
 import { Package, TrendingUp, CheckCircle, AlertTriangle } from "lucide-react";
 
 type MedicationStockWithPartialMed = Omit<MedicationStock, "medication"> & { medication?: Partial<Medication> | null };
@@ -24,6 +25,7 @@ export const MedicationStockDashboard = ({
   const [selectedView, setSelectedView] = useState<"all" | "emergency" | "icu" | "low">("all");
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [selectedStock, setSelectedStock] = useState<MedicationStockWithPartialMed | null>(null);
+  const [stockForBatches, setStockForBatches] = useState<MedicationStockWithPartialMed | null>(null);
 
   const getStocksForView = () => {
     switch (selectedView) {
@@ -137,6 +139,7 @@ export const MedicationStockDashboard = ({
                   setSelectedStock(stock);
                   setShowRestockModal(true);
                 }}
+                onBatches={() => setStockForBatches(stock)}
               />
             ))}
           </div>
@@ -163,6 +166,15 @@ export const MedicationStockDashboard = ({
             setSelectedStock(null);
             window.location.reload();
           }}
+        />
+      )}
+
+      {stockForBatches && (
+        <BatchesModal
+          stockId={stockForBatches.$id}
+          medicationName={stockForBatches.medication?.name ?? "Medicament"}
+          onClose={() => setStockForBatches(null)}
+          onSuccess={() => window.location.reload()}
         />
       )}
     </div>

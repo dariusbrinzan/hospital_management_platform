@@ -1,15 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardFooter } from "./ui/card";
 import { formatDateTime } from "@/lib/utils";
-import { MapPin } from "lucide-react";
+import { MapPin, Package, ShoppingCart } from "lucide-react";
 
 type MedicationStockWithPartialMed = Omit<MedicationStock, "medication"> & { medication?: Partial<Medication> | null };
 
 interface MedicationStockCardProps {
   stock: MedicationStockWithPartialMed;
   onRestock: () => void;
+  onBatches?: () => void;
 }
 
 const locationLabels: Record<string, string> = {
@@ -19,8 +21,34 @@ const locationLabels: Record<string, string> = {
   surgery_ward: "Secție Chirurgie",
 };
 
-export const MedicationStockCard = ({ stock, onRestock }: MedicationStockCardProps) => {
+export const MedicationStockCard = ({ stock, onRestock, onBatches }: MedicationStockCardProps) => {
+  const [reorderLoading, setReorderLoading] = useState(false);
   const isLowStock = (stock.availableQuantity ?? 0) <= stock.minimumStockLevel;
+  const reorderQty = stock.reorderQuantity ?? stock.minimumStockLevel ?? 10;
+
+  const handleReorder = async () => {
+    setReorderLoading(true);
+    try {
+      const res = await fetch("/api/admin/pharmacy/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestedBy: "Admin",
+          lines: [{ medicationId: stock.medicationId, quantity: reorderQty }],
+        }),
+      });
+      const data = await res.json();
+      if (data.$id) {
+        window.location.href = "/admin/pharmacy";
+      } else {
+        alert(data.error || "Eroare la creare comandă");
+      }
+    } catch {
+      alert("Eroare la creare comandă");
+    } finally {
+      setReorderLoading(false);
+    }
+  };
   const stockPercentage =
     stock.maximumStockLevel > 0 ? (stock.quantity / stock.maximumStockLevel) * 100 : 0;
 
@@ -109,14 +137,32 @@ export const MedicationStockCard = ({ stock, onRestock }: MedicationStockCardPro
           </p>
         )}
       </CardContent>
-      <CardFooter className="p-4 pt-0">
+      <CardFooter className="flex flex-wrap gap-2 p-4 pt-0">
         <Button
           onClick={onRestock}
-          className="w-full rounded-lg bg-teal-600 hover:bg-teal-700"
+          className="flex-1 rounded-lg bg-teal-600 hover:bg-teal-700"
           size="sm"
         >
           Reaprovizionează
         </Button>
+        {onBatches && (
+          <Button variant="outline" size="sm" onClick={onBatches} className="rounded-lg">
+            <Package className="mr-1 size-4" />
+            Loturi
+          </Button>
+        )}
+        {isLowStock && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleReorder}
+            disabled={reorderLoading}
+            className="rounded-lg border-amber-200 text-amber-800 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/20"
+          >
+            <ShoppingCart className="mr-1 size-4" />
+            {reorderLoading ? "..." : "Comandă reaprovizionare"}
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

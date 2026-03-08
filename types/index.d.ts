@@ -402,6 +402,7 @@ declare interface MedicationStock {
   reservedQuantity: number;
   minimumStockLevel: number;
   maximumStockLevel: number;
+  reorderQuantity?: number | null;
   lastRestockedDate?: Date | string | null;
   lastRestockedQuantity?: number | null;
   notes?: string | null;

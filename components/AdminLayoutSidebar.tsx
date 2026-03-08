@@ -23,6 +23,8 @@ const ADMIN_NAV = [
   { href: "/admin/appointments", label: "Programări", icon: "📅" },
   { href: "/admin/emergency", label: "Urgențe", icon: "🚨", primary: true },
   { href: "/admin/medications", label: "Medicamente", icon: "💊" },
+  { href: "/admin/pharmacy", label: "Farmacie", icon: "📦" },
+  { href: "/admin/laborator", label: "Laborator", icon: "🔬" },
   { href: "/admin/patients", label: "Pacienți", icon: "👥" },
   { href: "/admin/hospitalizations", label: "Spitalizări", icon: "🏥" },
   { href: "/admin/imaging", label: "Imagistică", icon: "🩻" },

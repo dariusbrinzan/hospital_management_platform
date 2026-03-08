@@ -307,6 +307,81 @@ export const patientHelpers = {
   },
 };
 
+// Semnături digitale pacienți
+export const patientSignatureHelpers = {
+  create: (data: {
+    patientId: string;
+    documentType: string;
+    documentId?: string | null;
+    signatureData: string;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO patient_signatures (id, patientId, documentType, documentId, signatureData, signedAt, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      data.patientId,
+      data.documentType,
+      data.documentId ?? null,
+      data.signatureData,
+      now,
+      now
+    );
+    return patientSignatureHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const row = db.prepare("SELECT * FROM patient_signatures WHERE id = ?").get(id) as any;
+    if (!row) return null;
+    return {
+      $id: row.id,
+      patientId: row.patientId,
+      documentType: row.documentType,
+      documentId: row.documentId,
+      signatureData: row.signatureData,
+      signedAt: parseDate(row.signedAt),
+      createdAt: parseDate(row.createdAt),
+    };
+  },
+
+  getByPatientId: (patientId: string, limit = 50) => {
+    const rows = db.prepare(`
+      SELECT * FROM patient_signatures WHERE patientId = ? ORDER BY signedAt DESC LIMIT ?
+    `).all(patientId, limit) as any[];
+    return rows.map((r) => ({
+      $id: r.id,
+      patientId: r.patientId,
+      documentType: r.documentType,
+      documentId: r.documentId,
+      signedAt: parseDate(r.signedAt),
+      createdAt: parseDate(r.createdAt),
+    }));
+  },
+
+  getByDocument: (patientId: string, documentType: string, documentId?: string | null) => {
+    let row: any;
+    if (documentId) {
+      row = db.prepare(
+        "SELECT * FROM patient_signatures WHERE patientId = ? AND documentType = ? AND documentId = ? ORDER BY signedAt DESC LIMIT 1"
+      ).get(patientId, documentType, documentId);
+    } else {
+      row = db.prepare(
+        "SELECT * FROM patient_signatures WHERE patientId = ? AND documentType = ? AND documentId IS NULL ORDER BY signedAt DESC LIMIT 1"
+      ).get(patientId, documentType);
+    }
+    if (!row) return null;
+    return {
+      $id: row.id,
+      patientId: row.patientId,
+      documentType: row.documentType,
+      documentId: row.documentId,
+      signedAt: parseDate(row.signedAt),
+    };
+  },
+};
+
 // Appointments helpers
 export const appointmentHelpers = {
   create: (appointment: any) => {
@@ -4690,6 +4765,7 @@ export const medicationStockHelpers = {
       reservedQuantity: stock.reservedQuantity,
       minimumStockLevel: stock.minimumStockLevel,
       maximumStockLevel: stock.maximumStockLevel,
+      reorderQuantity: stock.reorderQuantity != null ? stock.reorderQuantity : null,
       lastRestockedDate: stock.lastRestockedDate ? parseDate(stock.lastRestockedDate) : null,
       lastRestockedQuantity: stock.lastRestockedQuantity,
       notes: stock.notes,
@@ -4726,6 +4802,7 @@ export const medicationStockHelpers = {
       reservedQuantity: stock.reservedQuantity,
       minimumStockLevel: stock.minimumStockLevel,
       maximumStockLevel: stock.maximumStockLevel,
+      reorderQuantity: stock.reorderQuantity != null ? stock.reorderQuantity : null,
       lastRestockedDate: stock.lastRestockedDate ? parseDate(stock.lastRestockedDate) : null,
       lastRestockedQuantity: stock.lastRestockedQuantity,
       notes: stock.notes,
@@ -4769,6 +4846,7 @@ export const medicationStockHelpers = {
       maximumStockLevel: stock.maximumStockLevel,
       lastRestockedDate: stock.lastRestockedDate ? parseDate(stock.lastRestockedDate) : null,
       lastRestockedQuantity: stock.lastRestockedQuantity,
+      reorderQuantity: stock.reorderQuantity != null ? stock.reorderQuantity : null,
       notes: stock.notes,
       createdAt: parseDate(stock.createdAt),
       updatedAt: parseDate(stock.updatedAt),
@@ -4804,6 +4882,7 @@ export const medicationStockHelpers = {
       maximumStockLevel: stock.maximumStockLevel,
       lastRestockedDate: stock.lastRestockedDate ? parseDate(stock.lastRestockedDate) : null,
       lastRestockedQuantity: stock.lastRestockedQuantity,
+      reorderQuantity: stock.reorderQuantity != null ? stock.reorderQuantity : null,
       notes: stock.notes,
       createdAt: parseDate(stock.createdAt),
       updatedAt: parseDate(stock.updatedAt),
@@ -4847,6 +4926,7 @@ export const medicationStockHelpers = {
       maximumStockLevel: stock.maximumStockLevel,
       lastRestockedDate: stock.lastRestockedDate ? parseDate(stock.lastRestockedDate) : null,
       lastRestockedQuantity: stock.lastRestockedQuantity,
+      reorderQuantity: stock.reorderQuantity != null ? stock.reorderQuantity : null,
       notes: stock.notes,
       createdAt: parseDate(stock.createdAt),
       updatedAt: parseDate(stock.updatedAt),
@@ -5059,6 +5139,345 @@ export const medicationTransactionHelpers = {
         unit: trans.medicationUnit,
       },
     }));
+  },
+};
+
+// Lab Orders (cereri analize)
+export const labOrderHelpers = {
+  create: (data: { patientId: string; medicalRecordId?: string; appointmentId?: string; orderedBy: string; priority?: string; notes?: string; tests: { testTypeId: string; medicationId?: string }[] }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO lab_orders (id, patientId, medicalRecordId, appointmentId, orderedBy, orderedAt, status, priority, notes, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)
+    `).run(id, data.patientId, data.medicalRecordId ?? null, data.appointmentId ?? null, data.orderedBy, now, data.priority ?? "normal", data.notes ?? null, now, now);
+    data.tests.forEach((t) => {
+      const tid = generateId();
+      db.prepare(`
+        INSERT INTO lab_order_tests (id, orderId, testTypeId, medicationId, status, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, 'pending', ?, ?)
+      `).run(tid, id, t.testTypeId, t.medicationId ?? null, now, now);
+    });
+    return labOrderHelpers.getById(id);
+  },
+  getById: (id: string) => {
+    const order = db.prepare("SELECT * FROM lab_orders WHERE id = ?").get(id) as any;
+    if (!order) return null;
+    const tests = db.prepare(`
+      SELECT t.*, tt.code as testCode, tt.name as testName, tt.unit, tt.referenceRange, m.name as medicationName
+      FROM lab_order_tests t
+      LEFT JOIN lab_test_types tt ON t.testTypeId = tt.id
+      LEFT JOIN medications m ON t.medicationId = m.id
+      WHERE t.orderId = ?
+    `).all(id) as any[];
+    return {
+      $id: order.id,
+      patientId: order.patientId,
+      medicalRecordId: order.medicalRecordId,
+      appointmentId: order.appointmentId,
+      orderedBy: order.orderedBy,
+      orderedAt: parseDate(order.orderedAt),
+      status: order.status,
+      priority: order.priority,
+      notes: order.notes,
+      createdAt: parseDate(order.createdAt),
+      tests: tests.map((t) => ({ $id: t.id, testTypeId: t.testTypeId, testCode: t.testCode, testName: t.testName, unit: t.unit, referenceRange: t.referenceRange, medicationId: t.medicationId, medicationName: t.medicationName, status: t.status, resultValue: t.resultValue, resultUnit: t.resultUnit, resultAt: t.resultAt ? parseDate(t.resultAt) : null, notes: t.notes })),
+    };
+  },
+  getAll: (status?: string) => {
+    let q = "SELECT o.*, p.name as patientName FROM lab_orders o LEFT JOIN patients p ON o.patientId = p.id WHERE 1=1";
+    const params: any[] = [];
+    if (status) { q += " AND o.status = ?"; params.push(status); }
+    q += " ORDER BY o.orderedAt DESC";
+    const rows = db.prepare(q).all(...params) as any[];
+    return rows.map((r) => ({ $id: r.id, patientId: r.patientId, patientName: r.patientName, orderedBy: r.orderedBy, orderedAt: parseDate(r.orderedAt), status: r.status, priority: r.priority }));
+  },
+  updateStatus: (id: string, status: string) => {
+    const now = new Date().toISOString();
+    db.prepare("UPDATE lab_orders SET status = ?, updatedAt = ? WHERE id = ?").run(status, now, id);
+    return labOrderHelpers.getById(id);
+  },
+};
+
+// Lab Order Tests (rezultate per test)
+export const labOrderTestHelpers = {
+  add: (orderId: string, testTypeId: string, medicationId?: string) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO lab_order_tests (id, orderId, testTypeId, medicationId, status, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, 'pending', ?, ?)
+    `).run(id, orderId, testTypeId, medicationId ?? null, now, now);
+    return labOrderHelpers.getById(orderId);
+  },
+  setResult: (id: string, data: { resultValue: string; resultUnit?: string; referenceRange?: string; notes?: string }) => {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE lab_order_tests SET resultValue = ?, resultUnit = ?, referenceRange = ?, resultAt = ?, notes = ?, status = 'completed', updatedAt = ? WHERE id = ?
+    `).run(data.resultValue, data.resultUnit ?? null, data.referenceRange ?? null, now, data.notes ?? null, now, id);
+    return db.prepare("SELECT * FROM lab_order_tests WHERE id = ?").get(id);
+  },
+  getByOrderId: (orderId: string) => {
+    const rows = db.prepare(`
+      SELECT t.*, tt.code, tt.name as testName, tt.unit, tt.referenceRange, m.name as medicationName
+      FROM lab_order_tests t
+      LEFT JOIN lab_test_types tt ON t.testTypeId = tt.id
+      LEFT JOIN medications m ON t.medicationId = m.id
+      WHERE t.orderId = ?
+    `).all(orderId) as any[];
+    return rows.map((r) => ({ $id: r.id, orderId: r.orderId, testTypeId: r.testTypeId, testName: r.testName, medicationId: r.medicationId, medicationName: r.medicationName, status: r.status, resultValue: r.resultValue, resultUnit: r.resultUnit, resultAt: r.resultAt ? parseDate(r.resultAt) : null     }));
+  },
+};
+
+// Medication Stock Batches (loturi)
+export const medicationStockBatchHelpers = {
+  create: (data: { stockId: string; batchNumber: string; expirationDate: string; quantity: number }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO medication_stock_batches (id, stockId, batchNumber, expirationDate, quantity, receivedAt, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(id, data.stockId, data.batchNumber, data.expirationDate, data.quantity, now, now);
+    const stock = medicationStockHelpers.getById(data.stockId);
+    if (stock) medicationStockHelpers.updateQuantity(data.stockId, stock.quantity + data.quantity);
+    return medicationStockBatchHelpers.getById(id);
+  },
+  getById: (id: string) => {
+    const r = db.prepare("SELECT * FROM medication_stock_batches WHERE id = ?").get(id) as any;
+    if (!r) return null;
+    return { $id: r.id, stockId: r.stockId, batchNumber: r.batchNumber, expirationDate: r.expirationDate, quantity: r.quantity, receivedAt: parseDate(r.receivedAt), createdAt: parseDate(r.createdAt) };
+  },
+  getByStockId: (stockId: string) => {
+    const rows = db.prepare("SELECT * FROM medication_stock_batches WHERE stockId = ? ORDER BY expirationDate ASC").all(stockId) as any[];
+    return rows.map((r) => ({ $id: r.id, stockId: r.stockId, batchNumber: r.batchNumber, expirationDate: r.expirationDate, quantity: r.quantity, receivedAt: parseDate(r.receivedAt), createdAt: parseDate(r.createdAt) }));
+  },
+  getExpiringSoon: (days = 30) => {
+    const limit = new Date(); limit.setDate(limit.getDate() + days);
+    const rows = db.prepare("SELECT * FROM medication_stock_batches WHERE expirationDate <= ? AND quantity > 0 ORDER BY expirationDate ASC").all(limit.toISOString().slice(0, 10)) as any[];
+    return rows.map((r) => ({ $id: r.id, stockId: r.stockId, batchNumber: r.batchNumber, expirationDate: r.expirationDate, quantity: r.quantity, receivedAt: parseDate(r.receivedAt) }));
+  },
+};
+
+// Pharmacy Orders (comenzi aprovizionare; create acceptă API cu lines)
+export const pharmacyOrderHelpers = {
+  create: (data: { requestedBy: string; notes?: string; lines?: { medicationId: string; quantity: number; unitPrice?: number }[] } | string, notes?: string) => {
+    const requestedBy = typeof data === "string" ? data : data.requestedBy;
+    const notesVal = typeof data === "string" ? notes : data.notes;
+    const lines = typeof data === "object" && data.lines ? data.lines : [];
+    const id = generateId();
+    const now = new Date().toISOString();
+    const orderNumber = "PO-" + now.slice(0, 10).replace(/-/g, "") + "-" + id.slice(0, 8).toUpperCase();
+    db.prepare(`
+      INSERT INTO pharmacy_orders (id, orderNumber, status, requestedBy, requestedAt, notes, createdAt, updatedAt)
+      VALUES (?, ?, 'draft', ?, ?, ?, ?, ?)
+    `).run(id, orderNumber, requestedBy, now, notesVal ?? null, now, now);
+    lines.forEach((line) => {
+      const lineId = generateId();
+      db.prepare(`
+        INSERT INTO pharmacy_order_lines (id, orderId, medicationId, quantity, unitPrice, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(lineId, id, line.medicationId, line.quantity, line.unitPrice ?? null, now);
+    });
+    return pharmacyOrderHelpers.getById(id);
+  },
+  addLine: (orderId: string, medicationId: string, quantity: number, unitPrice?: number) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO pharmacy_order_lines (id, orderId, medicationId, quantity, unitPrice, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(id, orderId, medicationId, quantity, unitPrice ?? null, now);
+    return { $id: id, orderId, medicationId, quantity, unitPrice: unitPrice ?? null, receivedQuantity: null };
+  },
+  getById: (id: string) => {
+    const o = db.prepare("SELECT * FROM pharmacy_orders WHERE id = ?").get(id) as any;
+    if (!o) return null;
+    const lines = db.prepare(`
+      SELECT l.*, m.name as medicationName, m.unit
+      FROM pharmacy_order_lines l
+      LEFT JOIN medications m ON l.medicationId = m.id
+      WHERE l.orderId = ?
+    `).all(id) as any[];
+    return {
+      $id: o.id,
+      orderNumber: o.orderNumber,
+      status: o.status,
+      requestedBy: o.requestedBy,
+      requestedAt: parseDate(o.requestedAt),
+      approvedBy: o.approvedBy,
+      approvedAt: o.approvedAt ? parseDate(o.approvedAt) : null,
+      receivedBy: o.receivedBy,
+      receivedAt: o.receivedAt ? parseDate(o.receivedAt) : null,
+      notes: o.notes,
+      createdAt: parseDate(o.createdAt),
+      updatedAt: parseDate(o.updatedAt),
+      lines: lines.map((l) => ({ $id: l.id, orderId: l.orderId, medicationId: l.medicationId, medicationName: l.medicationName, unit: l.unit, quantity: l.quantity, unitPrice: l.unitPrice, receivedQuantity: l.receivedQuantity })),
+    };
+  },
+  getAll: (status?: string) => {
+    let q = "SELECT * FROM pharmacy_orders WHERE 1=1";
+    const params: any[] = [];
+    if (status) { q += " AND status = ?"; params.push(status); }
+    q += " ORDER BY requestedAt DESC";
+    const orders = db.prepare(q).all(...params) as any[];
+    return orders.map((o) => ({
+      $id: o.id,
+      orderNumber: o.orderNumber,
+      status: o.status,
+      requestedBy: o.requestedBy,
+      requestedAt: parseDate(o.requestedAt),
+      approvedBy: o.approvedBy,
+      receivedAt: o.receivedAt ? parseDate(o.receivedAt) : null,
+      createdAt: parseDate(o.createdAt),
+    }));
+  },
+  submit: (id: string) => {
+    const now = new Date().toISOString();
+    db.prepare("UPDATE pharmacy_orders SET status = 'submitted', updatedAt = ? WHERE id = ? AND status = 'draft'").run(now, id);
+    return pharmacyOrderHelpers.getById(id);
+  },
+  approve: (id: string, approvedBy: string) => {
+    const now = new Date().toISOString();
+    db.prepare("UPDATE pharmacy_orders SET status = 'approved', approvedBy = ?, approvedAt = ?, updatedAt = ? WHERE id = ? AND status = 'submitted'").run(approvedBy, now, now, id);
+    return pharmacyOrderHelpers.getById(id);
+  },
+  receive: (id: string, receivedBy: string, lineReceivedQuantities?: { lineId: string; receivedQuantity: number }[]) => {
+    const now = new Date().toISOString();
+    const order = pharmacyOrderHelpers.getById(id);
+    if (!order || order.status !== "approved") return null;
+    if (lineReceivedQuantities?.length) {
+      for (const { lineId, receivedQuantity } of lineReceivedQuantities) {
+        db.prepare("UPDATE pharmacy_order_lines SET receivedQuantity = ? WHERE id = ?").run(receivedQuantity, lineId);
+        const line = (order as any).lines?.find((l: any) => l.$id === lineId);
+        if (line) {
+          const stocks = medicationStockHelpers.getByMedicationId(line.medicationId, "main_pharmacy");
+          const stockId = stocks[0]?.$id;
+          if (stockId) {
+            medicationStockHelpers.restock(stockId, receivedQuantity);
+            medicationTransactionHelpers.create({ medicationId: line.medicationId, stockId, transactionType: "restock", quantity: receivedQuantity, performedBy: receivedBy, reason: "Primire comandă " + order.orderNumber });
+          }
+        }
+      }
+    }
+    db.prepare("UPDATE pharmacy_orders SET status = 'received', receivedBy = ?, receivedAt = ?, updatedAt = ? WHERE id = ?").run(receivedBy, now, now, id);
+    return pharmacyOrderHelpers.getById(id);
+  },
+  cancel: (id: string) => {
+    const now = new Date().toISOString();
+    db.prepare("UPDATE pharmacy_orders SET status = 'cancelled', updatedAt = ? WHERE id = ?").run(now, id);
+    return pharmacyOrderHelpers.getById(id);
+  },
+};
+
+// Pharmacy Dispensings
+export const pharmacyDispensingHelpers = {
+  create: (data: { prescriptionId: string; patientId: string; medicationId: string; stockId?: string; batchId?: string; quantity: number; dispensedBy: string; notes?: string }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO pharmacy_dispensings (id, prescriptionId, patientId, medicationId, stockId, batchId, quantity, dispensedAt, dispensedBy, notes, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, data.prescriptionId, data.patientId, data.medicationId, data.stockId ?? null, data.batchId ?? null, data.quantity, now, data.dispensedBy, data.notes ?? null, now);
+    if (data.stockId) {
+      medicationStockHelpers.consumeQuantity(data.stockId, data.quantity);
+      medicationTransactionHelpers.create({ medicationId: data.medicationId, stockId: data.stockId, transactionType: "usage", quantity: -data.quantity, performedBy: data.dispensedBy, relatedTo: "pharmacy_dispensing", relatedId: id });
+    }
+    return pharmacyDispensingHelpers.getById(id);
+  },
+  getById: (id: string) => {
+    const d = db.prepare(`
+      SELECT d.*, m.name as medicationName, m.unit
+      FROM pharmacy_dispensings d
+      LEFT JOIN medications m ON d.medicationId = m.id
+      WHERE d.id = ?
+    `).get(id) as any;
+    if (!d) return null;
+    return { $id: d.id, prescriptionId: d.prescriptionId, patientId: d.patientId, medicationId: d.medicationId, medicationName: d.medicationName, unit: d.unit, stockId: d.stockId, batchId: d.batchId, quantity: d.quantity, dispensedAt: parseDate(d.dispensedAt), dispensedBy: d.dispensedBy, notes: d.notes, createdAt: parseDate(d.createdAt) };
+  },
+  getByPatientId: (patientId: string, limit = 50) => {
+    const rows = db.prepare(`
+      SELECT d.*, m.name as medicationName
+      FROM pharmacy_dispensings d
+      LEFT JOIN medications m ON d.medicationId = m.id
+      WHERE d.patientId = ? ORDER BY d.dispensedAt DESC LIMIT ?
+    `).all(patientId, limit) as any[];
+    return rows.map((r) => ({ $id: r.id, prescriptionId: r.prescriptionId, medicationName: r.medicationName, quantity: r.quantity, dispensedAt: parseDate(r.dispensedAt), dispensedBy: r.dispensedBy }));
+  },
+  getByPrescriptionId: (prescriptionId: string) => {
+    const rows = db.prepare("SELECT * FROM pharmacy_dispensings WHERE prescriptionId = ? ORDER BY dispensedAt DESC").all(prescriptionId) as any[];
+    return rows.map((r) => ({ $id: r.id, quantity: r.quantity, dispensedAt: parseDate(r.dispensedAt), dispensedBy: r.dispensedBy }));
+  },
+};
+
+// Medication Interactions
+export const medicationInteractionHelpers = {
+  create: (data: { medicationId1: string; medicationId2: string; severity: string; description?: string }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    const [m1, m2] = [data.medicationId1, data.medicationId2].sort();
+    db.prepare(`
+      INSERT INTO medication_interactions (id, medicationId1, medicationId2, severity, description, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(id, m1, m2, data.severity, data.description ?? null, now);
+    return medicationInteractionHelpers.getById(id);
+  },
+  getById: (id: string) => {
+    const r = db.prepare(`
+      SELECT i.*, m1.name as name1, m2.name as name2
+      FROM medication_interactions i
+      LEFT JOIN medications m1 ON i.medicationId1 = m1.id
+      LEFT JOIN medications m2 ON i.medicationId2 = m2.id
+      WHERE i.id = ?
+    `).get(id) as any;
+    if (!r) return null;
+    return { $id: r.id, medicationId1: r.medicationId1, medicationId2: r.medicationId2, medicationName1: r.name1, medicationName2: r.name2, severity: r.severity, description: r.description, createdAt: parseDate(r.createdAt) };
+  },
+  getForMedication: (medicationId: string) => {
+    const rows = db.prepare(`
+      SELECT i.*, m1.name as name1, m2.name as name2
+      FROM medication_interactions i
+      LEFT JOIN medications m1 ON i.medicationId1 = m1.id
+      LEFT JOIN medications m2 ON i.medicationId2 = m2.id
+      WHERE i.medicationId1 = ? OR i.medicationId2 = ?
+    `).all(medicationId, medicationId) as any[];
+    return rows.map((r) => ({ $id: r.id, medicationId1: r.medicationId1, medicationId2: r.medicationId2, medicationName1: r.name1, medicationName2: r.name2, severity: r.severity, description: r.description }));
+  },
+  getAll: () => {
+    const rows = db.prepare(`
+      SELECT i.*, m1.name as name1, m2.name as name2
+      FROM medication_interactions i
+      LEFT JOIN medications m1 ON i.medicationId1 = m1.id
+      LEFT JOIN medications m2 ON i.medicationId2 = m2.id
+      ORDER BY i.severity DESC, m1.name
+    `).all() as any[];
+    return rows.map((r) => ({ $id: r.id, medicationId1: r.medicationId1, medicationId2: r.medicationId2, medicationName1: r.name1, medicationName2: r.name2, severity: r.severity, description: r.description }));
+  },
+};
+
+// Lab Test Types (inclusiv TDM)
+export const labTestTypeHelpers = {
+  getAll: (category?: string) => {
+    let q = "SELECT t.*, m.name as medicationName FROM lab_test_types t LEFT JOIN medications m ON t.medicationId = m.id WHERE 1=1";
+    const params: any[] = [];
+    if (category) { q += " AND t.category = ?"; params.push(category); }
+    q += " ORDER BY t.category, t.name";
+    const rows = db.prepare(q).all(...params) as any[];
+    return rows.map((r) => ({ $id: r.id, code: r.code, name: r.name, category: r.category, unit: r.unit, referenceRange: r.referenceRange, medicationId: r.medicationId, medicationName: r.medicationName, createdAt: parseDate(r.createdAt) }));
+  },
+  getById: (id: string) => {
+    const r = db.prepare("SELECT t.*, m.name as medicationName FROM lab_test_types t LEFT JOIN medications m ON t.medicationId = m.id WHERE t.id = ?").get(id) as any;
+    if (!r) return null;
+    return { $id: r.id, code: r.code, name: r.name, category: r.category, unit: r.unit, referenceRange: r.referenceRange, medicationId: r.medicationId, medicationName: r.medicationName };
+  },
+  getTDM: () => labTestTypeHelpers.getAll("tdm"),
+  create: (data: { code: string; name: string; category: string; unit?: string; referenceRange?: string; medicationId?: string }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO lab_test_types (id, code, name, category, unit, referenceRange, medicationId, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, data.code, data.name, data.category, data.unit ?? null, data.referenceRange ?? null, data.medicationId ?? null, now);
+    return labTestTypeHelpers.getById(id);
   },
 };
 
