@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/input-otp";
 import { loginAdmin } from "@/lib/actions/auth.actions";
 
-export const PasskeyModal = () => {
+export const PasskeyModal = ({ returnTo = "/" }: { returnTo?: string }) => {
   const router = useRouter();
   const [passkey, setPasskey] = useState("");
   const [error, setError] = useState("");
@@ -29,7 +29,7 @@ export const PasskeyModal = () => {
   const closeModal = () => {
     setError("");
     setPasskey("");
-    router.push("/");
+    router.push(returnTo);
   };
 
   const validatePasskey = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {

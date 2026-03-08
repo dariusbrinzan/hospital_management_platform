@@ -21,7 +21,7 @@ import { Separator } from "@/components/ui/separator";
 
 export default async function DoctorPatientsPage() {
   const doctorName = await getDoctorSession();
-  if (!doctorName) redirect("/?doctor=true");
+  if (!doctorName) redirect("/medic");
 
   const appointmentsData = await getRecentAppointmentList(doctorName);
   const allAppointments = appointmentsData?.documents ?? [];

@@ -25,7 +25,7 @@ const TRIAGE_LABELS: Record<string, string> = {
 
 export default async function DoctorEmergencyPage() {
   const doctorName = await getDoctorSession();
-  if (!doctorName) redirect("/?doctor=true");
+  if (!doctorName) redirect("/medic");
 
   const [myCases, isOnDuty] = await Promise.all([
     Promise.resolve(emergencyHelpers.getByAssignedDoctor(doctorName)),

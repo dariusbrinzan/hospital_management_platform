@@ -214,8 +214,8 @@ export const logoutAdmin = async () => {
   }
 };
 
-/** Redirect la /?admin=true dacă nu există sesiune administrator. Folosit pe rutele doar pentru admin. */
+/** Redirect la /admin-login dacă nu există sesiune administrator. Folosit pe rutele doar pentru admin. */
 export const requireAdmin = async () => {
   const isAdmin = await getAdminSession();
-  if (!isAdmin) redirect("/?admin=true");
+  if (!isAdmin) redirect("/admin-login");
 };

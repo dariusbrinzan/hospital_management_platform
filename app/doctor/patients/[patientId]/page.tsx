@@ -35,7 +35,7 @@ export default async function DoctorPatientDetailsPage({
   params: { patientId: string };
 }) {
   const doctorName = await getDoctorSession();
-  if (!doctorName) redirect("/?doctor=true");
+  if (!doctorName) redirect("/medic");
 
   const patient = await getPatientById(params.patientId);
   if (!patient) redirect("/doctor");

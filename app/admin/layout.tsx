@@ -9,7 +9,7 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   if (!(await getAdminSession())) {
-    redirect("/?admin=true");
+    redirect("/admin-login");
   }
 
   return <AdminLayoutClient>{children}</AdminLayoutClient>;

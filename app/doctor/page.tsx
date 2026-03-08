@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default async function DoctorDashboardPage() {
   const doctorName = await getDoctorSession();
-  if (!doctorName) redirect("/?doctor=true");
+  if (!doctorName) redirect("/medic");
 
   const appointments = await getRecentAppointmentList(doctorName);
   const todayIso = new Date().toISOString().slice(0, 10);

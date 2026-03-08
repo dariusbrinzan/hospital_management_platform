@@ -16,7 +16,7 @@ type CalendarEvent = {
 
 export default async function DoctorCalendarPage() {
   const doctorName = await getDoctorSession();
-  if (!doctorName) redirect("/?doctor=true");
+  if (!doctorName) redirect("/medic");
 
   const data = await getRecentAppointmentList(doctorName);
   const appointments = data?.documents ?? [];

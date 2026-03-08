@@ -16,7 +16,7 @@ export default async function DoctorEmergencyCasePage({
 }) {
   const { caseId } = params;
   const doctorName = await getDoctorSession();
-  if (!doctorName) redirect("/?doctor=true");
+  if (!doctorName) redirect("/medic");
 
   const [emergencyCase, imagingStudies, stateTransitions] = await Promise.all([
     emergencyHelpers.getById(caseId),

@@ -11,7 +11,7 @@ export default async function DoctorLayout({
   const doctorName = await getDoctorSession();
 
   if (!doctorName) {
-    redirect("/?doctor=true");
+    redirect("/medic");
   }
 
   return <DoctorLayoutClient doctorName={doctorName}>{children}</DoctorLayoutClient>;

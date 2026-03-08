@@ -15,7 +15,7 @@ import {
 
 export default async function DoctorPrescriptionsPage() {
   const doctorName = await getDoctorSession();
-  if (!doctorName) redirect("/?doctor=true");
+  if (!doctorName) redirect("/medic");
 
   const allPrescriptions = prescriptionHelpers.getAllByDoctorName(doctorName);
 

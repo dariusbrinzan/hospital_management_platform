@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DoctorImagingPage() {
   const doctorName = await getDoctorSession();
-  if (!doctorName) redirect("/?doctor=true");
+  if (!doctorName) redirect("/medic");
 
   const [modalities, myStudies] = await Promise.all([
     getModalities(),

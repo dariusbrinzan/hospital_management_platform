@@ -11,7 +11,7 @@ export default async function DoctorMessagesPage({
 }) {
   const doctorName = await getDoctorSession();
   if (!doctorName) {
-    redirect("/?doctor=true");
+    redirect("/medic");
   }
 
   const doctorData = Doctors.find((d) => d.name === doctorName);

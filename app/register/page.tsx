@@ -41,12 +41,6 @@ const RegisterPage = async () => {
               <Link href="/faq" className="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
                 Întrebări frecvente
               </Link>
-              <Link href="/?doctor=true" className="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
-                Medic
-              </Link>
-              <Link href="/?admin=true" className="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
-                Administrator
-              </Link>
             </div>
           </div>
         </div>

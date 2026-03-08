@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default async function DoctorCreateAppointmentPage() {
   const doctorName = await getDoctorSession();
-  if (!doctorName) redirect("/?doctor=true");
+  if (!doctorName) redirect("/medic");
 
   const appointmentsData = await getRecentAppointmentList(doctorName);
   const allAppointments = appointmentsData?.documents ?? [];

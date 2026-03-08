@@ -10,7 +10,7 @@ import { ResultsToReviewList } from "@/components/ResultsToReviewList";
 
 export default async function DoctorResultsPage() {
   const doctorName = await getDoctorSession();
-  if (!doctorName) redirect("/?doctor=true");
+  if (!doctorName) redirect("/medic");
 
   const [unreviewedLab, unreviewedImaging] = await Promise.all([
     Promise.resolve(labResultHelpers.getUnreviewedForDoctor(doctorName)),
