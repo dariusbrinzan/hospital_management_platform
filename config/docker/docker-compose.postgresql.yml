@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  postgresql:
+    image: postgres:16
+    container_name: carepulse-postgresql
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: carepulse
+      POSTGRES_USER: carepulse
+      POSTGRES_PASSWORD: change-me
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  postgresql-data:
+

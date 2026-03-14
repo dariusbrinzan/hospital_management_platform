@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: carepulse
+  labels:
+    app.kubernetes.io/name: carepulse
+    app.kubernetes.io/part-of: healthcare-platform
+

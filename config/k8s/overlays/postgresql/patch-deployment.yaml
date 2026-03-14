@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: carepulse
+spec:
+  template:
+    metadata:
+      annotations:
+        postgresql.carepulse.io/provisioned: "true"
+    spec:
+      containers:
+        - name: app
+          volumeMounts:
+            - name: carepulse-data
+              mountPath: /app/data
+      volumes:
+        - name: carepulse-data
+          persistentVolumeClaim:
+            claimName: carepulse-data
+

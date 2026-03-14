@@ -1,0 +1,7 @@
+---
+- name: Initialize the first control plane node
+  hosts: kube_control_plane[0]
+  become: true
+  roles:
+    - control_plane
+

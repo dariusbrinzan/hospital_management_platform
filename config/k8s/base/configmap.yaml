@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: carepulse-config
+  labels:
+    app.kubernetes.io/name: carepulse
+data:
+  NODE_ENV: production
+  PORT: "3000"
+  HOSTNAME: "0.0.0.0"
+  NEXT_PUBLIC_APP_URL: https://carepulse.example.com
+  DATABASE_PROVIDER: sqlite
+  SQLITE_DATABASE_PATH: /app/data/carepulse.db
+  ENABLE_DB_AUTODISCOVERY: "true"
+  DATABASE_AUTODISCOVERY_MODE: postgresql-auto
+  APP_NAMESPACE: carepulse
+  DB_DISCOVERY_HOSTS: postgresql postgresql.carepulse.svc.cluster.local postgres postgres.carepulse.svc.cluster.local
+  POSTGRES_HOST: postgresql.carepulse.svc.cluster.local
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: carepulse
+  POSTGRES_SSLMODE: disable

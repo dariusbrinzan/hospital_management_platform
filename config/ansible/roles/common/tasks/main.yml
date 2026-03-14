@@ -1,0 +1,46 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install common operating system packages
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Disable swap immediately
+  ansible.builtin.command: swapoff -a
+  when: disable_swap
+  changed_when: false
+
+- name: Disable swap persistently in fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^(.*\sswap\s+sw\s+.*)$'
+    replace: '# \1'
+  when: disable_swap
+
+- name: Configure kernel modules for Kubernetes
+  ansible.builtin.template:
+    src: modules-load-k8s.conf.j2
+    dest: /etc/modules-load.d/k8s.conf
+    mode: "0644"
+
+- name: Configure sysctl for Kubernetes networking
+  ansible.builtin.template:
+    src: sysctl-k8s.conf.j2
+    dest: /etc/sysctl.d/99-kubernetes-cri.conf
+    mode: "0644"
+
+- name: Load overlay kernel module
+  ansible.builtin.command: modprobe overlay
+  changed_when: false
+
+- name: Load br_netfilter kernel module
+  ansible.builtin.command: modprobe br_netfilter
+  changed_when: false
+
+- name: Apply sysctl settings
+  ansible.builtin.command: sysctl --system
+  changed_when: false

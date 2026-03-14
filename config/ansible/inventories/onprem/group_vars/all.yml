@@ -1,0 +1,23 @@
+ansible_user: ubuntu
+ansible_become: true
+
+kubernetes_version: "1.30"
+pod_network_cidr: "10.244.0.0/16"
+service_cidr: "10.96.0.0/12"
+control_plane_endpoint: "cp1.internal.example.com:6443"
+cni_manifest_url: "https://raw.githubusercontent.com/flannel-io/flannel/v0.25.5/Documentation/kube-flannel.yml"
+
+disable_swap: true
+containerd_systemd_cgroup: true
+kubectl_install_on_workers: false
+
+common_packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gpg
+  - jq
+  - nfs-common
+  - software-properties-common
+  - unzip
+

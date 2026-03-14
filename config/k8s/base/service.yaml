@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: carepulse
+  labels:
+    app.kubernetes.io/name: carepulse
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: carepulse
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+
