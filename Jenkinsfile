@@ -29,9 +29,15 @@ pipeline {
     booleanParam(name: 'APPLY_INFRA', defaultValue: true, description: 'Rulează provisioning de infrastructură.')
     booleanParam(name: 'CONFIGURE_CLUSTER', defaultValue: true, description: 'Rulează configurarea clusterului.')
     booleanParam(name: 'DEPLOY_APPLICATION', defaultValue: true, description: 'Rulează deployment-ul aplicației.')
+    booleanParam(name: 'DEPLOY_OBSERVABILITY', defaultValue: false, description: 'Rulează deployment-ul stack-ului Prometheus + Grafana + Fluent Bit.')
     booleanParam(name: 'PUSH_IMAGE', defaultValue: false, description: 'Face push la imagine după build.')
     booleanParam(name: 'AUTO_DISCOVER_POSTGRES', defaultValue: true, description: 'Încearcă să găsească o bază PostgreSQL existentă înainte de deploy.')
     booleanParam(name: 'RUN_SMOKE_TEST', defaultValue: false, description: 'Rulează un smoke test HTTP după deploy, dacă URL-ul este accesibil din Jenkins.')
+    string(name: 'OBSERVABILITY_NAMESPACE', defaultValue: 'observability', description: 'Namespace Kubernetes pentru Prometheus, Grafana și Fluent Bit.')
+    string(name: 'GRAFANA_INGRESS_HOST', defaultValue: 'grafana.example.com', description: 'Host-ul de ingress pentru Grafana.')
+    string(name: 'PROMETHEUS_INGRESS_HOST', defaultValue: 'prometheus.example.com', description: 'Host-ul de ingress pentru Prometheus.')
+    string(name: 'GRAFANA_ADMIN_USER', defaultValue: 'admin', description: 'Utilizatorul administrator pentru Grafana.')
+    string(name: 'GRAFANA_ADMIN_PASSWORD', defaultValue: 'change-me', description: 'Parola administratorului Grafana.')
   }
 
   environment {
@@ -57,6 +63,11 @@ pipeline {
     AUTO_DISCOVER_POSTGRES = "${params.AUTO_DISCOVER_POSTGRES}"
     RUN_SMOKE_TEST = "${params.RUN_SMOKE_TEST}"
     PUSH_IMAGE = "${params.PUSH_IMAGE}"
+    OBSERVABILITY_NAMESPACE = "${params.OBSERVABILITY_NAMESPACE}"
+    GRAFANA_INGRESS_HOST = "${params.GRAFANA_INGRESS_HOST}"
+    PROMETHEUS_INGRESS_HOST = "${params.PROMETHEUS_INGRESS_HOST}"
+    GRAFANA_ADMIN_USER = "${params.GRAFANA_ADMIN_USER}"
+    GRAFANA_ADMIN_PASSWORD = "${params.GRAFANA_ADMIN_PASSWORD}"
   }
 
   stages {
@@ -166,6 +177,17 @@ pipeline {
       }
     }
 
+    stage('Deploy Observability') {
+      when {
+        expression {
+          return params.DEPLOY_OBSERVABILITY
+        }
+      }
+      steps {
+        sh 'config/jenkins/scripts/deploy-observability.sh'
+      }
+    }
+
     stage('Post-Deploy Checks') {
       when {
         expression {
@@ -174,6 +196,17 @@ pipeline {
       }
       steps {
         sh 'config/jenkins/scripts/post-deploy-checks.sh'
+      }
+    }
+
+    stage('Verify Observability') {
+      when {
+        expression {
+          return params.DEPLOY_OBSERVABILITY
+        }
+      }
+      steps {
+        sh 'config/jenkins/scripts/verify-observability.sh'
       }
     }
   }

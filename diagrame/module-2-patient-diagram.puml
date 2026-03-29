@@ -1,0 +1,202 @@
+@startuml Modulul Pacient
+
+top to bottom direction
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 14
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+skinparam ranksep 45
+skinparam nodesep 25
+
+title Diagrama UML - Modulul Pacient
+
+package "Interfață pacient" {
+  package "Pagini" {
+    component "PatientDashboardPage\n/patients/[userId]/dashboard" as PatientDashboardPage <<Page>>
+    component "NewAppointmentPage\n/patients/[userId]/new-appointment" as NewAppointmentPage <<Page>>
+    component "CalendarPage\n/patients/[userId]/calendar" as CalendarPage <<Page>>
+    component "ProfilePage\n/patients/[userId]/profile" as ProfilePage <<Page>>
+    component "MedicalHistoryPage\n/patients/[userId]/medical-history" as MedicalHistoryPage <<Page>>
+    component "LabResultsPage\n/patients/[userId]/lab-results" as LabResultsPage <<Page>>
+    component "PrescriptionsPage\n/patients/[userId]/prescriptions" as PrescriptionsPage <<Page>>
+    component "MessagesPage\n/patients/[userId]/messages" as MessagesPage <<Page>>
+    component "NotificationsPage\n/patients/[userId]/notifications" as NotificationsPage <<Page>>
+    component "MedicationRequestsPage\n/patients/[userId]/medication-requests" as MedicationRequestsPage <<Page>>
+    component "SignaturePage\n/patients/[userId]/signature" as SignaturePage <<Page>>
+    component "ReportProblemPage\n/patients/[userId]/report-problem" as ReportProblemPage <<Page>>
+    component "HospitalMapPage\n/patients/[userId]/hospital-map" as HospitalMapPage <<Page>>
+  }
+
+  package "Componente" {
+    component "AppointmentForm" as AppointmentForm <<Component>>
+    component "MedicalCalendar" as MedicalCalendar <<Component>>
+    component "MedicalProfileEditors\n(MedicalProfileEditor,\nAllergyManager,\nLifestyleEditor,\nContactInfoEditor,\nCurrentMedicationEditor)" as MedicalProfileEditors <<Component>>
+    component "MedicalHistorySuite\n(MedicalHistorySummary,\nMedicalHistoryWithFilters,\nMedicalDocumentsManager)" as MedicalHistorySuite <<Component>>
+    component "MessagesView" as MessagesView <<Component>>
+    component "NotificationsList" as NotificationsList <<Component>>
+    component "PatientMedicationRequestsView" as PatientMedicationRequestsView <<Component>>
+    component "PatientSignatureCard" as PatientSignatureCard <<Component>>
+    component "ReportProblemForm" as ReportProblemForm <<Component>>
+    component "HospitalMap" as HospitalMap <<Component>>
+  }
+}
+
+package "Servicii" {
+  component "AuthActions\n(requireAuth)" as PatientAuth <<Service>>
+  component "PatientActions\n(getUser, getPatient,\ngetPatientById)" as PatientActions <<Service>>
+  component "AppointmentActions\n(getPatientAppointments,\ngetAppointment)" as PatientAppointmentActions <<Service>>
+  component "NotificationActions\n(ensureAppointmentReminders24h)" as PatientNotificationActions <<Service>>
+  component "PatientDataHelpers\n(medicalRecordHelpers,\nprescriptionHelpers,\nallergyHelpers,\nvaccinationHelpers,\nfamilyHistoryHelpers,\nlabResultHelpers,\nmedicalDocumentHelpers)" as PatientDataHelpers <<Service>>
+  component "Messaging Layer\n(appointment messages,\nconversation context)" as PatientMessaging <<Service>>
+  component "Support Layer\n(problem reports,\nsignatures,\nmedication requests)" as PatientSupport <<Service>>
+}
+
+package "Resurse / output" {
+  rectangle "patient_session\n<<Cookie>>\nvalue = userId" as PatientSession
+  rectangle "PDF endpoints\n<<Target>>\n/api/pdf/patient/{id}\n/api/pdf/analysis/{groupId}" as PatientPdfTargets
+  rectangle "VideoCall\n<<Target>>\n/video-call?appointmentId=..." as VideoCallTarget
+}
+
+package "Persistență" {
+  rectangle "users\n<<Table>>\n--\nid : TEXT <<PK>>\nemail : TEXT\npassword : TEXT" as Users
+  rectangle "patients\n<<Table>>\n--\nid : TEXT <<PK>>\nuserId : TEXT <<FK>>\nname : TEXT\nphone : TEXT" as Patients
+  rectangle "appointments\n<<Table>>\n--\nid : TEXT <<PK>>\nuserId : TEXT <<FK>>\npatientId : TEXT <<FK>>\nschedule : TEXT\nstatus : TEXT" as Appointments
+  rectangle "appointment_messages\n<<Table>>\n--\nid : TEXT <<PK>>\nappointmentId : TEXT <<FK>>\nbody : TEXT" as AppointmentMessages
+  rectangle "notifications\n<<Table>>\n--\nid : TEXT <<PK>>\nuserId : TEXT <<FK>>\nappointmentId : TEXT <<FK>>\nisRead : INTEGER" as Notifications
+  rectangle "medical_records\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>\nappointmentId : TEXT <<FK>>" as MedicalRecords
+  rectangle "prescriptions\n<<Table>>\n--\nid : TEXT <<PK>>\nmedicalRecordId : TEXT <<FK>>\nmedicationName : TEXT" as Prescriptions
+  rectangle "lab_results\n<<Table>>\n--\nid : TEXT <<PK>>\nmedicalRecordId : TEXT <<FK>>\nappointmentId : TEXT <<FK>>" as LabResults
+  rectangle "medical_documents\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>\nappointmentId : TEXT <<FK>>" as MedicalDocuments
+  rectangle "allergies_adverse_reactions\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>" as Allergies
+  rectangle "vaccinations\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>" as Vaccinations
+  rectangle "family_history\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>" as FamilyHistory
+  rectangle "medication_requests\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>\nprescriptionId : TEXT <<FK>>" as MedicationRequests
+  rectangle "patient_signatures\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>\ndocumentType : TEXT" as PatientSignatures
+  rectangle "problem_reports\n<<Table>>\n--\nid : TEXT <<PK>>\nuserId : TEXT <<FK>>\nsubject : TEXT" as ProblemReports
+}
+
+' Layout helpers
+PatientDashboardPage -[hidden]down-> NewAppointmentPage
+NewAppointmentPage -[hidden]down-> CalendarPage
+CalendarPage -[hidden]down-> ProfilePage
+ProfilePage -[hidden]down-> MedicalHistoryPage
+MedicalHistoryPage -[hidden]down-> LabResultsPage
+LabResultsPage -[hidden]down-> PrescriptionsPage
+PrescriptionsPage -[hidden]down-> MessagesPage
+MessagesPage -[hidden]down-> NotificationsPage
+NotificationsPage -[hidden]down-> MedicationRequestsPage
+MedicationRequestsPage -[hidden]down-> SignaturePage
+SignaturePage -[hidden]down-> ReportProblemPage
+ReportProblemPage -[hidden]down-> HospitalMapPage
+
+AppointmentForm -[hidden]down-> MedicalCalendar
+MedicalCalendar -[hidden]down-> MedicalProfileEditors
+MedicalProfileEditors -[hidden]down-> MedicalHistorySuite
+MedicalHistorySuite -[hidden]down-> MessagesView
+MessagesView -[hidden]down-> NotificationsList
+NotificationsList -[hidden]down-> PatientMedicationRequestsView
+PatientMedicationRequestsView -[hidden]down-> PatientSignatureCard
+PatientSignatureCard -[hidden]down-> ReportProblemForm
+ReportProblemForm -[hidden]down-> HospitalMap
+
+PatientAuth -[hidden]down-> PatientActions
+PatientActions -[hidden]down-> PatientAppointmentActions
+PatientAppointmentActions -[hidden]down-> PatientNotificationActions
+PatientNotificationActions -[hidden]down-> PatientDataHelpers
+PatientDataHelpers -[hidden]down-> PatientMessaging
+PatientMessaging -[hidden]down-> PatientSupport
+
+Users -[hidden]down-> Patients
+Patients -[hidden]down-> Appointments
+Appointments -[hidden]down-> AppointmentMessages
+AppointmentMessages -[hidden]down-> Notifications
+Notifications -[hidden]down-> MedicalRecords
+MedicalRecords -[hidden]down-> Prescriptions
+Prescriptions -[hidden]down-> LabResults
+LabResults -[hidden]down-> MedicalDocuments
+MedicalDocuments -[hidden]down-> Allergies
+Allergies -[hidden]down-> Vaccinations
+Vaccinations -[hidden]down-> FamilyHistory
+FamilyHistory -[hidden]down-> MedicationRequests
+MedicationRequests -[hidden]down-> PatientSignatures
+PatientSignatures -[hidden]down-> ProblemReports
+
+' Page -> component
+NewAppointmentPage --> AppointmentForm : include
+CalendarPage --> MedicalCalendar : include
+ProfilePage --> MedicalProfileEditors : include
+MedicalHistoryPage --> MedicalHistorySuite : include
+MessagesPage --> MessagesView : include
+NotificationsPage --> NotificationsList : include
+MedicationRequestsPage --> PatientMedicationRequestsView : include
+SignaturePage --> PatientSignatureCard : include
+ReportProblemPage --> ReportProblemForm : include
+HospitalMapPage --> HospitalMap : include
+
+' Page -> service
+PatientDashboardPage ..> PatientAuth : requireAuth()
+PatientDashboardPage ..> PatientActions : getUser()/getPatient()
+PatientDashboardPage ..> PatientAppointmentActions : getPatientAppointments()
+PatientDashboardPage ..> PatientNotificationActions : reminders
+
+NewAppointmentPage ..> PatientActions : getPatient()
+NewAppointmentPage ..> PatientAppointmentActions : create flow
+CalendarPage ..> PatientAppointmentActions : appointment events
+CalendarPage ..> PatientDataHelpers : vaccination/prescription events
+ProfilePage ..> PatientActions : getUser()/getPatient()
+ProfilePage ..> PatientDataHelpers : profile data
+MedicalHistoryPage ..> PatientDataHelpers : EMR timeline
+LabResultsPage ..> PatientAppointmentActions : analysisResults
+LabResultsPage ..> PatientDataHelpers : lab_results
+PrescriptionsPage ..> PatientDataHelpers : prescriptions
+MessagesPage ..> PatientMessaging : appointment thread
+NotificationsPage ..> PatientNotificationActions : notifications
+MedicationRequestsPage ..> PatientSupport : medication requests
+SignaturePage ..> PatientSupport : signatures
+ReportProblemPage ..> PatientSupport : problem reports
+HospitalMapPage ..> PatientAuth : requireAuth()
+
+' Service -> resource / db
+PatientAuth --> PatientSession : read/write
+PatientActions --> Users : read
+PatientActions --> Patients : read
+PatientAppointmentActions --> Appointments : read/write
+PatientMessaging --> AppointmentMessages : read/write
+PatientNotificationActions --> Notifications : read/write
+PatientDataHelpers --> MedicalRecords : read
+PatientDataHelpers --> Prescriptions : read
+PatientDataHelpers --> LabResults : read
+PatientDataHelpers --> MedicalDocuments : read
+PatientDataHelpers --> Allergies : read
+PatientDataHelpers --> Vaccinations : read
+PatientDataHelpers --> FamilyHistory : read
+PatientSupport --> MedicationRequests : read/write
+PatientSupport --> PatientSignatures : write
+PatientSupport --> ProblemReports : write
+
+' Outputs
+PatientDashboardPage --> PatientPdfTargets : descarcă dosar
+LabResultsPage --> PatientPdfTargets : descarcă buletin
+PatientDashboardPage --> VideoCallTarget : accesează videoconsultație
+
+' DB relations
+Users ||--o{ Patients : profile
+Users ||--o{ Appointments : owns
+Patients ||--o{ Appointments : has
+Appointments ||--o{ AppointmentMessages : messages
+Users ||--o{ Notifications : receives
+Patients ||--o{ MedicalRecords : history
+MedicalRecords ||--o{ Prescriptions : contains
+MedicalRecords ||--o{ LabResults : contains
+Patients ||--o{ MedicalDocuments : documents
+Patients ||--o{ Allergies : allergies
+Patients ||--o{ Vaccinations : vaccines
+Patients ||--o{ FamilyHistory : family
+Patients ||--o{ MedicationRequests : requests
+Patients ||--o{ PatientSignatures : signs
+Users ||--o{ ProblemReports : reports
+
+@enduml

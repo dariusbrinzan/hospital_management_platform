@@ -1,0 +1,174 @@
+@startuml Modulul Medic
+
+top to bottom direction
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 14
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+skinparam ranksep 45
+skinparam nodesep 25
+
+title Diagrama UML - Modulul Medic
+
+package "Interfață medic" {
+  package "Pagini" {
+    component "DoctorDashboardPage\n/doctor" as DoctorDashboardPage <<Page>>
+    component "DoctorCalendarPage\n/doctor/calendar" as DoctorCalendarPage <<Page>>
+    component "DoctorCreateAppointmentPage\n/doctor/create-appointment" as DoctorCreateAppointmentPage <<Page>>
+    component "DoctorPatientsPage\n/doctor/patients" as DoctorPatientsPage <<Page>>
+    component "DoctorPatientDetailsPage\n/doctor/patients/[patientId]" as DoctorPatientDetailsPage <<Page>>
+    component "DoctorConsultationsPage\n/doctor/consultations" as DoctorConsultationsPage <<Page>>
+    component "DoctorPrescriptionsPage\n/doctor/prescriptions" as DoctorPrescriptionsPage <<Page>>
+    component "DoctorResultsPage\n/doctor/results" as DoctorResultsPage <<Page>>
+    component "DoctorImagingPage\n/doctor/imaging" as DoctorImagingPage <<Page>>
+    component "DoctorMessagesPage\n/doctor/messages" as DoctorMessagesPage <<Page>>
+    component "DoctorEmergencyPage\n/doctor/emergency" as DoctorEmergencyPage <<Page>>
+    component "DoctorProfilePage\n/doctor/profile" as DoctorProfilePage <<Page>>
+  }
+
+  package "Componente" {
+    component "DoctorAppointmentsCards" as DoctorAppointmentsCards <<Component>>
+    component "MedicalCalendar" as DoctorMedicalCalendar <<Component>>
+    component "DoctorCreateAppointmentForm" as DoctorCreateAppointmentForm <<Component>>
+    component "DoctorPatientViews\n(DoctorDetails,\nMedicalLetterButton,\nConcediuMedicalButton)" as DoctorPatientViews <<Component>>
+    component "ResultsToReviewList" as ResultsToReviewList <<Component>>
+    component "ImagingBookingForm" as DoctorImagingBookingForm <<Component>>
+    component "DoctorMessagesView" as DoctorMessagesView <<Component>>
+    component "EmergencyCaseViews\n(EmergencyCaseDetails,\nEmergencyImagingSection)" as EmergencyCaseViews <<Component>>
+  }
+}
+
+package "Servicii" {
+  component "AuthActions\n(getDoctorSession)" as DoctorAuth <<Service>>
+  component "AppointmentActions\n(getRecentAppointmentList,\ngetPatientAppointments)" as DoctorAppointmentActions <<Service>>
+  component "PatientActions\n(getPatientById)" as DoctorPatientActions <<Service>>
+  component "ImagingActions\n(getModalities,\ngetStudiesOrderedByDoctor)" as DoctorImagingActions <<Service>>
+  component "DoctorDataHelpers\n(medicalRecordHelpers,\nprescriptionHelpers,\nlabResultHelpers,\nimagingStudyHelpers,\nallergyHelpers,\nvaccinationHelpers,\nfamilyHistoryHelpers)" as DoctorDataHelpers <<Service>>
+  component "DoctorMessaging Layer" as DoctorMessaging <<Service>>
+  component "EmergencyHelpers\n(emergencyHelpers,\ndoctorsOnDutyHelpers)" as DoctorEmergencyHelpers <<Service>>
+}
+
+package "Resurse / acces" {
+  rectangle "doctor_session\n<<Cookie>>\nvalue = doctorName" as DoctorSession
+  rectangle "PDF endpoints\n<<Target>>\n/api/pdf/doctor/consultation/{id}\n/api/pdf/medical-letter" as DoctorPdfTargets
+  rectangle "Review endpoints\n<<Target>>\n/api/doctor/results/*/review" as DoctorReviewTargets
+}
+
+package "Persistență" {
+  rectangle "doctor_access_codes\n<<Table>>\n--\ncode : TEXT <<PK>>\ndoctor_name : TEXT" as DoctorAccessCodes
+  rectangle "appointments\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>\nprimaryPhysician : TEXT" as DoctorAppointments
+  rectangle "patients\n<<Table>>\n--\nid : TEXT <<PK>>\nuserId : TEXT <<FK>>\nname : TEXT" as DoctorPatients
+  rectangle "appointment_messages\n<<Table>>\n--\nid : TEXT <<PK>>\nappointmentId : TEXT <<FK>>" as DoctorAppointmentMessages
+  rectangle "doctor_notifications\n<<Table>>\n--\nid : TEXT <<PK>>\nappointmentId : TEXT <<FK>>" as DoctorNotifications
+  rectangle "medical_records\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>\nappointmentId : TEXT <<FK>>" as DoctorMedicalRecords
+  rectangle "prescriptions\n<<Table>>\n--\nid : TEXT <<PK>>\nmedicalRecordId : TEXT <<FK>>" as DoctorPrescriptions
+  rectangle "lab_results\n<<Table>>\n--\nid : TEXT <<PK>>\nmedicalRecordId : TEXT <<FK>>\nappointmentId : TEXT <<FK>>" as DoctorLabResults
+  rectangle "imaging_studies\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>\nmodalityId : TEXT <<FK>>" as DoctorImagingStudies
+  rectangle "imaging_modalities\n<<Table>>\n--\nid : TEXT <<PK>>\nname : TEXT" as DoctorImagingModalities
+  rectangle "emergency_cases\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>\nassignedDoctorId : TEXT" as DoctorEmergencyCases
+  rectangle "doctors_on_duty\n<<Table>>\n--\nid : TEXT <<PK>>\ndoctorName : TEXT" as DoctorsOnDuty
+}
+
+' Layout
+DoctorDashboardPage -[hidden]down-> DoctorCalendarPage
+DoctorCalendarPage -[hidden]down-> DoctorCreateAppointmentPage
+DoctorCreateAppointmentPage -[hidden]down-> DoctorPatientsPage
+DoctorPatientsPage -[hidden]down-> DoctorPatientDetailsPage
+DoctorPatientDetailsPage -[hidden]down-> DoctorConsultationsPage
+DoctorConsultationsPage -[hidden]down-> DoctorPrescriptionsPage
+DoctorPrescriptionsPage -[hidden]down-> DoctorResultsPage
+DoctorResultsPage -[hidden]down-> DoctorImagingPage
+DoctorImagingPage -[hidden]down-> DoctorMessagesPage
+DoctorMessagesPage -[hidden]down-> DoctorEmergencyPage
+DoctorEmergencyPage -[hidden]down-> DoctorProfilePage
+
+DoctorAppointmentsCards -[hidden]down-> DoctorMedicalCalendar
+DoctorMedicalCalendar -[hidden]down-> DoctorCreateAppointmentForm
+DoctorCreateAppointmentForm -[hidden]down-> DoctorPatientViews
+DoctorPatientViews -[hidden]down-> ResultsToReviewList
+ResultsToReviewList -[hidden]down-> DoctorImagingBookingForm
+DoctorImagingBookingForm -[hidden]down-> DoctorMessagesView
+DoctorMessagesView -[hidden]down-> EmergencyCaseViews
+
+DoctorAuth -[hidden]down-> DoctorAppointmentActions
+DoctorAppointmentActions -[hidden]down-> DoctorPatientActions
+DoctorPatientActions -[hidden]down-> DoctorImagingActions
+DoctorImagingActions -[hidden]down-> DoctorDataHelpers
+DoctorDataHelpers -[hidden]down-> DoctorMessaging
+DoctorMessaging -[hidden]down-> DoctorEmergencyHelpers
+
+DoctorAccessCodes -[hidden]down-> DoctorAppointments
+DoctorAppointments -[hidden]down-> DoctorPatients
+DoctorPatients -[hidden]down-> DoctorAppointmentMessages
+DoctorAppointmentMessages -[hidden]down-> DoctorNotifications
+DoctorNotifications -[hidden]down-> DoctorMedicalRecords
+DoctorMedicalRecords -[hidden]down-> DoctorPrescriptions
+DoctorPrescriptions -[hidden]down-> DoctorLabResults
+DoctorLabResults -[hidden]down-> DoctorImagingStudies
+DoctorImagingStudies -[hidden]down-> DoctorImagingModalities
+DoctorImagingModalities -[hidden]down-> DoctorEmergencyCases
+DoctorEmergencyCases -[hidden]down-> DoctorsOnDuty
+
+' Page -> component
+DoctorDashboardPage --> DoctorAppointmentsCards : include
+DoctorCalendarPage --> DoctorMedicalCalendar : include
+DoctorCreateAppointmentPage --> DoctorCreateAppointmentForm : include
+DoctorPatientDetailsPage --> DoctorPatientViews : include
+DoctorResultsPage --> ResultsToReviewList : include
+DoctorImagingPage --> DoctorImagingBookingForm : include
+DoctorMessagesPage --> DoctorMessagesView : include
+DoctorEmergencyPage --> EmergencyCaseViews : include
+
+' Page -> service
+DoctorDashboardPage ..> DoctorAuth : getDoctorSession()
+DoctorDashboardPage ..> DoctorAppointmentActions : programări
+DoctorCalendarPage ..> DoctorAppointmentActions : calendar
+DoctorCreateAppointmentPage ..> DoctorAppointmentActions : create appointment
+DoctorPatientsPage ..> DoctorAppointmentActions : recent appointments
+DoctorPatientsPage ..> DoctorDataHelpers : EMR summary
+DoctorPatientDetailsPage ..> DoctorPatientActions : getPatientById()
+DoctorPatientDetailsPage ..> DoctorAppointmentActions : patient appointments
+DoctorPatientDetailsPage ..> DoctorDataHelpers : patient context
+DoctorConsultationsPage ..> DoctorDataHelpers : medical_records
+DoctorPrescriptionsPage ..> DoctorDataHelpers : prescriptions
+DoctorResultsPage ..> DoctorDataHelpers : lab/imaging review
+DoctorImagingPage ..> DoctorImagingActions : imaging scheduling
+DoctorMessagesPage ..> DoctorMessaging : conversations
+DoctorEmergencyPage ..> DoctorEmergencyHelpers : my cases
+DoctorProfilePage ..> DoctorAuth : session metadata
+
+' Service -> resource / db
+DoctorAuth --> DoctorSession : read/write
+DoctorAuth --> DoctorAccessCodes : validate code
+DoctorAppointmentActions --> DoctorAppointments : read/write
+DoctorPatientActions --> DoctorPatients : read
+DoctorMessaging --> DoctorAppointmentMessages : read/write
+DoctorMessaging --> DoctorNotifications : read/write
+DoctorDataHelpers --> DoctorMedicalRecords : read/write
+DoctorDataHelpers --> DoctorPrescriptions : read
+DoctorDataHelpers --> DoctorLabResults : read/write
+DoctorImagingActions --> DoctorImagingStudies : read/write
+DoctorImagingActions --> DoctorImagingModalities : read
+DoctorEmergencyHelpers --> DoctorEmergencyCases : read/write
+DoctorEmergencyHelpers --> DoctorsOnDuty : read/write
+
+' Outputs
+DoctorConsultationsPage --> DoctorPdfTargets : consultation PDF
+DoctorPatientDetailsPage --> DoctorPdfTargets : scrisoare medicală
+DoctorResultsPage --> DoctorReviewTargets : sign/review
+
+' Logical DB relations
+DoctorPatients ||--o{ DoctorAppointments : has
+DoctorAppointments ||--o{ DoctorAppointmentMessages : messages
+DoctorAppointments ||--o{ DoctorNotifications : notifies
+DoctorPatients ||--o{ DoctorMedicalRecords : history
+DoctorMedicalRecords ||--o{ DoctorPrescriptions : contains
+DoctorMedicalRecords ||--o{ DoctorLabResults : contains
+DoctorPatients ||--o{ DoctorImagingStudies : studies
+DoctorImagingModalities ||--o{ DoctorImagingStudies : modality
+DoctorPatients ||--o{ DoctorEmergencyCases : case
+
+@enduml

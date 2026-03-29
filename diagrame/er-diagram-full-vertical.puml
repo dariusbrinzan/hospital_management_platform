@@ -1,0 +1,727 @@
+@startuml ER Diagram - Baza de Date eHealth (Schema completă, layout vertical)
+
+top to bottom direction
+hide circle
+skinparam backgroundColor #FFFFFF
+skinparam monochrome false
+skinparam shadowing false
+skinparam roundcorner 16
+skinparam linetype polyline
+skinparam packageStyle rectangle
+skinparam wrapWidth 180
+skinparam ranksep 70
+skinparam nodesep 25
+
+title Diagramă Entitate-Relație - Schema completă eHealth (layout vertical)
+
+legend bottom
+Schema completă a bazei de date:
+- 56 tabele
+- toate relațiile FK reale din SQLite
+- layout optimizat pentru inserare în Word
+
+Notă:
+referințele de tip doctorName / primaryPhysician / assignedDoctorId
+sunt relații logice stocate ca TEXT și nu foreign key reale.
+endlegend
+
+package "1. Identitate și acces" as P1 {
+  entity "users" as users {
+    * id : TEXT <<PK>>
+    --
+    name : TEXT
+    email : TEXT <<UNIQUE>>
+    password : TEXT
+    createdAt : TEXT
+  }
+
+  entity "patients" as patients {
+    * id : TEXT <<PK>>
+    * userId : TEXT <<FK>>
+    --
+    name : TEXT
+    email : TEXT
+    phone : TEXT
+    birthDate : TEXT
+    primaryPhysician : TEXT
+  }
+
+  entity "doctors" as doctors {
+    * id : TEXT <<PK>>
+    --
+    name : TEXT
+    specialty : TEXT
+    email : TEXT
+    phone : TEXT
+  }
+
+  entity "doctor_access_codes" as doctor_access_codes {
+    * code : TEXT <<PK>>
+    --
+    doctor_name : TEXT
+    createdAt : TEXT
+  }
+
+  users -[hidden]down-> patients
+  patients -[hidden]down-> doctors
+  doctors -[hidden]down-> doctor_access_codes
+}
+
+package "2. Programări și comunicare" as P2 {
+  entity "appointments" as appointments {
+    * id : TEXT <<PK>>
+    * userId : TEXT <<FK>>
+    * patientId : TEXT <<FK>>
+    --
+    schedule : TEXT
+    status : TEXT
+    primaryPhysician : TEXT
+    appointmentType : TEXT
+  }
+
+  entity "appointment_waitlist" as appointment_waitlist {
+    * id : TEXT <<PK>>
+    * userId : TEXT <<FK>>
+    * patientId : TEXT <<FK>>
+    --
+    primaryPhysician : TEXT
+    requestedSlotAt : TEXT
+    status : TEXT
+  }
+
+  entity "appointment_messages" as appointment_messages {
+    * id : TEXT <<PK>>
+    * appointmentId : TEXT <<FK>>
+    --
+    senderRole : TEXT
+    senderName : TEXT
+    body : TEXT
+  }
+
+  entity "notifications" as notifications {
+    * id : TEXT <<PK>>
+    * userId : TEXT <<FK>>
+    appointmentId : TEXT <<FK>>
+    --
+    type : TEXT
+    title : TEXT
+    isRead : INTEGER
+  }
+
+  entity "doctor_notifications" as doctor_notifications {
+    * id : TEXT <<PK>>
+    appointmentId : TEXT <<FK>>
+    --
+    doctorName : TEXT
+    type : TEXT
+    isRead : INTEGER
+  }
+
+  entity "doctor_reviews" as doctor_reviews {
+    * id : TEXT <<PK>>
+    * appointmentId : TEXT <<FK>>
+    * patientId : TEXT <<FK>>
+    --
+    doctorName : TEXT
+    rating : INTEGER
+    comment : TEXT
+  }
+
+  entity "problem_reports" as problem_reports {
+    * id : TEXT <<PK>>
+    userId : TEXT <<FK>>
+    --
+    reporterName : TEXT
+    subject : TEXT
+    status : TEXT
+  }
+
+  appointments -[hidden]down-> appointment_waitlist
+  appointment_waitlist -[hidden]down-> appointment_messages
+  appointment_messages -[hidden]down-> notifications
+  notifications -[hidden]down-> doctor_notifications
+  doctor_notifications -[hidden]down-> doctor_reviews
+  doctor_reviews -[hidden]down-> problem_reports
+}
+
+package "3. Dosar medical electronic" as P3 {
+  entity "medical_records" as medical_records {
+    * id : TEXT <<PK>>
+    * patientId : TEXT <<FK>>
+    appointmentId : TEXT <<FK>>
+    --
+    doctorName : TEXT
+    recordType : TEXT
+    visitDate : TEXT
+  }
+
+  entity "diagnoses" as diagnoses {
+    * id : TEXT <<PK>>
+    * medicalRecordId : TEXT <<FK>>
+    --
+    diagnosisCode : TEXT
+    diagnosisName : TEXT
+    status : TEXT
+  }
+
+  entity "prescriptions" as prescriptions {
+    * id : TEXT <<PK>>
+    * medicalRecordId : TEXT <<FK>>
+    --
+    medicationName : TEXT
+    dosage : TEXT
+    status : TEXT
+  }
+
+  entity "vital_signs" as vital_signs {
+    * id : TEXT <<PK>>
+    * medicalRecordId : TEXT <<FK>>
+    --
+    pulse : INTEGER
+    temperature : REAL
+    oxygenSaturation : INTEGER
+  }
+
+  entity "lab_results" as lab_results {
+    * id : TEXT <<PK>>
+    * medicalRecordId : TEXT <<FK>>
+    appointmentId : TEXT <<FK>>
+    --
+    testName : TEXT
+    resultValue : TEXT
+    status : TEXT
+  }
+
+  entity "procedures" as procedures {
+    * id : TEXT <<PK>>
+    * medicalRecordId : TEXT <<FK>>
+    --
+    procedureName : TEXT
+    procedureDate : TEXT
+    performedBy : TEXT
+  }
+
+  entity "allergies_adverse_reactions" as allergies_adverse_reactions {
+    * id : TEXT <<PK>>
+    * patientId : TEXT <<FK>>
+    --
+    allergenName : TEXT
+    severity : TEXT
+    status : TEXT
+  }
+
+  entity "vaccinations" as vaccinations {
+    * id : TEXT <<PK>>
+    * patientId : TEXT <<FK>>
+    --
+    vaccineName : TEXT
+    administrationDate : TEXT
+    nextDoseDate : TEXT
+  }
+
+  entity "family_history" as family_history {
+    * id : TEXT <<PK>>
+    * patientId : TEXT <<FK>>
+    --
+    relation : TEXT
+    condition : TEXT
+    status : TEXT
+  }
+
+  entity "medical_documents" as medical_documents {
+    * id : TEXT <<PK>>
+    * patientId : TEXT <<FK>>
+    appointmentId : TEXT <<FK>>
+    --
+    documentType : TEXT
+    fileName : TEXT
+    isApproved : INTEGER
+  }
+
+  entity "document_access_log" as document_access_log {
+    * id : TEXT <<PK>>
+    * documentId : TEXT <<FK>>
+    --
+    accessedBy : TEXT
+    accessType : TEXT
+    accessedAt : TEXT
+  }
+
+  entity "patient_signatures" as patient_signatures {
+    * id : TEXT <<PK>>
+    * patientId : TEXT <<FK>>
+    --
+    documentType : TEXT
+    documentId : TEXT
+    signedAt : TEXT
+  }
+
+  medical_records -[hidden]down-> diagnoses
+  diagnoses -[hidden]down-> prescriptions
+  prescriptions -[hidden]down-> vital_signs
+  vital_signs -[hidden]down-> lab_results
+  lab_results -[hidden]down-> procedures
+  procedures -[hidden]down-> allergies_adverse_reactions
+  allergies_adverse_reactions -[hidden]down-> vaccinations
+  vaccinations -[hidden]down-> family_history
+  family_history -[hidden]down-> medical_documents
+  medical_documents -[hidden]down-> document_access_log
+  document_access_log -[hidden]down-> patient_signatures
+}
+
+package "4. Urgențe și dispecerat" as P4 {
+  entity "emergency_cases" as emergency_cases {
+    * id : TEXT <<PK>>
+    patientId : TEXT <<FK>>
+    --
+    triageLevel : TEXT
+    currentState : TEXT
+    assignedDoctorId : TEXT
+    priority : INTEGER
+  }
+
+  entity "doctors_on_duty" as doctors_on_duty {
+    * id : TEXT <<PK>>
+    --
+    doctorName : TEXT
+    weekStartDate : TEXT
+    isAvailable : INTEGER
+  }
+
+  entity "emergency_state_transitions" as emergency_state_transitions {
+    * id : TEXT <<PK>>
+    * emergencyCaseId : TEXT <<FK>>
+    --
+    fromState : TEXT
+    toState : TEXT
+    performedBy : TEXT
+  }
+
+  entity "emergency_documents" as emergency_documents {
+    * id : TEXT <<PK>>
+    * emergencyCaseId : TEXT <<FK>>
+    --
+    documentType : TEXT
+    signedBy : TEXT
+    signedAt : TEXT
+  }
+
+  entity "ambulances" as ambulances {
+    * id : TEXT <<PK>>
+    --
+    ambulanceNumber : TEXT <<UNIQUE>>
+    licensePlate : TEXT <<UNIQUE>>
+    status : TEXT
+  }
+
+  entity "ambulance_missions" as ambulance_missions {
+    * id : TEXT <<PK>>
+    * ambulanceId : TEXT <<FK>>
+    emergencyCaseId : TEXT <<FK>>
+    --
+    missionType : TEXT
+    priority : INTEGER
+    status : TEXT
+  }
+
+  emergency_cases -[hidden]down-> doctors_on_duty
+  doctors_on_duty -[hidden]down-> emergency_state_transitions
+  emergency_state_transitions -[hidden]down-> emergency_documents
+  emergency_documents -[hidden]down-> ambulances
+  ambulances -[hidden]down-> ambulance_missions
+}
+
+package "5. Imagistică și laborator" as P5 {
+  entity "imaging_modalities" as imaging_modalities {
+    * id : TEXT <<PK>>
+    --
+    name : TEXT <<UNIQUE>>
+    slotDurationMinutes : INTEGER
+    isActive : INTEGER
+  }
+
+  entity "imaging_studies" as imaging_studies {
+    * id : TEXT <<PK>>
+    * patientId : TEXT <<FK>>
+    * modalityId : TEXT <<FK>>
+    --
+    scheduledAt : TEXT
+    status : TEXT
+    sourceType : TEXT
+  }
+
+  entity "lab_test_types" as lab_test_types {
+    * id : TEXT <<PK>>
+    medicationId : TEXT <<FK>>
+    --
+    code : TEXT <<UNIQUE>>
+    name : TEXT
+    category : TEXT
+  }
+
+  entity "lab_orders" as lab_orders {
+    * id : TEXT <<PK>>
+    * patientId : TEXT <<FK>>
+    medicalRecordId : TEXT <<FK>>
+    appointmentId : TEXT <<FK>>
+    --
+    orderedBy : TEXT
+    status : TEXT
+    priority : TEXT
+  }
+
+  entity "lab_order_tests" as lab_order_tests {
+    * id : TEXT <<PK>>
+    * orderId : TEXT <<FK>>
+    * testTypeId : TEXT <<FK>>
+    medicationId : TEXT <<FK>>
+    --
+    status : TEXT
+    resultValue : TEXT
+    resultAt : TEXT
+  }
+
+  imaging_modalities -[hidden]down-> imaging_studies
+  imaging_studies -[hidden]down-> lab_test_types
+  lab_test_types -[hidden]down-> lab_orders
+  lab_orders -[hidden]down-> lab_order_tests
+}
+
+package "6. Medicamente și farmacie" as P6 {
+  entity "medications" as medications {
+    * id : TEXT <<PK>>
+    --
+    name : TEXT
+    category : TEXT
+    unit : TEXT
+    expirationDate : TEXT
+  }
+
+  entity "medication_stock" as medication_stock {
+    * id : TEXT <<PK>>
+    * medicationId : TEXT <<FK>>
+    --
+    location : TEXT
+    quantity : INTEGER
+    minimumStockLevel : INTEGER
+  }
+
+  entity "medication_transactions" as medication_transactions {
+    * id : TEXT <<PK>>
+    * medicationId : TEXT <<FK>>
+    * stockId : TEXT <<FK>>
+    --
+    transactionType : TEXT
+    quantity : INTEGER
+    transactionDate : TEXT
+  }
+
+  entity "medication_stock_batches" as medication_stock_batches {
+    * id : TEXT <<PK>>
+    * stockId : TEXT <<FK>>
+    --
+    batchNumber : TEXT
+    expirationDate : TEXT
+    quantity : INTEGER
+  }
+
+  entity "pharmacy_orders" as pharmacy_orders {
+    * id : TEXT <<PK>>
+    --
+    orderNumber : TEXT <<UNIQUE>>
+    status : TEXT
+    requestedBy : TEXT
+  }
+
+  entity "pharmacy_order_lines" as pharmacy_order_lines {
+    * id : TEXT <<PK>>
+    * orderId : TEXT <<FK>>
+    * medicationId : TEXT <<FK>>
+    --
+    quantity : INTEGER
+    unitPrice : REAL
+    receivedQuantity : INTEGER
+  }
+
+  entity "pharmacy_dispensings" as pharmacy_dispensings {
+    * id : TEXT <<PK>>
+    * prescriptionId : TEXT <<FK>>
+    * patientId : TEXT <<FK>>
+    * medicationId : TEXT <<FK>>
+    stockId : TEXT <<FK>>
+    batchId : TEXT <<FK>>
+    --
+    quantity : INTEGER
+    dispensedAt : TEXT
+    dispensedBy : TEXT
+  }
+
+  entity "medication_requests" as medication_requests {
+    * id : TEXT <<PK>>
+    * patientId : TEXT <<FK>>
+    * prescriptionId : TEXT <<FK>>
+    --
+    status : TEXT
+    requestedAt : TEXT
+    approvedAt : TEXT
+  }
+
+  entity "medication_interactions" as medication_interactions {
+    * id : TEXT <<PK>>
+    * medicationId1 : TEXT <<FK>>
+    * medicationId2 : TEXT <<FK>>
+    --
+    severity : TEXT
+    description : TEXT
+  }
+
+  medications -[hidden]down-> medication_stock
+  medication_stock -[hidden]down-> medication_transactions
+  medication_transactions -[hidden]down-> medication_stock_batches
+  medication_stock_batches -[hidden]down-> pharmacy_orders
+  pharmacy_orders -[hidden]down-> pharmacy_order_lines
+  pharmacy_order_lines -[hidden]down-> pharmacy_dispensings
+  pharmacy_dispensings -[hidden]down-> medication_requests
+  medication_requests -[hidden]down-> medication_interactions
+}
+
+package "7. Spitalizare și ATI" as P7 {
+  entity "hospital_rooms" as hospital_rooms {
+    * id : TEXT <<PK>>
+    --
+    roomNumber : TEXT <<UNIQUE>>
+    department : TEXT
+    roomType : TEXT
+    roomStatus : TEXT
+  }
+
+  entity "hospital_admissions" as hospital_admissions {
+    * id : TEXT <<PK>>
+    patientId : TEXT <<FK>>
+    appointmentId : TEXT <<FK>>
+    * roomId : TEXT <<FK>>
+    --
+    admissionType : TEXT
+    status : TEXT
+    department : TEXT
+  }
+
+  entity "hospital_vital_signs" as hospital_vital_signs {
+    * id : TEXT <<PK>>
+    * admissionId : TEXT <<FK>>
+    --
+    pulse : INTEGER
+    temperature : REAL
+    recordedAt : TEXT
+  }
+
+  entity "hospital_treatments" as hospital_treatments {
+    * id : TEXT <<PK>>
+    * admissionId : TEXT <<FK>>
+    --
+    medicationName : TEXT
+    dosage : TEXT
+    status : TEXT
+  }
+
+  entity "hospital_procedures" as hospital_procedures {
+    * id : TEXT <<PK>>
+    * admissionId : TEXT <<FK>>
+    --
+    procedureName : TEXT
+    procedureDate : TEXT
+    performedBy : TEXT
+  }
+
+  entity "icu_rooms" as icu_rooms {
+    * id : TEXT <<PK>>
+    --
+    roomNumber : INTEGER <<UNIQUE>>
+    maxCapacity : INTEGER
+    isAvailable : INTEGER
+  }
+
+  entity "icu_patients" as icu_patients {
+    * id : TEXT <<PK>>
+    emergencyCaseId : TEXT <<FK>>
+    patientId : TEXT <<FK>>
+    * roomId : TEXT <<FK>>
+    --
+    bedNumber : INTEGER
+    status : TEXT
+    diagnosis : TEXT
+  }
+
+  entity "icu_vital_signs" as icu_vital_signs {
+    * id : TEXT <<PK>>
+    * icuPatientId : TEXT <<FK>>
+    --
+    pulse : INTEGER
+    temperature : REAL
+    recordedAt : TEXT
+  }
+
+  entity "icu_treatments" as icu_treatments {
+    * id : TEXT <<PK>>
+    * icuPatientId : TEXT <<FK>>
+    --
+    medicationName : TEXT
+    dosage : TEXT
+    status : TEXT
+  }
+
+  entity "icu_equipment" as icu_equipment {
+    * id : TEXT <<PK>>
+    * icuPatientId : TEXT <<FK>>
+    --
+    equipmentType : TEXT
+    status : TEXT
+    startTime : TEXT
+  }
+
+  hospital_rooms -[hidden]down-> hospital_admissions
+  hospital_admissions -[hidden]down-> hospital_vital_signs
+  hospital_vital_signs -[hidden]down-> hospital_treatments
+  hospital_treatments -[hidden]down-> hospital_procedures
+  hospital_procedures -[hidden]down-> icu_rooms
+  icu_rooms -[hidden]down-> icu_patients
+  icu_patients -[hidden]down-> icu_vital_signs
+  icu_vital_signs -[hidden]down-> icu_treatments
+  icu_treatments -[hidden]down-> icu_equipment
+}
+
+package "8. Operațiuni și logistică" as P8 {
+  entity "consumable_requests" as consumable_requests {
+    * id : TEXT <<PK>>
+    --
+    department : TEXT
+    requestedBy : TEXT
+    status : TEXT
+  }
+
+  entity "equipment" as equipment {
+    * id : TEXT <<PK>>
+    --
+    name : TEXT
+    category : TEXT
+    status : TEXT
+  }
+
+  entity "internal_transport_requests" as internal_transport_requests {
+    * id : TEXT <<PK>>
+    patientId : TEXT <<FK>>
+    --
+    patientName : TEXT
+    transportType : TEXT
+    status : TEXT
+  }
+
+  consumable_requests -[hidden]down-> equipment
+  equipment -[hidden]down-> internal_transport_requests
+}
+
+' Layout vertical între grupuri
+P1 -[hidden]down-> P2
+P2 -[hidden]down-> P3
+P3 -[hidden]down-> P4
+P4 -[hidden]down-> P5
+P5 -[hidden]down-> P6
+P6 -[hidden]down-> P7
+P7 -[hidden]down-> P8
+
+' Relații FK reale
+users ||--o{ patients : userId
+users ||--o{ appointments : userId
+users ||--o{ appointment_waitlist : userId
+users ||--o{ notifications : userId
+users ||--o{ problem_reports : userId
+
+patients ||--o{ appointments : patientId
+patients ||--o{ appointment_waitlist : patientId
+patients ||--o{ doctor_reviews : patientId
+patients ||--o{ medical_records : patientId
+patients ||--o{ allergies_adverse_reactions : patientId
+patients ||--o{ vaccinations : patientId
+patients ||--o{ family_history : patientId
+patients ||--o{ medical_documents : patientId
+patients ||--o{ patient_signatures : patientId
+patients ||--o{ emergency_cases : patientId
+patients ||--o{ imaging_studies : patientId
+patients ||--o{ lab_orders : patientId
+patients ||--o{ medication_requests : patientId
+patients ||--o{ pharmacy_dispensings : patientId
+patients ||--o{ hospital_admissions : patientId
+patients ||--o{ icu_patients : patientId
+patients ||--o{ internal_transport_requests : patientId
+
+appointments ||--o{ appointment_messages : appointmentId
+appointments ||--o{ notifications : appointmentId
+appointments ||--o{ doctor_notifications : appointmentId
+appointments ||--o{ doctor_reviews : appointmentId
+appointments ||--o{ medical_records : appointmentId
+appointments ||--o{ lab_results : appointmentId
+appointments ||--o{ lab_orders : appointmentId
+appointments ||--o{ medical_documents : appointmentId
+appointments ||--o{ hospital_admissions : appointmentId
+
+medical_records ||--o{ diagnoses : medicalRecordId
+medical_records ||--o{ prescriptions : medicalRecordId
+medical_records ||--o{ vital_signs : medicalRecordId
+medical_records ||--o{ lab_results : medicalRecordId
+medical_records ||--o{ procedures : medicalRecordId
+medical_records ||--o{ lab_orders : medicalRecordId
+
+medical_documents ||--o{ document_access_log : documentId
+
+emergency_cases ||--o{ emergency_state_transitions : emergencyCaseId
+emergency_cases ||--o{ emergency_documents : emergencyCaseId
+emergency_cases ||--o{ ambulance_missions : emergencyCaseId
+emergency_cases ||--o{ icu_patients : emergencyCaseId
+
+ambulances ||--o{ ambulance_missions : ambulanceId
+
+imaging_modalities ||--o{ imaging_studies : modalityId
+
+medications ||--o{ medication_stock : medicationId
+medications ||--o{ medication_transactions : medicationId
+medications ||--o{ pharmacy_order_lines : medicationId
+medications ||--o{ pharmacy_dispensings : medicationId
+medications ||--o{ medication_interactions : medicationId1
+medications ||--o{ medication_interactions : medicationId2
+medications ||--o{ lab_test_types : medicationId
+medications ||--o{ lab_order_tests : medicationId
+
+medication_stock ||--o{ medication_transactions : stockId
+medication_stock ||--o{ medication_stock_batches : stockId
+medication_stock ||--o{ pharmacy_dispensings : stockId
+
+medication_stock_batches ||--o{ pharmacy_dispensings : batchId
+
+pharmacy_orders ||--o{ pharmacy_order_lines : orderId
+
+prescriptions ||--o{ medication_requests : prescriptionId
+prescriptions ||--o{ pharmacy_dispensings : prescriptionId
+
+lab_test_types ||--o{ lab_order_tests : testTypeId
+lab_orders ||--o{ lab_order_tests : orderId
+
+hospital_rooms ||--o{ hospital_admissions : roomId
+hospital_admissions ||--o{ hospital_vital_signs : admissionId
+hospital_admissions ||--o{ hospital_treatments : admissionId
+hospital_admissions ||--o{ hospital_procedures : admissionId
+
+icu_rooms ||--o{ icu_patients : roomId
+icu_patients ||--o{ icu_vital_signs : icuPatientId
+icu_patients ||--o{ icu_treatments : icuPatientId
+icu_patients ||--o{ icu_equipment : icuPatientId
+
+' Relații logice neconstrânse de FK
+doctor_access_codes ..> doctors : doctor_name (logic)
+doctors_on_duty ..> doctors : doctorName (logic)
+appointments ..> doctors : primaryPhysician (logic)
+doctor_notifications ..> doctors : doctorName (logic)
+doctor_reviews ..> doctors : doctorName (logic)
+medical_records ..> doctors : doctorName (logic)
+emergency_cases ..> doctors : assignedDoctorId (logic)
+
+@enduml

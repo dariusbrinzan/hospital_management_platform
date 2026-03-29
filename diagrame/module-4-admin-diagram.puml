@@ -1,0 +1,220 @@
+@startuml Modulul Administrator
+
+top to bottom direction
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 14
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+skinparam ranksep 45
+skinparam nodesep 25
+
+title Diagrama UML - Modulul Administrator
+
+package "Interfață administrator" {
+  package "Pagini" {
+    component "AdminDashboardPage\n/admin" as AdminDashboardPage <<Page>>
+    component "AdminAppointmentsPage\n/admin/appointments" as AdminAppointmentsPage <<Page>>
+    component "AdminPatientsPage\n/admin/patients" as AdminPatientsPage <<Page>>
+    component "AdminEmergencyPage\n/admin/emergency" as AdminEmergencyPage <<Page>>
+    component "DispatcherPage\n/admin/emergency/dispatcher" as DispatcherPage <<Page>>
+    component "DoctorsOnDutyPage\n/admin/emergency/doctors" as DoctorsOnDutyPage <<Page>>
+    component "HospitalizationsPage\n/admin/hospitalizations" as HospitalizationsPage <<Page>>
+    component "ICUPage\n/admin/icu" as ICUPage <<Page>>
+    component "AdminImagingPage\n/admin/imaging" as AdminImagingPage <<Page>>
+    component "LaboratorPage\n/admin/laborator" as LaboratorPage <<Page>>
+    component "AdminLabImportPage\n/admin/lab-import" as AdminLabImportPage <<Page>>
+    component "MedicationsPage\n/admin/medications" as MedicationsPage <<Page>>
+    component "PharmacyPage\n/admin/pharmacy" as PharmacyPage <<Page>>
+    component "AdminLogisticsPage\n/admin/logistics" as AdminLogisticsPage <<Page>>
+    component "AdminReportsPage\n/admin/reports" as AdminReportsPage <<Page>>
+    component "AdminProblemReportsPage\n/admin/problem-reports" as AdminProblemReportsPage <<Page>>
+  }
+
+  package "Componente" {
+    component "AdminDashboardSection" as AdminDashboardSection <<Component>>
+    component "EmergencyKanbanBoard" as EmergencyKanbanBoard <<Component>>
+    component "DispatcherDashboard" as DispatcherDashboard <<Component>>
+    component "HospitalRoomsDashboard" as HospitalRoomsDashboard <<Component>>
+    component "ICURoomsDashboard" as ICURoomsDashboard <<Component>>
+    component "ImagingBookingForm" as AdminImagingBookingForm <<Component>>
+    component "LaboratorDashboard" as LaboratorDashboard <<Component>>
+    component "LabImportForm" as LabImportForm <<Component>>
+    component "MedicationStockDashboard" as MedicationStockDashboard <<Component>>
+    component "PharmacyAdvancedDashboard" as PharmacyAdvancedDashboard <<Component>>
+    component "LogisticsDashboard" as LogisticsDashboard <<Component>>
+    component "ReportsDashboard" as ReportsDashboard <<Component>>
+    component "ProblemReportsList" as ProblemReportsList <<Component>>
+  }
+}
+
+package "Servicii" {
+  component "AuthActions\n(requireAdmin,\ngetAdminSession)" as AdminAuth <<Service>>
+  component "DashboardActions\n(getAdminDashboardSnippets)" as AdminDashboardActions <<Service>>
+  component "AppointmentActions\n(getRecentAppointmentList)" as AdminAppointmentActions <<Service>>
+  component "PatientHelpers\n(search/getAll)" as AdminPatientHelpers <<Service>>
+  component "EmergencyHelpers\n(emergencyHelpers,\ndoctorsOnDutyHelpers,\nambulanceHelpers,\nambulanceMissionHelpers)" as AdminEmergencyHelpers <<Service>>
+  component "HospitalCareHelpers\n(hospitalRoomHelpers,\nhospitalAdmissionHelpers,\nicuHelpers)" as AdminHospitalHelpers <<Service>>
+  component "ImagingActions\n(getModalities,\ngetUpcomingStudies)" as AdminImagingActions <<Service>>
+  component "LabActions\n(lab-import,\nlab orders,\nlab tests)" as AdminLabActions <<Service>>
+  component "PharmacyHelpers\n(medicationStockHelpers,\npharmacy helpers,\nmedication helpers)" as AdminPharmacyHelpers <<Service>>
+  component "Reports & Logistics\n(reports.actions,\nlogistics.actions,\nproblemReportsHelpers)" as AdminOpsHelpers <<Service>>
+}
+
+package "Resurse / acces" {
+  rectangle "admin_session\n<<Cookie>>\nvalue = 1" as AdminSession
+  rectangle "PDF exports\n<<Target>>\n/api/pdf/reports\n/api/pdf/patient/{id}" as AdminPdfTargets
+  rectangle "Operational API\n<<Target>>\n/api/emergency/*\n/api/hospital/*\n/api/icu/*\n/api/admin/*" as AdminApiTargets
+}
+
+package "Persistență" {
+  rectangle "patients\n<<Table>>\n--\nid : TEXT <<PK>>\nuserId : TEXT <<FK>>" as AdminPatients
+  rectangle "appointments\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>" as AdminAppointments
+  rectangle "emergency_cases\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>" as AdminEmergencyCases
+  rectangle "doctors_on_duty\n<<Table>>\n--\nid : TEXT <<PK>>\ndoctorName : TEXT" as AdminDoctorsOnDuty
+  rectangle "ambulances\n<<Table>>\n--\nid : TEXT <<PK>>\nstatus : TEXT" as AdminAmbulances
+  rectangle "ambulance_missions\n<<Table>>\n--\nid : TEXT <<PK>>\nambulanceId : TEXT <<FK>>\nemergencyCaseId : TEXT <<FK>>" as AdminAmbulanceMissions
+  rectangle "hospital_rooms\n<<Table>>\n--\nid : TEXT <<PK>>\nroomNumber : TEXT" as AdminHospitalRooms
+  rectangle "hospital_admissions\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>\nroomId : TEXT <<FK>>" as AdminHospitalAdmissions
+  rectangle "icu_rooms\n<<Table>>\n--\nid : TEXT <<PK>>\nroomNumber : INTEGER" as AdminIcuRooms
+  rectangle "icu_patients\n<<Table>>\n--\nid : TEXT <<PK>>\nroomId : TEXT <<FK>>" as AdminIcuPatients
+  rectangle "imaging_studies\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>\nmodalityId : TEXT <<FK>>" as AdminImagingStudies
+  rectangle "lab_orders\n<<Table>>\n--\nid : TEXT <<PK>>\npatientId : TEXT <<FK>>" as AdminLabOrders
+  rectangle "lab_order_tests\n<<Table>>\n--\nid : TEXT <<PK>>\norderId : TEXT <<FK>>" as AdminLabOrderTests
+  rectangle "medications\n<<Table>>\n--\nid : TEXT <<PK>>\nname : TEXT" as AdminMedications
+  rectangle "medication_stock\n<<Table>>\n--\nid : TEXT <<PK>>\nmedicationId : TEXT <<FK>>" as AdminMedicationStock
+  rectangle "pharmacy_orders\n<<Table>>\n--\nid : TEXT <<PK>>\norderNumber : TEXT" as AdminPharmacyOrders
+  rectangle "problem_reports\n<<Table>>\n--\nid : TEXT <<PK>>\nuserId : TEXT <<FK>>" as AdminProblemReports
+  rectangle "consumable_requests\n<<Table>>\n--\nid : TEXT <<PK>>\ndepartment : TEXT" as AdminConsumableRequests
+  rectangle "equipment\n<<Table>>\n--\nid : TEXT <<PK>>\nstatus : TEXT" as AdminEquipment
+}
+
+' Layout
+AdminDashboardPage -[hidden]down-> AdminAppointmentsPage
+AdminAppointmentsPage -[hidden]down-> AdminPatientsPage
+AdminPatientsPage -[hidden]down-> AdminEmergencyPage
+AdminEmergencyPage -[hidden]down-> DispatcherPage
+DispatcherPage -[hidden]down-> DoctorsOnDutyPage
+DoctorsOnDutyPage -[hidden]down-> HospitalizationsPage
+HospitalizationsPage -[hidden]down-> ICUPage
+ICUPage -[hidden]down-> AdminImagingPage
+AdminImagingPage -[hidden]down-> LaboratorPage
+LaboratorPage -[hidden]down-> AdminLabImportPage
+AdminLabImportPage -[hidden]down-> MedicationsPage
+MedicationsPage -[hidden]down-> PharmacyPage
+PharmacyPage -[hidden]down-> AdminLogisticsPage
+AdminLogisticsPage -[hidden]down-> AdminReportsPage
+AdminReportsPage -[hidden]down-> AdminProblemReportsPage
+
+AdminDashboardSection -[hidden]down-> EmergencyKanbanBoard
+EmergencyKanbanBoard -[hidden]down-> DispatcherDashboard
+DispatcherDashboard -[hidden]down-> HospitalRoomsDashboard
+HospitalRoomsDashboard -[hidden]down-> ICURoomsDashboard
+ICURoomsDashboard -[hidden]down-> AdminImagingBookingForm
+AdminImagingBookingForm -[hidden]down-> LaboratorDashboard
+LaboratorDashboard -[hidden]down-> LabImportForm
+LabImportForm -[hidden]down-> MedicationStockDashboard
+MedicationStockDashboard -[hidden]down-> PharmacyAdvancedDashboard
+PharmacyAdvancedDashboard -[hidden]down-> LogisticsDashboard
+LogisticsDashboard -[hidden]down-> ReportsDashboard
+ReportsDashboard -[hidden]down-> ProblemReportsList
+
+AdminAuth -[hidden]down-> AdminDashboardActions
+AdminDashboardActions -[hidden]down-> AdminAppointmentActions
+AdminAppointmentActions -[hidden]down-> AdminPatientHelpers
+AdminPatientHelpers -[hidden]down-> AdminEmergencyHelpers
+AdminEmergencyHelpers -[hidden]down-> AdminHospitalHelpers
+AdminHospitalHelpers -[hidden]down-> AdminImagingActions
+AdminImagingActions -[hidden]down-> AdminLabActions
+AdminLabActions -[hidden]down-> AdminPharmacyHelpers
+AdminPharmacyHelpers -[hidden]down-> AdminOpsHelpers
+
+AdminPatients -[hidden]down-> AdminAppointments
+AdminAppointments -[hidden]down-> AdminEmergencyCases
+AdminEmergencyCases -[hidden]down-> AdminDoctorsOnDuty
+AdminDoctorsOnDuty -[hidden]down-> AdminAmbulances
+AdminAmbulances -[hidden]down-> AdminAmbulanceMissions
+AdminAmbulanceMissions -[hidden]down-> AdminHospitalRooms
+AdminHospitalRooms -[hidden]down-> AdminHospitalAdmissions
+AdminHospitalAdmissions -[hidden]down-> AdminIcuRooms
+AdminIcuRooms -[hidden]down-> AdminIcuPatients
+AdminIcuPatients -[hidden]down-> AdminImagingStudies
+AdminImagingStudies -[hidden]down-> AdminLabOrders
+AdminLabOrders -[hidden]down-> AdminLabOrderTests
+AdminLabOrderTests -[hidden]down-> AdminMedications
+AdminMedications -[hidden]down-> AdminMedicationStock
+AdminMedicationStock -[hidden]down-> AdminPharmacyOrders
+AdminPharmacyOrders -[hidden]down-> AdminProblemReports
+AdminProblemReports -[hidden]down-> AdminConsumableRequests
+AdminConsumableRequests -[hidden]down-> AdminEquipment
+
+' Page -> component
+AdminDashboardPage --> AdminDashboardSection : include
+AdminEmergencyPage --> EmergencyKanbanBoard : include
+DispatcherPage --> DispatcherDashboard : include
+HospitalizationsPage --> HospitalRoomsDashboard : include
+ICUPage --> ICURoomsDashboard : include
+AdminImagingPage --> AdminImagingBookingForm : include
+LaboratorPage --> LaboratorDashboard : include
+AdminLabImportPage --> LabImportForm : include
+MedicationsPage --> MedicationStockDashboard : include
+PharmacyPage --> PharmacyAdvancedDashboard : include
+AdminLogisticsPage --> LogisticsDashboard : include
+AdminReportsPage --> ReportsDashboard : include
+AdminProblemReportsPage --> ProblemReportsList : include
+
+' Page -> service
+AdminDashboardPage ..> AdminAuth : requireAdmin()
+AdminDashboardPage ..> AdminDashboardActions : snippets
+AdminAppointmentsPage ..> AdminAppointmentActions : appointments
+AdminPatientsPage ..> AdminPatientHelpers : patient search
+AdminEmergencyPage ..> AdminEmergencyHelpers : emergency board
+DispatcherPage ..> AdminEmergencyHelpers : ambulances/missions
+DoctorsOnDutyPage ..> AdminEmergencyHelpers : rotations
+HospitalizationsPage ..> AdminHospitalHelpers : rooms/admissions
+ICUPage ..> AdminHospitalHelpers : icu rooms/patients
+AdminImagingPage ..> AdminImagingActions : modalities/studies
+LaboratorPage ..> AdminLabActions : orders/tests
+AdminLabImportPage ..> AdminLabActions : CSV import
+MedicationsPage ..> AdminPharmacyHelpers : stock
+PharmacyPage ..> AdminPharmacyHelpers : advanced pharmacy
+AdminLogisticsPage ..> AdminOpsHelpers : logistics
+AdminReportsPage ..> AdminOpsHelpers : reports
+AdminProblemReportsPage ..> AdminOpsHelpers : issue handling
+
+' Service -> resource / db
+AdminAuth --> AdminSession : read/write
+AdminDashboardActions --> AdminAppointments : read
+AdminDashboardActions --> AdminEmergencyCases : read
+AdminDashboardActions --> AdminMedicationStock : read
+AdminAppointmentActions --> AdminAppointments : read
+AdminPatientHelpers --> AdminPatients : read
+AdminEmergencyHelpers --> AdminEmergencyCases : read/write
+AdminEmergencyHelpers --> AdminDoctorsOnDuty : read/write
+AdminEmergencyHelpers --> AdminAmbulances : read/write
+AdminEmergencyHelpers --> AdminAmbulanceMissions : read/write
+AdminHospitalHelpers --> AdminHospitalRooms : read/write
+AdminHospitalHelpers --> AdminHospitalAdmissions : read/write
+AdminHospitalHelpers --> AdminIcuRooms : read/write
+AdminHospitalHelpers --> AdminIcuPatients : read/write
+AdminImagingActions --> AdminImagingStudies : read/write
+AdminLabActions --> AdminLabOrders : read/write
+AdminLabActions --> AdminLabOrderTests : read/write
+AdminPharmacyHelpers --> AdminMedications : read/write
+AdminPharmacyHelpers --> AdminMedicationStock : read/write
+AdminPharmacyHelpers --> AdminPharmacyOrders : read/write
+AdminOpsHelpers --> AdminProblemReports : read/write
+AdminOpsHelpers --> AdminConsumableRequests : read/write
+AdminOpsHelpers --> AdminEquipment : read/write
+
+' Outputs
+AdminReportsPage --> AdminPdfTargets : exportă rapoarte
+AdminImagingPage --> AdminApiTargets : imaging API
+LaboratorPage --> AdminApiTargets : lab API
+AdminEmergencyPage --> AdminApiTargets : emergency API
+HospitalizationsPage --> AdminApiTargets : hospital API
+ICUPage --> AdminApiTargets : ICU API
+
+@enduml

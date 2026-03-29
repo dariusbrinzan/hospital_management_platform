@@ -1,0 +1,130 @@
+@startuml Module Transversale si Servicii Backend
+
+top to bottom direction
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 14
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+skinparam ranksep 45
+skinparam nodesep 25
+
+title Diagrama UML - Module Transversale și Servicii Backend
+
+package "Intrări / consumatori" {
+  component "Portal Pacient" as PatientPortal <<Consumer>>
+  component "Portal Medic" as DoctorPortal <<Consumer>>
+  component "Portal Administrator" as AdminPortal <<Consumer>>
+  component "Joburi automate\n/cron/*" as CronConsumers <<Consumer>>
+}
+
+package "API și orchestration" {
+  component "API Routes\napp/api/*" as ApiRoutes <<Layer>>
+  component "Server Actions\nlib/actions/*" as ServerActions <<Layer>>
+  component "Validation Layer\nlib/validation.ts" as ValidationLayer <<Layer>>
+}
+
+package "Servicii core" {
+  component "Auth Core\n(login / session /\nrequire role)" as AuthCore <<Service>>
+  component "Scheduling Core\n(programări,\nsloturi,\nwaitlist)" as SchedulingCore <<Service>>
+  component "Clinical Core\n(EMR,\nprescriptions,\nlab,\nimaging)" as ClinicalCore <<Service>>
+  component "Emergency Core\n(urgentă,\ndispecerat,\nATI,\nspitalizare)" as EmergencyCore <<Service>>
+  component "Pharmacy Core\n(stocuri,\ncomenzi,\ndispensări)" as PharmacyCore <<Service>>
+  component "Notification Core\n(reminders,\nalerts,\ndoctor notifications)" as NotificationCore <<Service>>
+  component "Reporting Core\n(reports,\nPDF,\nexports)" as ReportingCore <<Service>>
+  component "Chat Core\n(chatbot,\nchat context,\nmessage assistance)" as ChatCore <<Service>>
+}
+
+package "Persistență și resurse" {
+  component "Database Layer\nlib/db.ts" as DbLayer <<Persistence>>
+  component "Helper Layer\nlib/db-helpers.ts" as DbHelpers <<Persistence>>
+  rectangle "SQLite DB\ncarepulse.db" as SqliteDb
+  rectangle "Uploads Storage\n/public/uploads" as UploadsStorage
+  rectangle "Session Cookies\npatient_session\ndoctor_session\nadmin_session" as SessionCookies
+  rectangle "Static Knowledge\nchatbot-rules\nanalysis-reference-ranges\nhospital-map" as StaticKnowledge
+}
+
+package "Ieșiri / integrare" {
+  rectangle "PDF endpoints\n/api/pdf/*" as PdfEndpoints
+  rectangle "Chat endpoints\n/api/chat\n/api/chat-context" as ChatEndpoints
+  rectangle "Operational endpoints\n/api/emergency/*\n/api/hospital/*\n/api/icu/*\n/api/admin/*" as OperationalEndpoints
+}
+
+' Layout
+PatientPortal -[hidden]right-> DoctorPortal
+DoctorPortal -[hidden]right-> AdminPortal
+AdminPortal -[hidden]right-> CronConsumers
+
+ApiRoutes -[hidden]down-> ServerActions
+ServerActions -[hidden]down-> ValidationLayer
+
+AuthCore -[hidden]down-> SchedulingCore
+SchedulingCore -[hidden]down-> ClinicalCore
+ClinicalCore -[hidden]down-> EmergencyCore
+EmergencyCore -[hidden]down-> PharmacyCore
+PharmacyCore -[hidden]down-> NotificationCore
+NotificationCore -[hidden]down-> ReportingCore
+ReportingCore -[hidden]down-> ChatCore
+
+DbLayer -[hidden]down-> DbHelpers
+DbHelpers -[hidden]down-> SqliteDb
+SqliteDb -[hidden]down-> UploadsStorage
+UploadsStorage -[hidden]down-> SessionCookies
+SessionCookies -[hidden]down-> StaticKnowledge
+
+PdfEndpoints -[hidden]down-> ChatEndpoints
+ChatEndpoints -[hidden]down-> OperationalEndpoints
+
+' Consumers -> API/actions
+PatientPortal --> ApiRoutes : HTTP requests
+DoctorPortal --> ApiRoutes : HTTP requests
+AdminPortal --> ApiRoutes : HTTP requests
+PatientPortal --> ServerActions : server actions
+DoctorPortal --> ServerActions : server actions
+AdminPortal --> ServerActions : server actions
+CronConsumers --> ApiRoutes : cron triggers
+
+' API/actions -> core
+ApiRoutes --> ValidationLayer : validate input
+ApiRoutes --> AuthCore : auth / access control
+ApiRoutes --> SchedulingCore : appointments
+ApiRoutes --> ClinicalCore : medical data
+ApiRoutes --> EmergencyCore : emergency flow
+ApiRoutes --> PharmacyCore : pharmacy ops
+ApiRoutes --> NotificationCore : notifications
+ApiRoutes --> ReportingCore : pdf / export
+ApiRoutes --> ChatCore : chatbot
+
+ServerActions --> AuthCore : sessions
+ServerActions --> SchedulingCore : actions
+ServerActions --> ClinicalCore : actions
+ServerActions --> NotificationCore : reminders
+ServerActions --> ReportingCore : exports
+
+' Core -> persistence/resources
+AuthCore --> SessionCookies : read/write
+AuthCore --> DbHelpers : users / sessions
+SchedulingCore --> DbHelpers : appointments / waitlist
+ClinicalCore --> DbHelpers : EMR / lab / imaging
+EmergencyCore --> DbHelpers : emergency / ICU / hospital
+PharmacyCore --> DbHelpers : stock / orders / dispensing
+NotificationCore --> DbHelpers : notifications
+ReportingCore --> DbHelpers : query data
+ReportingCore --> UploadsStorage : generated files
+ChatCore --> StaticKnowledge : rules / ranges / map
+ChatCore --> DbHelpers : contextual data
+
+DbHelpers --> DbLayer : query abstraction
+DbLayer --> SqliteDb : persistence
+DbLayer --> UploadsStorage : document paths
+
+' Core -> outputs
+ReportingCore --> PdfEndpoints : publish PDFs
+ChatCore --> ChatEndpoints : chat responses
+EmergencyCore --> OperationalEndpoints : operational APIs
+ClinicalCore --> OperationalEndpoints : clinical APIs
+PharmacyCore --> OperationalEndpoints : pharmacy APIs
+
+@enduml

@@ -9,6 +9,7 @@ Directorul `config/` centralizeaza setup-ul de build, orchestration si infrastru
   - `docker-compose.postgresql.yml`: PostgreSQL local pentru dezvoltare sau validare de config
 - `config/env/`
   - exemple de variabile de mediu pentru aplicatie si PostgreSQL
+  - `observability.env.example` pentru configurarea Grafana/Prometheus/Fluent Bit
 - `config/ansible/`
   - bootstrap pentru noduri Ubuntu si cluster Kubernetes self-managed cu `kubeadm`
 - `config/k8s/`
@@ -16,6 +17,7 @@ Directorul `config/` centralizeaza setup-ul de build, orchestration si infrastru
   - overlay `sqlite` pentru rularea actuala
   - overlay `external-postgresql` pentru reutilizarea unei baze PostgreSQL existente
   - overlay `postgresql` care provisioneaza si PostgreSQL, fara sa migreze inca aplicatia
+  - stack separat de observability cu Prometheus, Grafana, kube-state-metrics, node-exporter si Fluent Bit
 - `config/jenkins/`
   - scripturi helper pentru pipeline-ul Jenkins
 - `Jenkinsfile`
@@ -95,7 +97,40 @@ Ce face fiecare overlay:
 - `external-postgresql`: aplicația + PVC SQLite + variabile pentru autodiscovery/reutilizare PostgreSQL extern
 - `postgresql`: aplicația + PVC SQLite + StatefulSet PostgreSQL + Service + Secret + NetworkPolicy
 
-Inainte de deploy:
+## Logging si monitorizare
+
+Stack-ul de observability este in:
+
+- `config/k8s/observability/base`
+
+Ce include:
+
+- `Prometheus` pentru colectarea metricalor de cluster si servicii annotate
+- `Grafana` cu datasource Prometheus si dashboard preprovisionat
+- `kube-state-metrics` pentru metrici despre obiectele Kubernetes
+- `node-exporter` pentru metrici de nod
+- `Fluent Bit` ca DaemonSet pentru colectarea logurilor din `var/log/containers`
+
+Deploy manual:
+
+```bash
+kubectl apply -k config/k8s/observability/base
+```
+
+Inainte de deploy manual, ajusteaza dupa nevoie:
+
+- host-ul din `config/k8s/observability/base/grafana.yaml`
+- host-ul din `config/k8s/observability/base/prometheus.yaml`
+- credențialele din `config/k8s/observability/base/grafana.yaml`
+
+Observatii:
+
+- `Fluent Bit` este configurat implicit sa colecteze si sa trimita logurile catre `stdout`, ca strat de colectare minim si portabil
+- `Prometheus` scrape-uieste implicit `kube-state-metrics`, `node-exporter` si metricele interne ale `Fluent Bit`
+- pentru servicii proprii, poti adauga annotation-ul `prometheus.io/scrape: "true"` pe `Service` atunci cand expui un endpoint `/metrics`
+- pentru stocarea logurilor intr-un backend cautabil, poti extinde ulterior iesirea `Fluent Bit` catre Loki/OpenSearch/Elasticsearch fara sa schimbi structura pipeline-ului
+
+Inainte de deploy aplicație:
 
 1. Editeaza `config/k8s/base/secret.yaml`
 2. Editeaza `config/k8s/base/configmap.yaml`
@@ -225,7 +260,17 @@ Fluxul este:
 4. configurare cluster self-managed sau obținere kubeconfig pentru EKS/AKS
 5. autodiscovery PostgreSQL
 6. deploy aplicație
-7. verificări post-deploy
+7. deploy opțional stack de observability
+8. verificări post-deploy pentru aplicație și observability
+
+Parametrii noi pentru observability în Jenkins:
+
+- `DEPLOY_OBSERVABILITY`
+- `OBSERVABILITY_NAMESPACE`
+- `GRAFANA_INGRESS_HOST`
+- `PROMETHEUS_INGRESS_HOST`
+- `GRAFANA_ADMIN_USER`
+- `GRAFANA_ADMIN_PASSWORD`
 
 Pipeline-ul suportă:
 

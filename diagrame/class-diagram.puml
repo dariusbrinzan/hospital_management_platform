@@ -1,7 +1,6 @@
 @startuml Class Diagram - Platformă eHealth
 
 skinparam backgroundColor #FFFFFF
-skinparam handwritten false
 skinparam monochrome false
 skinparam shadowing false
 skinparam roundcorner 20
