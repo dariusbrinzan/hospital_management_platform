@@ -1,32 +1,32 @@
 "use client";
 
+import "react-datepicker/dist/react-datepicker.css";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import ReactDatePicker from "react-datepicker";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { SelectItem, Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Doctors, MedicalSpecialties, AnalysisPackages, AnalysisPackage } from "@/constants";
+import { Doctors, MedicalSpecialties, AnalysisPackages, AnalysisTestsCatalog } from "@/constants";
 import {
   createAppointment,
   updateAppointment,
 } from "@/lib/actions/appointment.actions";
+import { isValidAppointmentDate } from "@/lib/utils";
 import { getAppointmentSchema } from "@/lib/validation";
 import { Appointment } from "@/types/appwrite.types";
 
-import "react-datepicker/dist/react-datepicker.css";
-import ReactDatePicker from "react-datepicker";
-
 import CustomFormField, { FormFieldType } from "../CustomFormField";
-import SubmitButton from "../SubmitButton";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
-import { Checkbox } from "../ui/checkbox";
-import { SlotSelector } from "../SlotSelector";
-import { isValidAppointmentDate } from "@/lib/utils";
 import { DoctorInfoCard } from "../DoctorInfoCard";
-import { toast } from "sonner";
+import { SlotSelector } from "../SlotSelector";
+import SubmitButton from "../SubmitButton";
+import { Checkbox } from "../ui/checkbox";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 
 export const AppointmentForm = ({
   userId,
@@ -53,6 +53,8 @@ export const AppointmentForm = ({
   const [selectedSlot, setSelectedSlot] = useState<Date | null>(
     appointment ? new Date(appointment.schedule) : null
   );
+  const [analysisMode, setAnalysisMode] = useState<"package" | "custom">("package");
+  const [selectedCustomTests, setSelectedCustomTests] = useState<string[]>([]);
 
   const AppointmentFormValidation = getAppointmentSchema(type);
 
@@ -96,6 +98,29 @@ export const AppointmentForm = ({
     return matchesSpecialty && matchesGender;
   });
 
+  const filteredCustomAnalysisTests = AnalysisTestsCatalog.filter((test) =>
+    AnalysisPackages.some((pkg) => {
+      const matchesSpecialty = pkg.specialties.includes(selectedSpecialty);
+      const matchesGender =
+        !pkg.gender ||
+        pkg.gender === "Ambele" ||
+        (patientGender && pkg.gender === patientGender);
+
+      return matchesSpecialty && matchesGender && pkg.tests.includes(test.name);
+    })
+  );
+
+  const customTestsTotalPrice = selectedCustomTests.reduce((sum, testName) => {
+    const selectedTest = AnalysisTestsCatalog.find((test) => test.name === testName);
+    return sum + (selectedTest?.price ?? 0);
+  }, 0);
+
+  const hasCustomAnalysisSelection =
+    selectedSpecialty === "Analize medicale" &&
+    analysisMode === "custom" &&
+    selectedCustomTests.length > 0;
+  const hasAnalysisSelection = Boolean(selectedAnalysisPackage) || hasCustomAnalysisSelection;
+
   // Când se schimbă doctorul, actualizează specializarea
   useEffect(() => {
     if (watchedDoctor && type === "create") {
@@ -104,7 +129,13 @@ export const AppointmentForm = ({
         setSelectedSpecialty(doctor.specialty);
       }
     }
-  }, [watchedDoctor, type]);
+  }, [selectedSpecialty, watchedDoctor, type]);
+
+  const toggleCustomTest = (testName: string, checked: boolean) => {
+    setSelectedCustomTests((prev) =>
+      checked ? [...prev, testName] : prev.filter((item) => item !== testName)
+    );
+  };
 
   // Actualizează selectedDate când se schimbă data din formular
   useEffect(() => {
@@ -129,12 +160,18 @@ export const AppointmentForm = ({
   ) => {
     setIsLoading(true);
 
+    if (selectedSpecialty === "Analize medicale" && analysisMode === "custom" && selectedCustomTests.length === 0) {
+      toast.warning("Selectați cel puțin o analiză pentru a crea pachetul personalizat.");
+      setIsLoading(false);
+      return;
+    }
+
     // Determină data programării
     let scheduleDate: Date;
     
     if (type === "create") {
       // Pentru pachete de analize, folosim data selectată direct
-      if (selectedAnalysisPackage && !selectedSlot) {
+      if (hasAnalysisSelection && !selectedSlot) {
         const formDate = new Date(values.schedule);
         formDate.setHours(10, 0, 0, 0); // Setăm la ora 10:00 pentru analize
         scheduleDate = formDate;
@@ -147,7 +184,7 @@ export const AppointmentForm = ({
       }
       
       // Verifică dacă slot-ul este valid pentru programări noi (doar dacă nu este pachet de analize)
-      if (!selectedAnalysisPackage && !selectedSlot) {
+      if (!hasAnalysisSelection && !selectedSlot) {
         toast.warning("Vă rugăm să selectați un slot disponibil");
         setIsLoading(false);
         return;
@@ -179,7 +216,7 @@ export const AppointmentForm = ({
     try {
       if (type === "create" && patientId) {
         // Dacă este selectat un pachet de analize, folosim doctorul selectat sau "Analize medicale" ca fallback
-        const primaryPhysician = selectedAnalysisPackage 
+        const primaryPhysician = hasAnalysisSelection
           ? (values.primaryPhysician || "Analize medicale")
           : values.primaryPhysician || "";
         
@@ -193,17 +230,22 @@ export const AppointmentForm = ({
               : `${selectedPkg.price} RON`;
             note = `Pachet Analize: ${selectedPkg.name} (${priceInfo})\n${note ? note + '\n' : ''}Analize incluse: ${selectedPkg.tests.join(', ')}`;
           }
+        } else if (hasCustomAnalysisSelection) {
+          const priceInfo = isInsured
+            ? "Decontat de Casa de Asigurări de Sănătate"
+            : `${customTestsTotalPrice} RON`;
+          note = `Pachet personalizat analize (${priceInfo})\n${note ? note + "\n" : ""}Analize selectate: ${selectedCustomTests.join(", ")}`;
         }
 
         const appointment = {
           userId,
           patient: patientId,
-          primaryPhysician: primaryPhysician,
+          primaryPhysician,
           schedule: scheduleDate,
-          reason: values.reason || (selectedAnalysisPackage ? "Analize medicale" : ""),
+          reason: values.reason || (hasAnalysisSelection ? "Analize medicale" : ""),
           status: status as Status,
-          note: note,
-          appointmentType: selectedAnalysisPackage ? "in_person" : (values.appointmentType === "video" ? "video" : "in_person"),
+          note,
+          appointmentType: hasAnalysisSelection ? "in_person" : (values.appointmentType === "video" ? "video" : "in_person"),
         };
 
         const newAppointment = await createAppointment(appointment);
@@ -281,6 +323,10 @@ export const AppointmentForm = ({
                           value={selectedSpecialty}
                           onValueChange={(value) => {
                             setSelectedSpecialty(value);
+                            setAnalysisMode("package");
+                            setSelectedAnalysisPackage("");
+                            setSelectedCustomTests([]);
+                            form.setValue("analysisPackage", "");
                             form.setValue("primaryPhysician", ""); // Resetează doctorul când se schimbă specializarea
                             setSelectedDate(null);
                             setSelectedSlot(null);
@@ -329,58 +375,139 @@ export const AppointmentForm = ({
                       )}
                     />
                     
-                    <FormField
-                      control={form.control}
-                      name="analysisPackage"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Pachet Analize Medicale</FormLabel>
-                          <FormControl>
-                            <Select
-                              value={selectedAnalysisPackage}
-                              onValueChange={(value) => {
-                                setSelectedAnalysisPackage(value);
-                                field.onChange(value);
-                              }}
-                            >
-                              <SelectTrigger className="shad-select-trigger">
-                                <SelectValue placeholder="Selectează un pachet de analize" />
-                              </SelectTrigger>
-                            <SelectContent className="shad-select-content max-h-[400px]">
-                              {filteredAnalysisPackages.map((pkg) => (
-                                <SelectItem key={pkg.id} value={pkg.id}>
-                                  <div className="flex flex-col gap-1 py-1">
-                                    <p className="text-14-semibold text-dark-700">{pkg.name}</p>
+                    <div className="rounded-lg border border-dark-200 bg-white p-4">
+                      <div className="mb-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAnalysisMode("package");
+                            setSelectedCustomTests([]);
+                          }}
+                          className={`rounded-lg px-4 py-2 text-14-medium transition ${
+                            analysisMode === "package"
+                              ? "bg-green-500 text-white"
+                              : "border border-dark-200 bg-white text-dark-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          Pachet predefinit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAnalysisMode("custom");
+                            setSelectedAnalysisPackage("");
+                            form.setValue("analysisPackage", "");
+                          }}
+                          className={`rounded-lg px-4 py-2 text-14-medium transition ${
+                            analysisMode === "custom"
+                              ? "bg-green-500 text-white"
+                              : "border border-dark-200 bg-white text-dark-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          Pachet personalizat
+                        </button>
+                      </div>
+
+                      {analysisMode === "package" ? (
+                        <FormField
+                          control={form.control}
+                          name="analysisPackage"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Pachet Analize Medicale</FormLabel>
+                              <FormControl>
+                                <Select
+                                  value={selectedAnalysisPackage}
+                                  onValueChange={(value) => {
+                                    setSelectedAnalysisPackage(value);
+                                    field.onChange(value);
+                                  }}
+                                >
+                                  <SelectTrigger className="shad-select-trigger">
+                                    <SelectValue placeholder="Selectează un pachet de analize" />
+                                  </SelectTrigger>
+                                  <SelectContent className="shad-select-content max-h-[400px]">
+                                    {filteredAnalysisPackages.map((pkg) => (
+                                      <SelectItem key={pkg.id} value={pkg.id}>
+                                        <div className="flex flex-col gap-1 py-1">
+                                          <p className="text-14-semibold text-dark-700">{pkg.name}</p>
+                                          <p className="text-12-regular text-dark-500">
+                                            {pkg.description}
+                                          </p>
+                                          <div className="mt-1">
+                                            {!isInsured ? (
+                                              <p className="text-14-medium font-semibold text-green-500">
+                                                {pkg.price} RON
+                                              </p>
+                                            ) : (
+                                              <p className="text-14-medium font-semibold text-green-500">
+                                                Decontat de CASMB
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <p className="text-14-semibold text-dark-700">Analize individuale</p>
+                              <p className="text-12-regular text-dark-500">
+                                Selectează analizele dorite și aplicația va construi automat pachetul tău.
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-12-regular text-dark-500">
+                                {selectedCustomTests.length} selectate
+                              </p>
+                              <p className="text-16-semibold text-green-500">
+                                {isInsured ? "Decontat de CASMB" : `${customTestsTotalPrice} RON`}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid gap-3 md:grid-cols-2">
+                            {filteredCustomAnalysisTests.map((test) => {
+                              const checked = selectedCustomTests.includes(test.name);
+                              return (
+                                <label
+                                  key={test.id}
+                                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
+                                    checked
+                                      ? "border-green-300 bg-green-50"
+                                      : "border-dark-200 bg-white hover:bg-gray-50"
+                                  }`}
+                                >
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={(value) => toggleCustomTest(test.name, Boolean(value))}
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-14-medium text-dark-700">{test.name}</p>
                                     <p className="text-12-regular text-dark-500">
-                                      {pkg.description}
+                                      {isInsured ? "Decontat de CASMB" : `${test.price} RON`}
                                     </p>
-                                    <div className="mt-1">
-                                      {!isInsured && (
-                                        <p className="text-14-medium text-green-500 font-semibold">
-                                          {pkg.price} RON
-                                        </p>
-                                      )}
-                                      {isInsured && (
-                                        <p className="text-14-medium text-green-500 font-semibold">
-                                          Decontat de CASMB
-                                        </p>
-                                      )}
-                                    </div>
                                   </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
                       )}
-                    />
+                    </div>
                   </>
                 )}
 
                 {/* Afișează detaliile pachetului selectat */}
-                {selectedAnalysisPackage && selectedSpecialty === "Analize medicale" && (
+                {selectedAnalysisPackage && selectedSpecialty === "Analize medicale" && analysisMode === "package" && (
                   <div className="rounded-lg border border-dark-200 bg-white p-6">
                     {(() => {
                       const selectedPkg = AnalysisPackages.find(
@@ -423,6 +550,44 @@ export const AppointmentForm = ({
                         </div>
                       );
                     })()}
+                  </div>
+                )}
+
+                {selectedSpecialty === "Analize medicale" && analysisMode === "custom" && selectedCustomTests.length > 0 && (
+                  <div className="rounded-lg border border-dark-200 bg-white p-6">
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                          <p className="text-18-semibold text-dark-700 mb-2">
+                            Pachet personalizat de analize
+                          </p>
+                          <p className="text-14-regular text-dark-600">
+                            Pachet generat din analizele selectate individual de pacient.
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          {!isInsured ? (
+                            <p className="text-20-semibold text-green-500">{customTestsTotalPrice} RON</p>
+                          ) : (
+                            <p className="text-18-semibold text-green-500">
+                              Decontat de Casa de Asigurări de Sănătate
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-14-semibold text-dark-700 mb-2">
+                          Analize selectate:
+                        </p>
+                        <ul className="list-disc list-inside space-y-1">
+                          {selectedCustomTests.map((test) => (
+                            <li key={test} className="text-14-regular text-dark-600">
+                              {test}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -669,7 +834,7 @@ export const AppointmentForm = ({
                 )}
                 
                 {/* Mesaj pentru analize medicale fără doctor selectat */}
-                {selectedSpecialty === "Analize medicale" && selectedAnalysisPackage && !watchedDoctor && (
+                {selectedSpecialty === "Analize medicale" && hasAnalysisSelection && !watchedDoctor && (
                   <div className="rounded-lg border border-green-200 bg-green-50 p-4">
                     <p className="text-14-regular text-dark-700">
                       Pentru analize medicale, vă rugăm să selectați data programării. Programările pentru analize se fac de luni până vineri, între orele 10:00-20:00.

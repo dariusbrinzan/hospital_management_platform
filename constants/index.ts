@@ -330,6 +330,77 @@ export const AnalysisPackages: AnalysisPackage[] = [
   },
 ];
 
+export interface AnalysisTestOption {
+  id: string;
+  name: string;
+  price: number;
+}
+
+const AnalysisTestPrices: Record<string, number> = {
+  "Hemoleucogramă completă": 45,
+  "Hemoleucogramă": 35,
+  "Glicemie": 20,
+  "Colesterol total": 22,
+  "HDL colesterol": 24,
+  "LDL colesterol": 24,
+  "Trigliceride": 22,
+  "Creatinină": 20,
+  "Uree": 18,
+  "ALT (GPT)": 20,
+  "AST (GOT)": 20,
+  "TSH": 40,
+  "FT4": 40,
+  "FT3": 40,
+  "Vitamina D": 70,
+  "Vitamina B12": 65,
+  "Acid folic": 55,
+  "PSA total": 55,
+  "PSA liber": 55,
+  "Raport PSA liber/PSA total": 35,
+  "Testosteron": 55,
+  "Estradiol": 55,
+  "Progesteron": 50,
+  "Feritină": 45,
+  "Prolactină": 45,
+  "FSH": 45,
+  "LH": 45,
+  "Grupa sanguină și Rh": 35,
+  "Anticorpi anti-Rh": 45,
+  "Homocisteină": 60,
+  "NT-proBNP": 90,
+  "Troponină": 85,
+  "Anticorpi anti-TPO": 60,
+  "Anticorpi anti-TG": 60,
+  "Cortizol": 50,
+  "Insulină": 45,
+  "HbA1c": 35,
+  "Calciu": 18,
+  "Fosfor": 18,
+  "GGT": 20,
+  "Fosfatază alcalină": 22,
+  "Bilirubină totală": 18,
+  "Bilirubină directă": 18,
+  "Amilază": 24,
+  "Lipază": 28,
+  "Zinc": 40,
+  "Seleniu": 45,
+};
+
+export const AnalysisTestsCatalog: AnalysisTestOption[] = Array.from(
+  new Set(AnalysisPackages.flatMap((pkg) => pkg.tests))
+)
+  .sort((a, b) => a.localeCompare(b, "ro"))
+  .map((testName) => ({
+    id: testName
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, ""),
+    name: testName,
+    price: AnalysisTestPrices[testName] ?? 30,
+  }));
+
 export const Doctors: Doctor[] = [
   {
     image: "/assets/images/b_48.png",
