@@ -35,7 +35,7 @@ const navItems = [
   { href: "medication-requests", label: "Cereri medicamente", icon: ClipboardList },
   { href: "lab-results", label: "Analize Medicale", icon: FlaskConical },
   { href: "calendar", label: "Calendar", icon: Calendar },
-  { href: "signature", label: "Semnătură digitală", icon: PenLine },
+  { href: "signature", label: "Consimțământ Pacient", icon: PenLine },
   { href: "profile", label: "Profil Medical", icon: User },
   { href: "hospital-map", label: "Hartă Spital", icon: MapPin },
   { href: "messages", label: "Mesaje", icon: MessageSquare },

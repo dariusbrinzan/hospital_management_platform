@@ -7,8 +7,10 @@ Directorul `config/` centralizeaza setup-ul de build, orchestration si infrastru
 - `config/docker/`
   - `Dockerfile`: build multi-stage pentru aplicatia Next.js 14
   - `docker-compose.postgresql.yml`: PostgreSQL local pentru dezvoltare sau validare de config
+  - `docker-compose.redis.yml`: Redis local pentru testarea cache-ului
 - `config/env/`
   - exemple de variabile de mediu pentru aplicatie si PostgreSQL
+  - `redis.env.example` pentru configurarea Redis request cache
   - `observability.env.example` pentru configurarea Grafana/Prometheus/Fluent Bit
 - `config/ansible/`
   - bootstrap pentru noduri Ubuntu si cluster Kubernetes self-managed cu `kubeadm`
@@ -17,6 +19,7 @@ Directorul `config/` centralizeaza setup-ul de build, orchestration si infrastru
   - overlay `sqlite` pentru rularea actuala
   - overlay `external-postgresql` pentru reutilizarea unei baze PostgreSQL existente
   - overlay `postgresql` care provisioneaza si PostgreSQL, fara sa migreze inca aplicatia
+  - stack Redis separat pentru request caching in cluster
   - stack separat de observability cu Prometheus, Grafana, kube-state-metrics, node-exporter si Fluent Bit
 - `config/jenkins/`
   - scripturi helper pentru pipeline-ul Jenkins
@@ -66,6 +69,12 @@ PostgreSQL local separat:
 docker compose -f config/docker/docker-compose.postgresql.yml up -d
 ```
 
+Redis local separat:
+
+```bash
+docker compose -f config/docker/docker-compose.redis.yml up -d
+```
+
 Nota:
 
 - variabilele `NEXT_PUBLIC_*` sunt importante la build time in Next.js
@@ -96,6 +105,49 @@ Ce face fiecare overlay:
 - `sqlite`: aplicația + PVC pentru `data/carepulse.db`
 - `external-postgresql`: aplicația + PVC SQLite + variabile pentru autodiscovery/reutilizare PostgreSQL extern
 - `postgresql`: aplicația + PVC SQLite + StatefulSet PostgreSQL + Service + Secret + NetworkPolicy
+
+## Redis request cache
+
+Stack-ul Redis pentru cluster este in:
+
+- `config/k8s/redis/base`
+
+Ce include:
+
+- `Deployment` Redis cu autentificare pe bază de parolă
+- `Service` intern `redis`
+- `PersistentVolumeClaim` pentru persistență
+- `NetworkPolicy` care permite accesul doar din pod-urile aplicației
+
+Deploy manual:
+
+```bash
+kubectl apply -k config/k8s/redis/base
+```
+
+Config pentru aplicație:
+
+- `ENABLE_REQUEST_CACHE`
+- `CACHE_PROVIDER=redis`
+- `REQUEST_CACHE_DEFAULT_TTL_SECONDS`
+- `REDIS_HOST`
+- `REDIS_PORT`
+- `REDIS_DB`
+- `REDIS_KEY_PREFIX`
+- `REDIS_PASSWORD`
+
+În implementarea actuală, cache-ul Redis este conectat la endpoint-uri GET cu citire frecventă, cum ar fi:
+
+- notificări pacient și medic
+- căutare pacienți
+- listă pacienți pentru admin
+- catalog medicamente și stocuri
+- camere ATI
+
+Observație:
+
+- cache-ul este `TTL-based`, nu are încă invalidare fină pe fiecare mutație
+- din acest motiv am folosit TTL-uri scurte pentru date dinamice și TTL-uri mai lungi pentru cataloage relativ stabile
 
 ## Logging si monitorizare
 
@@ -258,10 +310,18 @@ Fluxul este:
 2. provision infrastructură
 3. pregătire acces cluster
 4. configurare cluster self-managed sau obținere kubeconfig pentru EKS/AKS
-5. autodiscovery PostgreSQL
-6. deploy aplicație
-7. deploy opțional stack de observability
-8. verificări post-deploy pentru aplicație și observability
+5. deploy opțional Redis pentru request cache
+6. autodiscovery PostgreSQL
+7. deploy aplicație
+8. deploy opțional stack de observability
+9. verificări post-deploy pentru aplicație, Redis și observability
+
+Parametrii noi pentru Redis în Jenkins:
+
+- `DEPLOY_REDIS`
+- `REDIS_PASSWORD`
+- `REDIS_STORAGE_SIZE`
+- `REQUEST_CACHE_DEFAULT_TTL_SECONDS`
 
 Parametrii noi pentru observability în Jenkins:
 

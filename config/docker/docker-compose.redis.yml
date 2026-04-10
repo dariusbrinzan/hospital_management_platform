@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  redis:
+    image: bitnami/redis:7.4.1
+    container_name: carepulse-redis
+    restart: unless-stopped
+    environment:
+      ALLOW_EMPTY_PASSWORD: "no"
+      REDIS_PASSWORD: change-me
+      REDIS_AOF_ENABLED: "yes"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/bitnami/redis/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  redis-data:

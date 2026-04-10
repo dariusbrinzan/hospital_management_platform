@@ -10,7 +10,7 @@ export type DocumentTypeForSign = "consent_gdpr" | "document_receipt" | "general
 const DOCUMENT_LABELS: Record<DocumentTypeForSign, string> = {
   consent_gdpr: "Consimțământ prelucrare date (GDPR)",
   document_receipt: "Confirmare primire document",
-  general: "Semnătură generală",
+  general: "Consimțământ general",
 };
 
 interface PatientSignModalProps {
@@ -60,12 +60,12 @@ export function PatientSignModal({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Eroare la salvare");
-      toast.success("Semnătura a fost salvată.");
+      toast.success("Înregistrarea a fost salvată.");
       pad.clear();
       onClose();
       onSuccess?.();
     } catch (e: any) {
-      toast.error(e?.message || "Eroare la salvarea semnăturii.");
+      toast.error(e?.message || "Eroare la salvarea înregistrării.");
     } finally {
       setLoading(false);
     }
@@ -81,7 +81,7 @@ export function PatientSignModal({
   const label = title ?? DOCUMENT_LABELS[documentType];
   const desc =
     description ??
-    "Semnați în caseta de mai jos folosind mouse-ul sau degetul pe ecrane tactile.";
+    "Completați consimțământul în caseta de mai jos folosind mouse-ul sau degetul pe ecrane tactile.";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -116,7 +116,7 @@ export function PatientSignModal({
             onClick={handleSubmit}
             disabled={loading}
           >
-            {loading ? "Se salvează..." : "Semnează"}
+            {loading ? "Se salvează..." : "Confirmă și salvează"}
           </Button>
         </div>
       </div>

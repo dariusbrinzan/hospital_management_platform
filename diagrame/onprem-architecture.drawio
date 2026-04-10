@@ -1,0 +1,172 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.6.6 Chrome/144.0.7559.236 Electron/40.8.4 Safari/537.36" version="29.6.6">
+  <diagram id="onprem-architecture" name="OnPrem Architecture">
+    <mxGraphModel dx="1577" dy="1117" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="2339" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="hospital" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#0ea5e9;fillColor=#f0f9ff;verticalAlign=top;fontStyle=1;" value="Spital - On-Prem Data Center" vertex="1">
+          <mxGeometry height="880" width="1190" x="290" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="privateNet" parent="hospital" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#0284c7;fillColor=#e0f2fe;verticalAlign=top;fontStyle=1;" value="Retea privata 10.20.0.0/16" vertex="1">
+          <mxGeometry height="633.6" width="1113.2258064516127" x="38.387096774193544" y="211.2" as="geometry" />
+        </mxCell>
+        <mxCell id="cluster" parent="privateNet" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#16a34a;fillColor=#dcfce7;verticalAlign=top;fontStyle=1;" value="Kubernetes Cluster (kubeadm) - namespace: carepulse" vertex="1">
+          <mxGeometry height="422.4" width="806.1290322580645" x="153.55193548387095" y="48.8" as="geometry" />
+        </mxCell>
+        <mxCell id="cp" parent="cluster" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#16a34a;fillColor=#bbf7d0;strokeWidth=2;" value="Server 1&#xa;Ubuntu 24.04&#xa;Control Plane&#xa;(API Server, Scheduler, etcd)" vertex="1">
+          <mxGeometry height="81.63692307692308" width="210.04552549427683" x="27.397242455775242" y="36.283076923076926" as="geometry" />
+        </mxCell>
+        <mxCell id="w1" parent="cluster" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#16a34a;fillColor=#dcfce7;strokeWidth=2;" value="Server 2&#xa;Ubuntu 24.04&#xa;Worker Node 1&#xa;App Pod + Fluent Bit" vertex="1">
+          <mxGeometry height="81.63692307692308" width="146.11862643080127" x="273.9724245577524" y="36.283076923076926" as="geometry" />
+        </mxCell>
+        <mxCell id="w2" parent="cluster" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#16a34a;fillColor=#dcfce7;strokeWidth=2;" value="Server 3&#xa;Ubuntu 24.04&#xa;Worker Node 2&#xa;App Pod + Fluent Bit" vertex="1">
+          <mxGeometry height="81.63692307692308" width="146.11862643080127" x="447.4882934443289" y="36.283076923076926" as="geometry" />
+        </mxCell>
+        <mxCell id="w3" parent="cluster" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#16a34a;fillColor=#dcfce7;strokeWidth=2;" value="Server 4&#xa;Ubuntu 24.04&#xa;Worker Node 3&#xa;App Pod + Fluent Bit" vertex="1">
+          <mxGeometry height="81.63692307692308" width="118.72138397502604" x="621.0041623309055" y="36.283076923076926" as="geometry" />
+        </mxCell>
+        <mxCell id="svcapp" parent="cluster" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#ca8a04;fillColor=#fef9c3;strokeWidth=2;" value="Service carepulse&#xa;(ClusterIP)" vertex="1">
+          <mxGeometry height="31.74769230769231" width="210.04552549427683" x="273.9724245577524" y="136.06153846153848" as="geometry" />
+        </mxCell>
+        <mxCell id="ingctl" parent="cluster" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#ca8a04;fillColor=#fef9c3;strokeWidth=2;" value="Ingress Controller Pod" vertex="1">
+          <mxGeometry height="31.74769230769231" width="200.91311134235178" x="511.41519250780453" y="136.06153846153848" as="geometry" />
+        </mxCell>
+        <mxCell id="pgsql" parent="cluster" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#b45309;fillColor=#fde68a;strokeWidth=2;" value="PostgreSQL StatefulSet&#xa;(Primary + Replica)" vertex="1">
+          <mxGeometry height="40.81846153846154" width="237.4427679500521" x="36.52965660770032" y="190.48615384615385" as="geometry" />
+        </mxCell>
+        <mxCell id="pv" parent="cluster" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#b45309;fillColor=#ffedd5;strokeWidth=2;" value="Persistent Volumes&#xa;(CSI/NFS)" vertex="1">
+          <mxGeometry height="31.74769230769231" width="173.51586888657653" x="301.36966701352765" y="195.02153846153848" as="geometry" />
+        </mxCell>
+        <mxCell id="prom" parent="cluster" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#0e7490;fillColor=#cffafe;strokeWidth=2;" value="Prometheus Pod" vertex="1">
+          <mxGeometry height="31.74769230769231" width="127.85379812695113" x="511.41519250780453" y="195.02153846153848" as="geometry" />
+        </mxCell>
+        <mxCell id="graf" parent="cluster" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#0e7490;fillColor=#cffafe;strokeWidth=2;" value="Grafana Pod" vertex="1">
+          <mxGeometry height="31.74769230769231" width="100.45655567117589" x="657.5338189386058" y="195.02153846153848" as="geometry" />
+        </mxCell>
+        <mxCell id="log" parent="cluster" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#0e7490;fillColor=#cffafe;strokeWidth=2;" value="Loki / Elasticsearch" vertex="1">
+          <mxGeometry height="27.212307692307693" width="246.57518210197716" x="511.41519250780453" y="235.84" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="cluster" source="ingctl" style="endArrow=classic;html=1;rounded=1;" target="svcapp" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="cluster" source="svcapp" style="endArrow=classic;html=1;rounded=1;" target="w1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="cluster" source="svcapp" style="endArrow=classic;html=1;rounded=1;" target="w2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="cluster" source="svcapp" style="endArrow=classic;html=1;rounded=1;" target="w3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="cluster" source="w1" style="endArrow=classic;html=1;rounded=1;" target="pgsql" value="DB conn">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" edge="1" parent="cluster" source="w2" style="endArrow=classic;html=1;rounded=1;" target="pgsql" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" edge="1" parent="cluster" source="w3" style="endArrow=classic;html=1;rounded=1;" target="pgsql" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" edge="1" parent="cluster" source="pgsql" style="endArrow=classic;html=1;rounded=1;" target="pv" value="storage">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" edge="1" parent="cluster" source="w1" style="endArrow=classic;html=1;rounded=1;" target="prom" value="metrics">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" edge="1" parent="cluster" source="w2" style="endArrow=classic;html=1;rounded=1;" target="prom" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e23" edge="1" parent="cluster" source="w3" style="endArrow=classic;html=1;rounded=1;" target="prom" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e24" edge="1" parent="cluster" source="prom" style="endArrow=classic;html=1;rounded=1;" target="graf" value="dashboards">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e25" edge="1" parent="cluster" source="w1" style="endArrow=classic;html=1;rounded=1;" target="log" value="logs (Fluent Bit)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e26" edge="1" parent="cluster" source="w2" style="endArrow=classic;html=1;rounded=1;" target="log" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e27" edge="1" parent="cluster" source="w3" style="endArrow=classic;html=1;rounded=1;" target="log" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hypervisor" parent="hospital" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#7c3aed;fillColor=#f5f3ff;verticalAlign=top;fontStyle=1;" value="Hypervisor Cluster (Proxmox / VMware / KVM)" vertex="1">
+          <mxGeometry height="105.6" width="1113.2258064516127" x="38.387096774193544" y="84.48" as="geometry" />
+        </mxCell>
+        <mxCell id="vmk8s" parent="hypervisor" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#6d28d9;fillColor=#ede9fe;strokeWidth=2;" value="VM Group A - Kubernetes VMs (4 / max 10)&#xa;cp-01, worker-01, worker-02, worker-03&#xa;Ubuntu 24.04" vertex="1">
+          <mxGeometry height="63.36" width="537.4193548387096" x="19.193548387096772" y="31.68" as="geometry" />
+        </mxCell>
+        <mxCell id="vmisolated" parent="hypervisor" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#6d28d9;fillColor=#ede9fe;strokeWidth=2;" value="VM Group B - Pool izolat (pana la 6 VM suplimentare)&#xa;ex: backup, bastion, CI runner, BI, staging&#xa;separate prin VLAN/segmente + reguli firewall" vertex="1">
+          <mxGeometry height="63.36" width="518.2258064516129" x="575.8064516129033" y="31.68" as="geometry" />
+        </mxCell>
+        <mxCell id="firewall" parent="hospital" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#dc2626;fillColor=#fee2e2;strokeWidth=2;" value="Firewall + ACL + IDS/IPS" vertex="1">
+          <mxGeometry height="31.74769230769231" width="200.91311134235173" x="36.52965660770031" y="13.606153846153846" as="geometry" />
+        </mxCell>
+        <mxCell id="lb" parent="hospital" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#0284c7;fillColor=#e0f2fe;strokeWidth=2;" value="Load Balancer / Ingress VIP&#xa;(HAProxy/Nginx/MetalLB)" vertex="1">
+          <mxGeometry height="36.283076923076926" width="246.5751821019771" x="273.97242455775233" y="13.606153846153846" as="geometry" />
+        </mxCell>
+        <mxCell id="nat" parent="hospital" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#0284c7;fillColor=#e0f2fe;strokeWidth=2;" value="NAT Gateway / Proxy Egress" vertex="1">
+          <mxGeometry height="31.74769230769231" width="237.44276795005203" x="557.0772632674298" y="13.606153846153846" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="hospital" source="firewall" style="endArrow=classic;html=1;rounded=1;" target="lb" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="hospital" source="lb" style="endArrow=classic;html=1;rounded=1;" target="ingctl" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="hospital" source="nat" style="endArrow=classic;html=1;rounded=1;" target="internet" value="egress controlat">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e28" edge="1" parent="hospital" source="hypervisor" style="endArrow=classic;html=1;rounded=1;dashed=1;" target="privateNet" value="hosteaza VM Group A">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="internet" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;strokeColor=#6b7280;fillColor=#f3f4f6;" value="Internet" vertex="1">
+          <mxGeometry height="70" width="140" x="660" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="git" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#7c3aed;fillColor=#ede9fe;strokeWidth=2;" value="Git Repository" vertex="1">
+          <mxGeometry height="70" width="180" x="40" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="jenkins" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#7c3aed;fillColor=#ede9fe;strokeWidth=2;" value="Jenkins Server&#xa;CI/CD Pipeline" vertex="1">
+          <mxGeometry height="90" width="180" x="40" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="registry" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#7c3aed;fillColor=#ede9fe;strokeWidth=2;" value="Container Registry" vertex="1">
+          <mxGeometry height="70" width="180" x="40" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="ansible" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#7c3aed;fillColor=#ede9fe;strokeWidth=2;" value="Ansible Control Node&#xa;(Ubuntu 24.04)" vertex="1">
+          <mxGeometry height="90" width="220" x="40" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="internet" style="endArrow=classic;html=1;rounded=1;orthogonalLoop=1;jettySize=auto;" target="firewall" value="HTTPS 443">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="git" style="endArrow=classic;html=1;rounded=1;" target="jenkins" value="git push / webhook">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="jenkins" style="endArrow=classic;html=1;rounded=1;" target="registry" value="build + push image">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="jenkins" style="endArrow=classic;html=1;rounded=1;" target="cp" value="kubectl apply">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="ansible" style="endArrow=classic;html=1;rounded=1;" target="cp" value="ssh + ansible">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="ansible" style="endArrow=classic;html=1;rounded=1;" target="w1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="ansible" style="endArrow=classic;html=1;rounded=1;" target="w2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="ansible" style="endArrow=classic;html=1;rounded=1;" target="w3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="registry" style="endArrow=classic;html=1;rounded=1;" target="cp" value="image pull">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12a" edge="1" parent="1" source="ansible" style="endArrow=classic;html=1;rounded=1;dashed=1;" target="hypervisor" value="provisionare VM-uri">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

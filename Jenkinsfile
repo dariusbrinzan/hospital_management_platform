@@ -29,10 +29,14 @@ pipeline {
     booleanParam(name: 'APPLY_INFRA', defaultValue: true, description: 'Rulează provisioning de infrastructură.')
     booleanParam(name: 'CONFIGURE_CLUSTER', defaultValue: true, description: 'Rulează configurarea clusterului.')
     booleanParam(name: 'DEPLOY_APPLICATION', defaultValue: true, description: 'Rulează deployment-ul aplicației.')
+    booleanParam(name: 'DEPLOY_REDIS', defaultValue: false, description: 'Rulează deployment-ul Redis pentru request caching.')
     booleanParam(name: 'DEPLOY_OBSERVABILITY', defaultValue: false, description: 'Rulează deployment-ul stack-ului Prometheus + Grafana + Fluent Bit.')
     booleanParam(name: 'PUSH_IMAGE', defaultValue: false, description: 'Face push la imagine după build.')
     booleanParam(name: 'AUTO_DISCOVER_POSTGRES', defaultValue: true, description: 'Încearcă să găsească o bază PostgreSQL existentă înainte de deploy.')
     booleanParam(name: 'RUN_SMOKE_TEST', defaultValue: false, description: 'Rulează un smoke test HTTP după deploy, dacă URL-ul este accesibil din Jenkins.')
+    string(name: 'REDIS_PASSWORD', defaultValue: 'change-me', description: 'Parola folosită de instanța Redis din cluster.')
+    string(name: 'REDIS_STORAGE_SIZE', defaultValue: '5Gi', description: 'Dimensiunea volumului persistent pentru Redis.')
+    string(name: 'REQUEST_CACHE_DEFAULT_TTL_SECONDS', defaultValue: '60', description: 'TTL implicit pentru răspunsurile GET cache-uite în Redis.')
     string(name: 'OBSERVABILITY_NAMESPACE', defaultValue: 'observability', description: 'Namespace Kubernetes pentru Prometheus, Grafana și Fluent Bit.')
     string(name: 'GRAFANA_INGRESS_HOST', defaultValue: 'grafana.example.com', description: 'Host-ul de ingress pentru Grafana.')
     string(name: 'PROMETHEUS_INGRESS_HOST', defaultValue: 'prometheus.example.com', description: 'Host-ul de ingress pentru Prometheus.')
@@ -63,6 +67,9 @@ pipeline {
     AUTO_DISCOVER_POSTGRES = "${params.AUTO_DISCOVER_POSTGRES}"
     RUN_SMOKE_TEST = "${params.RUN_SMOKE_TEST}"
     PUSH_IMAGE = "${params.PUSH_IMAGE}"
+    REDIS_PASSWORD = "${params.REDIS_PASSWORD}"
+    REDIS_STORAGE_SIZE = "${params.REDIS_STORAGE_SIZE}"
+    REQUEST_CACHE_DEFAULT_TTL_SECONDS = "${params.REQUEST_CACHE_DEFAULT_TTL_SECONDS}"
     OBSERVABILITY_NAMESPACE = "${params.OBSERVABILITY_NAMESPACE}"
     GRAFANA_INGRESS_HOST = "${params.GRAFANA_INGRESS_HOST}"
     PROMETHEUS_INGRESS_HOST = "${params.PROMETHEUS_INGRESS_HOST}"
@@ -124,7 +131,7 @@ pipeline {
     stage('Prepare Cluster Access') {
       when {
         expression {
-          return params.CONFIGURE_CLUSTER || params.DEPLOY_APPLICATION
+          return params.CONFIGURE_CLUSTER || params.DEPLOY_APPLICATION || params.DEPLOY_REDIS || params.DEPLOY_OBSERVABILITY
         }
       }
       steps {
@@ -146,12 +153,23 @@ pipeline {
     stage('Acquire Managed Kubeconfig') {
       when {
         expression {
-          return (params.CONFIGURE_CLUSTER || params.DEPLOY_APPLICATION) &&
+          return (params.CONFIGURE_CLUSTER || params.DEPLOY_APPLICATION || params.DEPLOY_REDIS || params.DEPLOY_OBSERVABILITY) &&
             (params.TARGET_PLATFORM == 'aws-eks' || params.TARGET_PLATFORM == 'azure-aks')
         }
       }
       steps {
         sh 'config/jenkins/scripts/acquire-managed-kubeconfig.sh'
+      }
+    }
+
+    stage('Deploy Redis Cache') {
+      when {
+        expression {
+          return params.DEPLOY_REDIS
+        }
+      }
+      steps {
+        sh 'config/jenkins/scripts/deploy-redis.sh'
       }
     }
 
@@ -196,6 +214,17 @@ pipeline {
       }
       steps {
         sh 'config/jenkins/scripts/post-deploy-checks.sh'
+      }
+    }
+
+    stage('Verify Redis Cache') {
+      when {
+        expression {
+          return params.DEPLOY_REDIS
+        }
+      }
+      steps {
+        sh 'config/jenkins/scripts/verify-redis.sh'
       }
     }
 

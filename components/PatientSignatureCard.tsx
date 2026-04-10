@@ -10,7 +10,7 @@ import { formatDateTime } from "@/lib/utils";
 const DOCUMENT_LABELS: Record<string, string> = {
   consent_gdpr: "Consimțământ GDPR",
   document_receipt: "Primire document",
-  general: "General",
+  general: "Consimțământ general",
 };
 
 export function PatientSignatureCard() {
@@ -44,10 +44,10 @@ export function PatientSignatureCard() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg text-slate-900 dark:text-slate-100">
             <PenLine className="size-5 text-teal-600 dark:text-teal-400" />
-            Semnătură digitală
+            Consimțământ Pacient
           </CardTitle>
           <CardDescription className="text-slate-600 dark:text-slate-400">
-            Semnați digital consimțământul sau confirmarea primirii documentelor.
+            Înregistrați consimțământul pacientului sau confirmarea primirii documentelor.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -77,7 +77,7 @@ export function PatientSignatureCard() {
               className="rounded-xl border-teal-200 text-teal-700 hover:bg-teal-50 dark:border-teal-800 dark:text-teal-300 dark:hover:bg-teal-950/50"
               onClick={() => openSign("general")}
             >
-              Semnătură generală
+              Consimțământ general
             </Button>
           </div>
 
@@ -86,7 +86,7 @@ export function PatientSignatureCard() {
           ) : signatures.length > 0 ? (
             <div>
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Semnături recente
+                Consimțăminte și confirmări recente
               </p>
               <ul className="space-y-1.5 text-sm text-slate-700 dark:text-slate-300">
                 {signatures.slice(0, 5).map((s) => (
