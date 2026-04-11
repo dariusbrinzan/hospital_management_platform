@@ -1,16 +1,16 @@
 "use client";
 
+import { AlertCircle, Calendar, CalendarPlus, FileCheck, FileText, Menu, MessageSquare, Pill, ScanSearch, Scissors, Stethoscope, Users, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calendar, CalendarPlus, FileText, Menu, MessageSquare, Pill, ScanSearch, Stethoscope, Users, X, AlertCircle, FileCheck } from "lucide-react";
 import { useState } from "react";
 
-import { logoutDoctor } from "@/lib/actions/auth.actions";
-import { cn } from "@/lib/utils";
 import { DoctorNotificationsDropdown } from "@/components/DoctorNotificationsDropdown";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
+import { logoutDoctor } from "@/lib/actions/auth.actions";
+import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/doctor", label: "Programări", icon: Stethoscope },
@@ -19,6 +19,7 @@ const navItems = [
   { href: "/doctor/emergency", label: "Urgențe", icon: AlertCircle },
   { href: "/doctor/patients", label: "Istoric pacienți", icon: Users },
   { href: "/doctor/consultations", label: "Consultații / Rapoarte", icon: FileText },
+  { href: "/doctor/surgery", label: "Intervenții chirurgicale", icon: Scissors },
   { href: "/doctor/results", label: "Rezultate noi", icon: FileCheck },
   { href: "/doctor/prescriptions", label: "Rețete emise", icon: Pill },
   { href: "/doctor/imaging", label: "Imagistică", icon: ScanSearch },
@@ -71,7 +72,7 @@ export function DoctorLayoutClient({
             <Link
               href="/doctor/profile"
               prefetch={false}
-              className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 transition hover:border-teal-300 hover:bg-teal-50/60 dark:border-slate-700 dark:bg-slate-800/80 dark:hover:border-teal-700 dark:hover:bg-teal-950/30"
+              className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 transition hover:border-teal-300 hover:bg-teal-50/60 dark:border-slate-700 dark:bg-slate-800/80 dark:hover:border-teal-700 dark:hover:bg-teal-950/30 sm:flex"
             >
               <div className="flex size-8 items-center justify-center rounded-full bg-teal-100 text-teal-600 dark:bg-teal-900/50 dark:text-teal-400">
                 <Stethoscope className="size-4" />
@@ -106,7 +107,7 @@ export function DoctorLayoutClient({
               aria-hidden
             />
           )}
-          <div className="relative z-30 flex h-full flex-col overflow-y-auto py-6 pl-4 pr-4 lg:pl-6">
+          <div className="relative z-30 flex h-full flex-col overflow-y-auto px-4 py-6 lg:pl-6">
             <nav className="flex flex-col gap-0.5" aria-label="Navigare medic">
               {navItems.map(({ href, label, icon: Icon }) => {
                 const isActive = href === "/doctor" ? pathname === "/doctor" : pathname.startsWith(href);

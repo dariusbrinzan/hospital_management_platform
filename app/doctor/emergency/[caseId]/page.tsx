@@ -1,13 +1,13 @@
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 
-import { getDoctorSession } from "@/lib/actions/auth.actions";
-import { emergencyHelpers } from "@/lib/db-helpers";
-import { getStudiesForEmergencyCase } from "@/lib/actions/imaging.actions";
-import { formatEmergencyCaseNumber } from "@/lib/utils";
 import { EmergencyCaseDetails } from "@/components/EmergencyCaseDetails";
 import { Button } from "@/components/ui/button";
+import { getDoctorSession } from "@/lib/actions/auth.actions";
+import { getStudiesForEmergencyCase } from "@/lib/actions/imaging.actions";
+import { emergencyHelpers, patientMedicationAdministrationHelpers } from "@/lib/db-helpers";
+import { formatEmergencyCaseNumber } from "@/lib/utils";
 
 export default async function DoctorEmergencyCasePage({
   params,
@@ -18,10 +18,11 @@ export default async function DoctorEmergencyCasePage({
   const doctorName = await getDoctorSession();
   if (!doctorName) redirect("/medic");
 
-  const [emergencyCase, imagingStudies, stateTransitions] = await Promise.all([
+  const [emergencyCase, imagingStudies, stateTransitions, medicationAdministrations] = await Promise.all([
     emergencyHelpers.getById(caseId),
     getStudiesForEmergencyCase(caseId),
     Promise.resolve(emergencyHelpers.getStateTransitions(caseId)),
+    Promise.resolve(patientMedicationAdministrationHelpers.getByEmergencyCaseId(caseId)),
   ]);
 
   if (!emergencyCase) {
@@ -74,6 +75,7 @@ export default async function DoctorEmergencyCasePage({
         emergencyCase={emergencyCase}
         imagingStudies={imagingStudies}
         stateTransitions={stateTransitions}
+        medicationAdministrations={medicationAdministrations}
         performedBy={doctorName}
       />
     </div>

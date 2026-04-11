@@ -4464,6 +4464,553 @@ export const hospitalAdmissionHelpers = {
   },
 };
 
+const mapOperatingRoomRow = (row: any): OperatingRoom => ({
+  $id: row.id,
+  roomNumber: row.roomNumber,
+  specialty: row.specialty,
+  floor: row.floor,
+  status: row.status,
+  hasAnesthesiaMachine: row.hasAnesthesiaMachine === 1,
+  hasImagingSupport: row.hasImagingSupport === 1,
+  notes: row.notes,
+  createdAt: parseDate(row.createdAt),
+  updatedAt: parseDate(row.updatedAt),
+});
+
+const mapSurgeryCaseRow = (row: any): SurgeryCase => ({
+  $id: row.id,
+  patientId: row.patientId,
+  appointmentId: row.appointmentId,
+  requestedByDoctor: row.requestedByDoctor,
+  surgicalSpecialty: row.surgicalSpecialty,
+  procedureName: row.procedureName,
+  diagnosis: row.diagnosis,
+  urgency: row.urgency,
+  estimatedDurationMinutes: row.estimatedDurationMinutes,
+  preferredDate: row.preferredDate ? parseDate(row.preferredDate) : null,
+  requiresICUBed: row.requiresICUBed === 1,
+  implantNeeded: row.implantNeeded === 1,
+  status: row.status,
+  clinicalNotes: row.clinicalNotes,
+  createdAt: parseDate(row.createdAt),
+  updatedAt: parseDate(row.updatedAt),
+  patient: row.patient_id
+    ? {
+        $id: row.patient_id,
+        name: row.patient_name,
+        email: row.patient_email,
+        phone: row.patient_phone,
+      }
+    : null,
+});
+
+const mapAnesthesiaConsultationRow = (row: any): AnesthesiaConsultation => ({
+  $id: row.id,
+  surgeryCaseId: row.surgeryCaseId,
+  anesthesiologistName: row.anesthesiologistName,
+  consultDate: parseDate(row.consultDate),
+  asaRisk: row.asaRisk,
+  airwayAssessment: row.airwayAssessment,
+  fastingConfirmed: row.fastingConfirmed === 1,
+  recommendations: row.recommendations,
+  clearanceStatus: row.clearanceStatus,
+  createdAt: parseDate(row.createdAt),
+  updatedAt: parseDate(row.updatedAt),
+});
+
+const mapSurgeryBookingRow = (row: any): SurgeryBooking => ({
+  $id: row.id,
+  surgeryCaseId: row.surgeryCaseId,
+  roomId: row.roomId,
+  scheduledStart: parseDate(row.scheduledStart),
+  scheduledEnd: parseDate(row.scheduledEnd),
+  surgeonName: row.surgeonName,
+  anesthesiologistName: row.anesthesiologistName,
+  nursingTeam: row.nursingTeam,
+  supportTeam: row.supportTeam,
+  bookingStatus: row.bookingStatus,
+  preOpChecklist: row.preOpChecklist,
+  postopDestination: row.postopDestination,
+  createdAt: parseDate(row.createdAt),
+  updatedAt: parseDate(row.updatedAt),
+  room: row.room_number
+    ? {
+        $id: row.roomId,
+        roomNumber: row.room_number,
+        specialty: row.room_specialty,
+      }
+    : null,
+});
+
+const mapSurgeryFinancialRow = (row: any): SurgeryFinancialCase => ({
+  $id: row.id,
+  surgeryCaseId: row.surgeryCaseId,
+  coverageType: row.coverageType,
+  estimatedTotal: row.estimatedTotal,
+  cassCoveredAmount: row.cassCoveredAmount,
+  patientAmount: row.patientAmount,
+  paymentStatus: row.paymentStatus,
+  billingNotes: row.billingNotes,
+  createdAt: parseDate(row.createdAt),
+  updatedAt: parseDate(row.updatedAt),
+});
+
+export const operatingRoomHelpers = {
+  getAll: () => {
+    const rows = db.prepare(`
+      SELECT * FROM operating_rooms
+      ORDER BY floor ASC, roomNumber ASC
+    `).all() as any[];
+
+    return rows.map(mapOperatingRoomRow);
+  },
+
+  getById: (id: string) => {
+    const row = db.prepare("SELECT * FROM operating_rooms WHERE id = ?").get(id) as any;
+    if (!row) return null;
+    return mapOperatingRoomRow(row);
+  },
+
+  updateStatus: (id: string, status: OperatingRoomStatus) => {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE operating_rooms
+      SET status = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(status, now, id);
+
+    return operatingRoomHelpers.getById(id);
+  },
+};
+
+export const surgeryCaseHelpers = {
+  create: (data: {
+    patientId: string;
+    appointmentId?: string | null;
+    requestedByDoctor: string;
+    surgicalSpecialty: string;
+    procedureName: string;
+    diagnosis: string;
+    urgency: SurgeryUrgency;
+    estimatedDurationMinutes: number;
+    preferredDate?: Date | string | null;
+    requiresICUBed?: boolean;
+    implantNeeded?: boolean;
+    clinicalNotes?: string;
+  }) => {
+    if (!data.patientId) {
+      throw new Error("Pacientul este obligatoriu.");
+    }
+    if (!data.requestedByDoctor?.trim()) {
+      throw new Error("Medicul solicitant este obligatoriu.");
+    }
+    if (!data.procedureName?.trim()) {
+      throw new Error("Procedura planificată este obligatorie.");
+    }
+    if (!data.diagnosis?.trim()) {
+      throw new Error("Diagnosticul operator este obligatoriu.");
+    }
+
+    const patient = patientHelpers.getById(data.patientId);
+    if (!patient) {
+      throw new Error("Pacientul selectat nu există.");
+    }
+
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO surgery_cases (
+        id, patientId, appointmentId, requestedByDoctor, surgicalSpecialty,
+        procedureName, diagnosis, urgency, estimatedDurationMinutes,
+        preferredDate, requiresICUBed, implantNeeded, status, clinicalNotes,
+        createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'anesthesia_pending', ?, ?, ?)
+    `).run(
+      id,
+      data.patientId,
+      data.appointmentId ?? null,
+      data.requestedByDoctor.trim(),
+      data.surgicalSpecialty.trim(),
+      data.procedureName.trim(),
+      data.diagnosis.trim(),
+      data.urgency,
+      Math.max(30, Number(data.estimatedDurationMinutes) || 90),
+      data.preferredDate ? formatDate(data.preferredDate) : null,
+      data.requiresICUBed ? 1 : 0,
+      data.implantNeeded ? 1 : 0,
+      data.clinicalNotes?.trim() || null,
+      now,
+      now
+    );
+
+    return surgeryCaseHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const row = db.prepare(`
+      SELECT
+        sc.*,
+        p.id as patient_id,
+        p.name as patient_name,
+        p.email as patient_email,
+        p.phone as patient_phone
+      FROM surgery_cases sc
+      INNER JOIN patients p ON sc.patientId = p.id
+      WHERE sc.id = ?
+    `).get(id) as any;
+
+    if (!row) return null;
+    return mapSurgeryCaseRow(row);
+  },
+
+  getAll: () => {
+    const rows = db.prepare(`
+      SELECT
+        sc.*,
+        p.id as patient_id,
+        p.name as patient_name,
+        p.email as patient_email,
+        p.phone as patient_phone
+      FROM surgery_cases sc
+      INNER JOIN patients p ON sc.patientId = p.id
+      ORDER BY
+        CASE sc.status
+          WHEN 'anesthesia_pending' THEN 1
+          WHEN 'ready_to_schedule' THEN 2
+          WHEN 'scheduled' THEN 3
+          WHEN 'proposed' THEN 4
+          ELSE 5
+        END,
+        COALESCE(sc.preferredDate, sc.createdAt) ASC
+    `).all() as any[];
+
+    return rows.map(mapSurgeryCaseRow);
+  },
+
+  getByDoctor: (doctorName: string) => {
+    const rows = db.prepare(`
+      SELECT
+        sc.*,
+        p.id as patient_id,
+        p.name as patient_name,
+        p.email as patient_email,
+        p.phone as patient_phone
+      FROM surgery_cases sc
+      INNER JOIN patients p ON sc.patientId = p.id
+      WHERE sc.requestedByDoctor = ?
+      ORDER BY COALESCE(sc.preferredDate, sc.createdAt) DESC
+    `).all(doctorName) as any[];
+
+    return rows.map(mapSurgeryCaseRow);
+  },
+
+  updateStatus: (id: string, status: SurgeryCaseStatus) => {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE surgery_cases
+      SET status = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(status, now, id);
+
+    return surgeryCaseHelpers.getById(id);
+  },
+};
+
+export const anesthesiaConsultationHelpers = {
+  getBySurgeryCaseId: (surgeryCaseId: string) => {
+    const row = db.prepare(`
+      SELECT * FROM anesthesia_consultations
+      WHERE surgeryCaseId = ?
+    `).get(surgeryCaseId) as any;
+
+    if (!row) return null;
+    return mapAnesthesiaConsultationRow(row);
+  },
+
+  upsert: (data: {
+    surgeryCaseId: string;
+    anesthesiologistName: string;
+    consultDate: Date | string;
+    asaRisk: string;
+    airwayAssessment?: string;
+    fastingConfirmed?: boolean;
+    recommendations?: string;
+    clearanceStatus: AnesthesiaClearanceStatus;
+  }) => {
+    const surgeryCase = surgeryCaseHelpers.getById(data.surgeryCaseId);
+    if (!surgeryCase) {
+      throw new Error("Cazul operator nu a fost găsit.");
+    }
+
+    if (!data.anesthesiologistName?.trim()) {
+      throw new Error("Numele medicului anestezist este obligatoriu.");
+    }
+
+    const existing = anesthesiaConsultationHelpers.getBySurgeryCaseId(data.surgeryCaseId);
+    const now = new Date().toISOString();
+
+    if (existing) {
+      db.prepare(`
+        UPDATE anesthesia_consultations
+        SET anesthesiologistName = ?, consultDate = ?, asaRisk = ?, airwayAssessment = ?,
+            fastingConfirmed = ?, recommendations = ?, clearanceStatus = ?, updatedAt = ?
+        WHERE surgeryCaseId = ?
+      `).run(
+        data.anesthesiologistName.trim(),
+        formatDate(data.consultDate),
+        data.asaRisk.trim(),
+        data.airwayAssessment?.trim() || null,
+        data.fastingConfirmed ? 1 : 0,
+        data.recommendations?.trim() || null,
+        data.clearanceStatus,
+        now,
+        data.surgeryCaseId
+      );
+    } else {
+      db.prepare(`
+        INSERT INTO anesthesia_consultations (
+          id, surgeryCaseId, anesthesiologistName, consultDate, asaRisk,
+          airwayAssessment, fastingConfirmed, recommendations, clearanceStatus,
+          createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        generateId(),
+        data.surgeryCaseId,
+        data.anesthesiologistName.trim(),
+        formatDate(data.consultDate),
+        data.asaRisk.trim(),
+        data.airwayAssessment?.trim() || null,
+        data.fastingConfirmed ? 1 : 0,
+        data.recommendations?.trim() || null,
+        data.clearanceStatus,
+        now,
+        now
+      );
+    }
+
+    const booking = surgeryBookingHelpers.getBySurgeryCaseId(data.surgeryCaseId);
+    const nextStatus: SurgeryCaseStatus =
+      data.clearanceStatus === "cleared" || data.clearanceStatus === "conditional"
+        ? booking
+          ? "scheduled"
+          : "ready_to_schedule"
+        : "anesthesia_pending";
+    surgeryCaseHelpers.updateStatus(data.surgeryCaseId, nextStatus);
+
+    return anesthesiaConsultationHelpers.getBySurgeryCaseId(data.surgeryCaseId);
+  },
+};
+
+export const surgeryBookingHelpers = {
+  getBySurgeryCaseId: (surgeryCaseId: string) => {
+    const row = db.prepare(`
+      SELECT
+        sb.*,
+        r.roomNumber as room_number,
+        r.specialty as room_specialty
+      FROM surgery_bookings sb
+      INNER JOIN operating_rooms r ON sb.roomId = r.id
+      WHERE sb.surgeryCaseId = ?
+    `).get(surgeryCaseId) as any;
+
+    if (!row) return null;
+    return mapSurgeryBookingRow(row);
+  },
+
+  getUpcoming: (limit = 30) => {
+    const rows = db.prepare(`
+      SELECT
+        sb.*,
+        r.roomNumber as room_number,
+        r.specialty as room_specialty
+      FROM surgery_bookings sb
+      INNER JOIN operating_rooms r ON sb.roomId = r.id
+      WHERE sb.bookingStatus != 'cancelled'
+      ORDER BY sb.scheduledStart ASC
+      LIMIT ?
+    `).all(limit) as any[];
+
+    return rows.map(mapSurgeryBookingRow);
+  },
+
+  upsert: (data: {
+    surgeryCaseId: string;
+    roomId: string;
+    scheduledStart: Date | string;
+    scheduledEnd: Date | string;
+    surgeonName: string;
+    anesthesiologistName?: string;
+    nursingTeam?: string;
+    supportTeam?: string;
+    bookingStatus?: SurgeryBookingStatus;
+    preOpChecklist?: string;
+    postopDestination?: string;
+  }) => {
+    const surgeryCase = surgeryCaseHelpers.getById(data.surgeryCaseId);
+    if (!surgeryCase) {
+      throw new Error("Cazul operator nu a fost găsit.");
+    }
+
+    const room = operatingRoomHelpers.getById(data.roomId);
+    if (!room) {
+      throw new Error("Sala operatorie selectată nu există.");
+    }
+
+    const start = formatDate(data.scheduledStart);
+    const end = formatDate(data.scheduledEnd);
+    if (new Date(end) <= new Date(start)) {
+      throw new Error("Ora de final trebuie să fie după ora de început.");
+    }
+
+    const existing = surgeryBookingHelpers.getBySurgeryCaseId(data.surgeryCaseId);
+    const overlap = db.prepare(`
+      SELECT sb.id
+      FROM surgery_bookings sb
+      WHERE sb.roomId = ?
+        AND sb.bookingStatus IN ('planned', 'confirmed', 'in_progress')
+        AND sb.id != COALESCE(?, '')
+        AND sb.scheduledStart < ?
+        AND sb.scheduledEnd > ?
+      LIMIT 1
+    `).get(data.roomId, existing?.$id ?? null, end, start) as { id: string } | undefined;
+
+    if (overlap) {
+      throw new Error("Sala selectată este deja rezervată în intervalul ales.");
+    }
+
+    const now = new Date().toISOString();
+    if (existing) {
+      db.prepare(`
+        UPDATE surgery_bookings
+        SET roomId = ?, scheduledStart = ?, scheduledEnd = ?, surgeonName = ?, anesthesiologistName = ?,
+            nursingTeam = ?, supportTeam = ?, bookingStatus = ?, preOpChecklist = ?, postopDestination = ?, updatedAt = ?
+        WHERE surgeryCaseId = ?
+      `).run(
+        data.roomId,
+        start,
+        end,
+        data.surgeonName.trim(),
+        data.anesthesiologistName?.trim() || null,
+        data.nursingTeam?.trim() || null,
+        data.supportTeam?.trim() || null,
+        data.bookingStatus ?? "planned",
+        data.preOpChecklist?.trim() || null,
+        data.postopDestination?.trim() || null,
+        now,
+        data.surgeryCaseId
+      );
+    } else {
+      db.prepare(`
+        INSERT INTO surgery_bookings (
+          id, surgeryCaseId, roomId, scheduledStart, scheduledEnd, surgeonName,
+          anesthesiologistName, nursingTeam, supportTeam, bookingStatus,
+          preOpChecklist, postopDestination, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        generateId(),
+        data.surgeryCaseId,
+        data.roomId,
+        start,
+        end,
+        data.surgeonName.trim(),
+        data.anesthesiologistName?.trim() || null,
+        data.nursingTeam?.trim() || null,
+        data.supportTeam?.trim() || null,
+        data.bookingStatus ?? "planned",
+        data.preOpChecklist?.trim() || null,
+        data.postopDestination?.trim() || null,
+        now,
+        now
+      );
+    }
+
+    const bookingStatus = data.bookingStatus ?? "planned";
+    if (bookingStatus === "completed") {
+      surgeryCaseHelpers.updateStatus(data.surgeryCaseId, "completed");
+    } else if (bookingStatus === "cancelled") {
+      surgeryCaseHelpers.updateStatus(data.surgeryCaseId, "ready_to_schedule");
+    } else {
+      surgeryCaseHelpers.updateStatus(data.surgeryCaseId, "scheduled");
+    }
+
+    return surgeryBookingHelpers.getBySurgeryCaseId(data.surgeryCaseId);
+  },
+};
+
+export const surgeryFinancialHelpers = {
+  getBySurgeryCaseId: (surgeryCaseId: string) => {
+    const row = db.prepare(`
+      SELECT * FROM surgery_financial_cases
+      WHERE surgeryCaseId = ?
+    `).get(surgeryCaseId) as any;
+
+    if (!row) return null;
+    return mapSurgeryFinancialRow(row);
+  },
+
+  upsert: (data: {
+    surgeryCaseId: string;
+    coverageType: SurgeryCoverageType;
+    estimatedTotal: number;
+    cassCoveredAmount?: number;
+    patientAmount?: number;
+    paymentStatus: SurgeryPaymentStatus;
+    billingNotes?: string;
+  }) => {
+    const surgeryCase = surgeryCaseHelpers.getById(data.surgeryCaseId);
+    if (!surgeryCase) {
+      throw new Error("Cazul operator nu a fost găsit.");
+    }
+
+    const estimatedTotal = Number(data.estimatedTotal) || 0;
+    const cassCoveredAmount = Number(data.cassCoveredAmount) || 0;
+    const computedPatientAmount =
+      data.patientAmount !== undefined && data.patientAmount !== null
+        ? Number(data.patientAmount) || 0
+        : Math.max(0, estimatedTotal - cassCoveredAmount);
+    const existing = surgeryFinancialHelpers.getBySurgeryCaseId(data.surgeryCaseId);
+    const now = new Date().toISOString();
+
+    if (existing) {
+      db.prepare(`
+        UPDATE surgery_financial_cases
+        SET coverageType = ?, estimatedTotal = ?, cassCoveredAmount = ?, patientAmount = ?,
+            paymentStatus = ?, billingNotes = ?, updatedAt = ?
+        WHERE surgeryCaseId = ?
+      `).run(
+        data.coverageType,
+        estimatedTotal,
+        cassCoveredAmount,
+        computedPatientAmount,
+        data.paymentStatus,
+        data.billingNotes?.trim() || null,
+        now,
+        data.surgeryCaseId
+      );
+    } else {
+      db.prepare(`
+        INSERT INTO surgery_financial_cases (
+          id, surgeryCaseId, coverageType, estimatedTotal, cassCoveredAmount,
+          patientAmount, paymentStatus, billingNotes, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        generateId(),
+        data.surgeryCaseId,
+        data.coverageType,
+        estimatedTotal,
+        cassCoveredAmount,
+        computedPatientAmount,
+        data.paymentStatus,
+        data.billingNotes?.trim() || null,
+        now,
+        now
+      );
+    }
+
+    return surgeryFinancialHelpers.getBySurgeryCaseId(data.surgeryCaseId);
+  },
+};
+
 // Ambulance Helpers
 export const ambulanceHelpers = {
   getAll: () => {
@@ -5319,6 +5866,226 @@ export const medicationTransactionHelpers = {
         unit: trans.medicationUnit,
       },
     }));
+  },
+};
+
+export const patientMedicationAdministrationHelpers = {
+  create: (data: {
+    patientId: string;
+    emergencyCaseId?: string | null;
+    medicationId?: string | null;
+    stockId?: string | null;
+    medicationName?: string;
+    dosage: string;
+    quantity: number;
+    route?: string;
+    administrationPhase: MedicationAdministrationPhase;
+    administeredBy?: string;
+    administeredAt?: Date | string;
+    notes?: string;
+  }) => {
+    if (!data.patientId) {
+      throw new Error("patientId este obligatoriu.");
+    }
+
+    if (!data.dosage?.trim()) {
+      throw new Error("Doza este obligatorie.");
+    }
+
+    if (!Number.isFinite(data.quantity) || data.quantity <= 0) {
+      throw new Error("Cantitatea trebuie să fie mai mare decât 0.");
+    }
+
+    const transaction = db.transaction(() => {
+      const stock = data.stockId ? medicationStockHelpers.getById(data.stockId) : null;
+
+      if (data.stockId && !stock) {
+        throw new Error("Stocul selectat nu a fost găsit.");
+      }
+
+      if (stock && stock.availableQuantity < data.quantity) {
+        throw new Error(
+          `Stoc insuficient. Disponibil: ${stock.availableQuantity} ${stock.medication?.unit || ""}, cerut: ${data.quantity}`
+        );
+      }
+
+      const medicationId = data.medicationId ?? stock?.medicationId ?? null;
+      const medicationName = data.medicationName?.trim() || stock?.medication?.name;
+      const unit = stock?.medication?.unit || null;
+      const now = new Date().toISOString();
+      const administeredAt = formatDate(data.administeredAt || now);
+      const id = generateId();
+
+      if (!medicationName) {
+        throw new Error("Numele medicamentului nu a putut fi determinat.");
+      }
+
+      db.prepare(`
+        INSERT INTO patient_medication_administrations (
+          id, patientId, emergencyCaseId, medicationId, stockId, medicationName,
+          dosage, quantity, unit, route, administrationPhase,
+          administeredBy, administeredAt, notes, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.patientId,
+        data.emergencyCaseId ?? null,
+        medicationId,
+        data.stockId ?? null,
+        medicationName,
+        data.dosage.trim(),
+        data.quantity,
+        unit,
+        data.route?.trim() || null,
+        data.administrationPhase,
+        data.administeredBy?.trim() || null,
+        administeredAt,
+        data.notes?.trim() || null,
+        now,
+        now
+      );
+
+      if (stock && medicationId) {
+        medicationStockHelpers.consumeQuantity(stock.$id, data.quantity);
+        medicationTransactionHelpers.create({
+          medicationId,
+          stockId: stock.$id,
+          transactionType: "usage",
+          quantity: -data.quantity,
+          reason:
+            data.administrationPhase === "before_doctor"
+              ? `Administrare UPU înainte de medic - ${medicationName}`
+              : `Administrare UPU în grijă medicală - ${medicationName}`,
+          performedBy: data.administeredBy?.trim() || "Sistem",
+          relatedTo: "patient_medication_administration",
+          relatedId: id,
+          notes: data.notes?.trim() || undefined,
+        });
+      }
+
+      return patientMedicationAdministrationHelpers.getById(id);
+    });
+
+    return transaction();
+  },
+
+  getById: (id: string) => {
+    const row = db.prepare(`
+      SELECT a.*, s.location as stockLocation, m.strength as medicationStrength
+      FROM patient_medication_administrations a
+      LEFT JOIN medication_stock s ON a.stockId = s.id
+      LEFT JOIN medications m ON a.medicationId = m.id
+      WHERE a.id = ?
+    `).get(id) as any;
+
+    if (!row) return null;
+
+    return {
+      $id: row.id,
+      patientId: row.patientId,
+      emergencyCaseId: row.emergencyCaseId,
+      medicationId: row.medicationId,
+      stockId: row.stockId,
+      medicationName: row.medicationName,
+      dosage: row.dosage,
+      quantity: row.quantity,
+      unit: row.unit,
+      route: row.route,
+      administrationPhase: row.administrationPhase,
+      administeredBy: row.administeredBy,
+      administeredAt: parseDate(row.administeredAt),
+      notes: row.notes,
+      stockLocation: row.stockLocation,
+      createdAt: parseDate(row.createdAt),
+      updatedAt: parseDate(row.updatedAt),
+      medication: row.medicationId
+        ? {
+            $id: row.medicationId,
+            name: row.medicationName,
+            strength: row.medicationStrength,
+            unit: row.unit,
+          }
+        : null,
+    } as PatientMedicationAdministration;
+  },
+
+  getByPatientId: (patientId: string, limit = 100) => {
+    const rows = db.prepare(`
+      SELECT a.*, s.location as stockLocation, m.strength as medicationStrength
+      FROM patient_medication_administrations a
+      LEFT JOIN medication_stock s ON a.stockId = s.id
+      LEFT JOIN medications m ON a.medicationId = m.id
+      WHERE a.patientId = ?
+      ORDER BY a.administeredAt DESC
+      LIMIT ?
+    `).all(patientId, limit) as any[];
+
+    return rows.map((row) => ({
+      $id: row.id,
+      patientId: row.patientId,
+      emergencyCaseId: row.emergencyCaseId,
+      medicationId: row.medicationId,
+      stockId: row.stockId,
+      medicationName: row.medicationName,
+      dosage: row.dosage,
+      quantity: row.quantity,
+      unit: row.unit,
+      route: row.route,
+      administrationPhase: row.administrationPhase,
+      administeredBy: row.administeredBy,
+      administeredAt: parseDate(row.administeredAt),
+      notes: row.notes,
+      stockLocation: row.stockLocation,
+      createdAt: parseDate(row.createdAt),
+      updatedAt: parseDate(row.updatedAt),
+      medication: row.medicationId
+        ? {
+            $id: row.medicationId,
+            name: row.medicationName,
+            strength: row.medicationStrength,
+            unit: row.unit,
+          }
+        : null,
+    })) as PatientMedicationAdministration[];
+  },
+
+  getByEmergencyCaseId: (emergencyCaseId: string) => {
+    const rows = db.prepare(`
+      SELECT a.*, s.location as stockLocation, m.strength as medicationStrength
+      FROM patient_medication_administrations a
+      LEFT JOIN medication_stock s ON a.stockId = s.id
+      LEFT JOIN medications m ON a.medicationId = m.id
+      WHERE a.emergencyCaseId = ?
+      ORDER BY a.administeredAt ASC
+    `).all(emergencyCaseId) as any[];
+
+    return rows.map((row) => ({
+      $id: row.id,
+      patientId: row.patientId,
+      emergencyCaseId: row.emergencyCaseId,
+      medicationId: row.medicationId,
+      stockId: row.stockId,
+      medicationName: row.medicationName,
+      dosage: row.dosage,
+      quantity: row.quantity,
+      unit: row.unit,
+      route: row.route,
+      administrationPhase: row.administrationPhase,
+      administeredBy: row.administeredBy,
+      administeredAt: parseDate(row.administeredAt),
+      notes: row.notes,
+      stockLocation: row.stockLocation,
+      createdAt: parseDate(row.createdAt),
+      updatedAt: parseDate(row.updatedAt),
+      medication: row.medicationId
+        ? {
+            $id: row.medicationId,
+            name: row.medicationName,
+            strength: row.medicationStrength,
+            unit: row.unit,
+          }
+        : null,
+    })) as PatientMedicationAdministration[];
   },
 };
 

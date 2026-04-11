@@ -1,19 +1,22 @@
 "use client";
 
+import { Activity, Clock, User } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+
 import { Doctors } from "@/constants";
-import Image from "next/image";
-import { Clock, User, Activity } from "lucide-react";
 import { formatEmergencyCaseNumber, getWaitingMinutes, formatWaitingTime, formatDateTime } from "@/lib/utils";
+
+import { EmergencyImagingSection } from "./EmergencyImagingSection";
+import { EmergencyMedicationAdministrationSection } from "./EmergencyMedicationAdministrationSection";
+import { CarePlanForm } from "./forms/CarePlanForm";
+import { ConsentForm } from "./forms/ConsentForm";
+import { DischargeForm } from "./forms/DischargeForm";
+import { TriageForm } from "./forms/TriageForm";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader } from "./ui/card";
-import { TriageForm } from "./forms/TriageForm";
-import { ConsentForm } from "./forms/ConsentForm";
-import { CarePlanForm } from "./forms/CarePlanForm";
-import { DischargeForm } from "./forms/DischargeForm";
-import { EmergencyImagingSection } from "./EmergencyImagingSection";
 
 type EmergencyState = "arrival" | "triage" | "consent" | "admission" | "treatment" | "icu" | "discharge";
 
@@ -30,6 +33,7 @@ interface EmergencyCaseDetailsProps {
   emergencyCase: EmergencyCase;
   imagingStudies?: any[];
   stateTransitions?: StateTransitionRow[];
+  medicationAdministrations?: PatientMedicationAdministration[];
   /** Numele utilizatorului care efectuează tranzițiile (ex. medic din sesiune). Implicit: "Admin". */
   performedBy?: string;
 }
@@ -44,7 +48,13 @@ const stateLabels: Record<EmergencyState, string> = {
   discharge: "Externare",
 };
 
-export const EmergencyCaseDetails = ({ emergencyCase, imagingStudies = [], stateTransitions = [], performedBy = "Admin" }: EmergencyCaseDetailsProps) => {
+export const EmergencyCaseDetails = ({
+  emergencyCase,
+  imagingStudies = [],
+  stateTransitions = [],
+  medicationAdministrations = [],
+  performedBy = "Admin",
+}: EmergencyCaseDetailsProps) => {
   const router = useRouter();
   const [activeForm, setActiveForm] = useState<EmergencyState | null>(null);
   const doctor = emergencyCase.assignedDoctorId
@@ -343,6 +353,13 @@ export const EmergencyCaseDetails = ({ emergencyCase, imagingStudies = [], state
         patientId={(emergencyCase as any).patientId ?? emergencyCase.patient?.$id}
         patientName={emergencyCase.patient?.name || (emergencyCase as any).patientName}
         initialStudies={imagingStudies}
+      />
+
+      <EmergencyMedicationAdministrationSection
+        caseId={emergencyCase.$id}
+        patientId={(emergencyCase as any).patientId ?? emergencyCase.patient?.$id}
+        performedBy={performedBy}
+        initialEntries={medicationAdministrations}
       />
 
       {/* Formulare pentru fiecare etapă */}

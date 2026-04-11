@@ -1,4 +1,4 @@
-/* eslint-disable no-unused-vars */
+/* eslint-disable no-unused-vars, no-use-before-define */
 
 declare type SearchParamProps = {
   params: { [key: string]: string };
@@ -373,6 +373,7 @@ declare interface AmbulanceMission {
 declare type MedicationCategory = "medication" | "infusion" | "syringe" | "supply";
 declare type MedicationLocation = "main_pharmacy" | "emergency_department" | "icu_ward" | "surgery_ward";
 declare type TransactionType = "restock" | "usage" | "adjustment" | "expired" | "damaged" | "return";
+declare type MedicationAdministrationPhase = "before_doctor" | "doctor_care";
 
 declare interface Medication {
   $id: string;
@@ -427,6 +428,27 @@ declare interface MedicationTransaction {
   createdAt: Date | string;
   medication?: Medication | null;
   stock?: MedicationStock | null;
+}
+
+declare interface PatientMedicationAdministration {
+  $id: string;
+  patientId: string;
+  emergencyCaseId?: string | null;
+  medicationId?: string | null;
+  stockId?: string | null;
+  medicationName: string;
+  dosage: string;
+  quantity: number;
+  unit?: string | null;
+  route?: string | null;
+  administrationPhase: MedicationAdministrationPhase;
+  administeredBy?: string | null;
+  administeredAt: Date | string;
+  notes?: string | null;
+  stockLocation?: MedicationLocation | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  medication?: Partial<Medication> | null;
 }
 
 // Sistem Documente Medicale
@@ -569,4 +591,106 @@ declare interface HospitalAdmission {
     floor: number;
     department: string;
   };
+}
+
+// Bloc operator / intervenții chirurgicale
+declare type OperatingRoomStatus = "available" | "reserved" | "in_use" | "cleaning" | "maintenance";
+declare type SurgeryUrgency = "elective" | "priority" | "emergency";
+declare type SurgeryCaseStatus =
+  | "proposed"
+  | "anesthesia_pending"
+  | "ready_to_schedule"
+  | "scheduled"
+  | "completed"
+  | "cancelled";
+declare type AnesthesiaClearanceStatus = "pending" | "cleared" | "conditional" | "denied";
+declare type SurgeryBookingStatus = "planned" | "confirmed" | "in_progress" | "completed" | "cancelled";
+declare type SurgeryCoverageType = "cass_full" | "cass_partial" | "private_full" | "mixed";
+declare type SurgeryPaymentStatus = "pending" | "partially_paid" | "paid" | "exempt";
+
+declare interface OperatingRoom {
+  $id: string;
+  roomNumber: string;
+  specialty: string;
+  floor: number;
+  status: OperatingRoomStatus;
+  hasAnesthesiaMachine: boolean;
+  hasImagingSupport: boolean;
+  notes?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+declare interface SurgeryCase {
+  $id: string;
+  patientId: string;
+  appointmentId?: string | null;
+  requestedByDoctor: string;
+  surgicalSpecialty: string;
+  procedureName: string;
+  diagnosis: string;
+  urgency: SurgeryUrgency;
+  estimatedDurationMinutes: number;
+  preferredDate?: Date | string | null;
+  requiresICUBed: boolean;
+  implantNeeded: boolean;
+  status: SurgeryCaseStatus;
+  clinicalNotes?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  patient?: {
+    $id: string;
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+  } | null;
+}
+
+declare interface AnesthesiaConsultation {
+  $id: string;
+  surgeryCaseId: string;
+  anesthesiologistName: string;
+  consultDate: Date | string;
+  asaRisk: string;
+  airwayAssessment?: string | null;
+  fastingConfirmed: boolean;
+  recommendations?: string | null;
+  clearanceStatus: AnesthesiaClearanceStatus;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+declare interface SurgeryBooking {
+  $id: string;
+  surgeryCaseId: string;
+  roomId: string;
+  scheduledStart: Date | string;
+  scheduledEnd: Date | string;
+  surgeonName: string;
+  anesthesiologistName?: string | null;
+  nursingTeam?: string | null;
+  supportTeam?: string | null;
+  bookingStatus: SurgeryBookingStatus;
+  preOpChecklist?: string | null;
+  postopDestination?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  room?: {
+    $id: string;
+    roomNumber: string;
+    specialty: string;
+  } | null;
+}
+
+declare interface SurgeryFinancialCase {
+  $id: string;
+  surgeryCaseId: string;
+  coverageType: SurgeryCoverageType;
+  estimatedTotal: number;
+  cassCoveredAmount: number;
+  patientAmount: number;
+  paymentStatus: SurgeryPaymentStatus;
+  billingNotes?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }

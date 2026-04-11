@@ -1,15 +1,15 @@
-import Link from "next/link";
-import { emergencyHelpers } from "@/lib/db-helpers";
-import { getStudiesForEmergencyCase } from "@/lib/actions/imaging.actions";
-import { EmergencyCaseDetails } from "@/components/EmergencyCaseDetails";
 import { AdminPageLayout } from "@/components/AdminPageLayout";
+import { EmergencyCaseDetails } from "@/components/EmergencyCaseDetails";
+import { getStudiesForEmergencyCase } from "@/lib/actions/imaging.actions";
+import { emergencyHelpers, patientMedicationAdministrationHelpers } from "@/lib/db-helpers";
 import { formatEmergencyCaseNumber } from "@/lib/utils";
 
 const EmergencyCasePage = async ({ params: { caseId } }: SearchParamProps) => {
-  const [emergencyCase, imagingStudies, stateTransitions] = await Promise.all([
+  const [emergencyCase, imagingStudies, stateTransitions, medicationAdministrations] = await Promise.all([
     emergencyHelpers.getById(caseId),
     getStudiesForEmergencyCase(caseId),
     Promise.resolve(emergencyHelpers.getStateTransitions(caseId)),
+    Promise.resolve(patientMedicationAdministrationHelpers.getByEmergencyCaseId(caseId)),
   ]);
 
   if (!emergencyCase) {
@@ -33,6 +33,7 @@ const EmergencyCasePage = async ({ params: { caseId } }: SearchParamProps) => {
         emergencyCase={emergencyCase}
         imagingStudies={imagingStudies}
         stateTransitions={stateTransitions}
+        medicationAdministrations={medicationAdministrations}
       />
     </AdminPageLayout>
   );

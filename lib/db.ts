@@ -782,6 +782,34 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_medication_transactions_type ON medication_transactions(transactionType);
   CREATE INDEX IF NOT EXISTS idx_medication_transactions_date ON medication_transactions(transactionDate);
 
+  CREATE TABLE IF NOT EXISTS patient_medication_administrations (
+    id TEXT PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    emergencyCaseId TEXT,
+    medicationId TEXT,
+    stockId TEXT,
+    medicationName TEXT NOT NULL,
+    dosage TEXT NOT NULL,
+    quantity REAL NOT NULL,
+    unit TEXT,
+    route TEXT,
+    administrationPhase TEXT NOT NULL DEFAULT 'doctor_care', -- 'before_doctor', 'doctor_care'
+    administeredBy TEXT,
+    administeredAt TEXT NOT NULL DEFAULT (datetime('now')),
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id),
+    FOREIGN KEY (emergencyCaseId) REFERENCES emergency_cases(id),
+    FOREIGN KEY (medicationId) REFERENCES medications(id),
+    FOREIGN KEY (stockId) REFERENCES medication_stock(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_patient_medication_administrations_patientId ON patient_medication_administrations(patientId);
+  CREATE INDEX IF NOT EXISTS idx_patient_medication_administrations_emergencyCaseId ON patient_medication_administrations(emergencyCaseId);
+  CREATE INDEX IF NOT EXISTS idx_patient_medication_administrations_administeredAt ON patient_medication_administrations(administeredAt);
+  CREATE INDEX IF NOT EXISTS idx_patient_medication_administrations_phase ON patient_medication_administrations(administrationPhase);
+
   -- Farmacie avansată: loturi, comenzi, dispensări, interacțiuni
   CREATE TABLE IF NOT EXISTS medication_stock_batches (
     id TEXT PRIMARY KEY,
@@ -1130,6 +1158,100 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_hospital_vital_signs_admissionId ON hospital_vital_signs(admissionId);
   CREATE INDEX IF NOT EXISTS idx_hospital_treatments_admissionId ON hospital_treatments(admissionId);
   CREATE INDEX IF NOT EXISTS idx_hospital_procedures_admissionId ON hospital_procedures(admissionId);
+
+  -- Tabele pentru Bloc Operator
+  CREATE TABLE IF NOT EXISTS operating_rooms (
+    id TEXT PRIMARY KEY,
+    roomNumber TEXT NOT NULL UNIQUE,
+    specialty TEXT NOT NULL,
+    floor INTEGER NOT NULL DEFAULT 2,
+    status TEXT NOT NULL DEFAULT 'available', -- 'available', 'reserved', 'in_use', 'cleaning', 'maintenance'
+    hasAnesthesiaMachine INTEGER NOT NULL DEFAULT 1,
+    hasImagingSupport INTEGER NOT NULL DEFAULT 0,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS surgery_cases (
+    id TEXT PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    appointmentId TEXT,
+    requestedByDoctor TEXT NOT NULL,
+    surgicalSpecialty TEXT NOT NULL,
+    procedureName TEXT NOT NULL,
+    diagnosis TEXT NOT NULL,
+    urgency TEXT NOT NULL DEFAULT 'elective', -- 'elective', 'priority', 'emergency'
+    estimatedDurationMinutes INTEGER NOT NULL DEFAULT 90,
+    preferredDate TEXT,
+    requiresICUBed INTEGER NOT NULL DEFAULT 0,
+    implantNeeded INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'anesthesia_pending', -- proposed, anesthesia_pending, ready_to_schedule, scheduled, completed, cancelled
+    clinicalNotes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id),
+    FOREIGN KEY (appointmentId) REFERENCES appointments(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS anesthesia_consultations (
+    id TEXT PRIMARY KEY,
+    surgeryCaseId TEXT NOT NULL UNIQUE,
+    anesthesiologistName TEXT NOT NULL,
+    consultDate TEXT NOT NULL,
+    asaRisk TEXT NOT NULL,
+    airwayAssessment TEXT,
+    fastingConfirmed INTEGER NOT NULL DEFAULT 0,
+    recommendations TEXT,
+    clearanceStatus TEXT NOT NULL DEFAULT 'pending', -- pending, cleared, conditional, denied
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (surgeryCaseId) REFERENCES surgery_cases(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS surgery_bookings (
+    id TEXT PRIMARY KEY,
+    surgeryCaseId TEXT NOT NULL UNIQUE,
+    roomId TEXT NOT NULL,
+    scheduledStart TEXT NOT NULL,
+    scheduledEnd TEXT NOT NULL,
+    surgeonName TEXT NOT NULL,
+    anesthesiologistName TEXT,
+    nursingTeam TEXT,
+    supportTeam TEXT,
+    bookingStatus TEXT NOT NULL DEFAULT 'planned', -- planned, confirmed, in_progress, completed, cancelled
+    preOpChecklist TEXT,
+    postopDestination TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (surgeryCaseId) REFERENCES surgery_cases(id),
+    FOREIGN KEY (roomId) REFERENCES operating_rooms(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS surgery_financial_cases (
+    id TEXT PRIMARY KEY,
+    surgeryCaseId TEXT NOT NULL UNIQUE,
+    coverageType TEXT NOT NULL DEFAULT 'cass_full', -- cass_full, cass_partial, private_full, mixed
+    estimatedTotal REAL NOT NULL DEFAULT 0,
+    cassCoveredAmount REAL NOT NULL DEFAULT 0,
+    patientAmount REAL NOT NULL DEFAULT 0,
+    paymentStatus TEXT NOT NULL DEFAULT 'pending', -- pending, partially_paid, paid, exempt
+    billingNotes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (surgeryCaseId) REFERENCES surgery_cases(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_operating_rooms_status ON operating_rooms(status);
+  CREATE INDEX IF NOT EXISTS idx_operating_rooms_specialty ON operating_rooms(specialty);
+  CREATE INDEX IF NOT EXISTS idx_surgery_cases_patientId ON surgery_cases(patientId);
+  CREATE INDEX IF NOT EXISTS idx_surgery_cases_doctor ON surgery_cases(requestedByDoctor);
+  CREATE INDEX IF NOT EXISTS idx_surgery_cases_status ON surgery_cases(status);
+  CREATE INDEX IF NOT EXISTS idx_surgery_cases_preferredDate ON surgery_cases(preferredDate);
+  CREATE INDEX IF NOT EXISTS idx_surgery_bookings_roomId ON surgery_bookings(roomId);
+  CREATE INDEX IF NOT EXISTS idx_surgery_bookings_start_end ON surgery_bookings(scheduledStart, scheduledEnd);
+  CREATE INDEX IF NOT EXISTS idx_surgery_bookings_status ON surgery_bookings(bookingStatus);
+  CREATE INDEX IF NOT EXISTS idx_surgery_financial_cases_paymentStatus ON surgery_financial_cases(paymentStatus);
 
   -- Tabele pentru Istoric Medical Complet
   CREATE TABLE IF NOT EXISTS medical_records (
@@ -1671,6 +1793,68 @@ try {
   }
 } catch (error) {
   console.log("Hospital rooms initialization:", error);
+}
+
+// Inițializare săli bloc operator
+try {
+  const operatingRoomsExist = db.prepare("SELECT COUNT(*) as count FROM operating_rooms").get() as { count: number };
+  if (operatingRoomsExist.count === 0) {
+    const now = new Date().toISOString();
+    const rooms = [
+      {
+        id: randomUUID(),
+        roomNumber: "BO-1",
+        specialty: "Chirurgie generală",
+        floor: 2,
+        status: "available",
+        hasAnesthesiaMachine: 1,
+        hasImagingSupport: 0,
+        notes: "Sală pentru chirurgie abdominală și intervenții elective.",
+      },
+      {
+        id: randomUUID(),
+        roomNumber: "BO-2",
+        specialty: "Ortopedie și traumatologie",
+        floor: 2,
+        status: "available",
+        hasAnesthesiaMachine: 1,
+        hasImagingSupport: 1,
+        notes: "Sală cu suport pentru C-arm și materiale ortopedice.",
+      },
+      {
+        id: randomUUID(),
+        roomNumber: "BO-3",
+        specialty: "Neurochirurgie / chirurgie vasculară",
+        floor: 3,
+        status: "cleaning",
+        hasAnesthesiaMachine: 1,
+        hasImagingSupport: 1,
+        notes: "Sală hibridă pentru cazuri complexe și prioritare.",
+      },
+    ];
+
+    rooms.forEach((room) => {
+      db.prepare(`
+        INSERT INTO operating_rooms (
+          id, roomNumber, specialty, floor, status,
+          hasAnesthesiaMachine, hasImagingSupport, notes, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        room.id,
+        room.roomNumber,
+        room.specialty,
+        room.floor,
+        room.status,
+        room.hasAnesthesiaMachine,
+        room.hasImagingSupport,
+        room.notes,
+        now,
+        now
+      );
+    });
+  }
+} catch (error) {
+  console.log("Operating rooms initialization:", error);
 }
 
 export default db;

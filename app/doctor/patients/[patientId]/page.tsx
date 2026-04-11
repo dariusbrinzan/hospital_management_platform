@@ -1,24 +1,26 @@
+import { ArrowLeft, Mail, Phone, Scissors, Stethoscope, UserRound } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Mail, Phone, Stethoscope, UserRound } from "lucide-react";
 
+import { ConcediuMedicalButton } from "@/components/ConcediuMedicalButton";
+import { MedicalLetterButton } from "@/components/MedicalLetterButton";
+import { MedicationAdministrationTimeline } from "@/components/MedicationAdministrationTimeline";
+import { StatusBadge } from "@/components/StatusBadge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { getPatientAppointments } from "@/lib/actions/appointment.actions";
 import { getDoctorSession } from "@/lib/actions/auth.actions";
 import { getPatientById } from "@/lib/actions/patient.actions";
-import { getPatientAppointments } from "@/lib/actions/appointment.actions";
-import { formatDateTime } from "@/lib/utils";
 import {
   allergyHelpers,
   familyHistoryHelpers,
   labResultHelpers,
   medicalRecordHelpers,
+  patientMedicationAdministrationHelpers,
   prescriptionHelpers,
   vaccinationHelpers,
 } from "@/lib/db-helpers";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { StatusBadge } from "@/components/StatusBadge";
-import { MedicalLetterButton } from "@/components/MedicalLetterButton";
-import { ConcediuMedicalButton } from "@/components/ConcediuMedicalButton";
+import { formatDateTime } from "@/lib/utils";
 
 const calculateAge = (birthDate: Date | string) => {
   const birth = new Date(birthDate);
@@ -51,6 +53,7 @@ export default async function DoctorPatientDetailsPage({
 
   const structuredAllergies = allergyHelpers.getByPatientId(params.patientId);
   const activePrescriptions = prescriptionHelpers.getActiveByPatientId(params.patientId);
+  const medicationAdministrations = patientMedicationAdministrationHelpers.getByPatientId(params.patientId);
   const vaccinations = vaccinationHelpers
     .getByPatientId(params.patientId)
     .sort((a: any, b: any) => new Date(b.administrationDate).getTime() - new Date(a.administrationDate).getTime());
@@ -112,6 +115,14 @@ export default async function DoctorPatientDetailsPage({
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={`/doctor/surgery?patientId=${params.patientId}`}
+                prefetch={false}
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 text-sm font-medium text-teal-700 hover:bg-teal-100 dark:border-teal-900/40 dark:bg-teal-950/30 dark:text-teal-300 dark:hover:bg-teal-950/50"
+              >
+                <Scissors className="size-4" />
+                Programează intervenție
+              </Link>
               <a
                 href={`mailto:${patient.email}`}
                 className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
@@ -249,6 +260,21 @@ export default async function DoctorPatientDetailsPage({
         </div>
 
         <div className="space-y-6 lg:col-span-2">
+          <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+            <CardHeader className="pb-3">
+              <CardTitle>Medicație administrată pacientului</CardTitle>
+              <CardDescription>
+                Istoricul complet al tratamentelor administrate, inclusiv intervalele orare și etapa clinică.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MedicationAdministrationTimeline
+                entries={medicationAdministrations}
+                emptyMessage="Nu există administrări medicamentoase înregistrate pentru acest pacient."
+              />
+            </CardContent>
+          </Card>
+
           <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
             <CardHeader className="pb-3">
               <CardTitle>Condiții medicale generale</CardTitle>

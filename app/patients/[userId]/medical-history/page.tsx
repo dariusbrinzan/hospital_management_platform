@@ -1,14 +1,22 @@
 import { redirect } from "next/navigation";
-import { getPatient, getUser } from "@/lib/actions/patient.actions";
-import { requireAuth } from "@/lib/actions/auth.actions";
-import { medicalRecordHelpers } from "@/lib/db-helpers";
-import { allergyHelpers, vaccinationHelpers, familyHistoryHelpers } from "@/lib/db-helpers";
-import { vitalSignsHelpers, labResultHelpers, appointmentHelpers } from "@/lib/db-helpers";
-import { medicalDocumentHelpers } from "@/lib/db-helpers";
-import { calculateAge } from "@/lib/analysis-reference-ranges";
-import { MedicalHistoryWithFilters } from "@/components/MedicalHistoryWithFilters";
-import { MedicalHistorySummary } from "@/components/MedicalHistorySummary";
+
 import { MedicalDocumentsManager } from "@/components/MedicalDocumentsManager";
+import { MedicalHistorySummary } from "@/components/MedicalHistorySummary";
+import { MedicalHistoryWithFilters } from "@/components/MedicalHistoryWithFilters";
+import { MedicationAdministrationTimeline } from "@/components/MedicationAdministrationTimeline";
+import { requireAuth } from "@/lib/actions/auth.actions";
+import { getPatient, getUser } from "@/lib/actions/patient.actions";
+import { calculateAge } from "@/lib/analysis-reference-ranges";
+import {
+  allergyHelpers,
+  appointmentHelpers,
+  familyHistoryHelpers,
+  labResultHelpers,
+  medicalRecordHelpers,
+  patientMedicationAdministrationHelpers,
+  vaccinationHelpers,
+  vitalSignsHelpers,
+} from "@/lib/db-helpers";
 
 const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
   const session = await requireAuth();
@@ -31,7 +39,7 @@ const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
   const vaccinations = vaccinationHelpers.getByPatientId(patientId);
   const familyHistory = familyHistoryHelpers.getByPatientId(patientId);
   const vitalSignsHistory = vitalSignsHelpers.getByPatientId(patientId);
-  const documents = medicalDocumentHelpers.getByPatientId(patientId);
+  const medicationAdministrations = patientMedicationAdministrationHelpers.getByPatientId(patientId);
   
   // Obține analizele din lab_results
   const labResults = labResultHelpers.getByPatientId(patientId);
@@ -164,6 +172,17 @@ const MedicalHistoryPage = async ({ params: { userId } }: SearchParamProps) => {
             familyHistory={familyHistory}
             analysisGroups={allAnalysisGroups}
             patientInfo={patientInfo}
+          />
+        </div>
+
+        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="mb-2 text-24-bold text-dark-900 dark:text-slate-100">Medicație administrată în spital</h2>
+          <p className="mb-4 text-14-regular text-dark-600 dark:text-slate-400">
+            Poți urmări exact ce tratament ți-a fost administrat, la ce oră și dacă s-a întâmplat înainte sau după preluarea de către medic.
+          </p>
+          <MedicationAdministrationTimeline
+            entries={medicationAdministrations}
+            emptyMessage="Nu există administrări medicamentoase înregistrate încă."
           />
         </div>
 

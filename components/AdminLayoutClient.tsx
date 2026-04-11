@@ -16,6 +16,7 @@ import {
   ScanSearch,
   Shield,
   ShoppingCart,
+  Scissors,
   Users,
   X,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const ADMIN_NAV = [
   { href: "/admin/appointments", label: "Programări", icon: Calendar },
   { href: "/admin/doctor-calendar", label: "Calendar Medici", icon: CalendarDays },
   { href: "/admin/emergency", label: "Urgențe", icon: AlertCircle },
+  { href: "/admin/operating-room", label: "Bloc operator", icon: Scissors },
   { href: "/admin/medications", label: "Medicamente", icon: Pill },
   { href: "/admin/pharmacy", label: "Farmacie", icon: ShoppingCart },
   { href: "/admin/laborator", label: "Laborator", icon: FlaskConical },
@@ -85,7 +87,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
             <Link
               href="/admin"
               prefetch={false}
-              className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 transition hover:border-teal-300 hover:bg-teal-50/60 dark:border-slate-700 dark:bg-slate-800/80 dark:hover:border-teal-700 dark:hover:bg-teal-950/30"
+              className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 transition hover:border-teal-300 hover:bg-teal-50/60 dark:border-slate-700 dark:bg-slate-800/80 dark:hover:border-teal-700 dark:hover:bg-teal-950/30 sm:flex"
             >
               <div className="flex size-8 items-center justify-center rounded-full bg-teal-100 text-teal-600 dark:bg-teal-900/50 dark:text-teal-400">
                 <Shield className="size-4" />
@@ -120,7 +122,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
               aria-hidden
             />
           )}
-          <div className="relative z-30 flex h-full flex-col overflow-y-auto py-6 pl-4 pr-4 lg:pl-6">
+          <div className="relative z-30 flex h-full flex-col overflow-y-auto px-4 py-6 lg:pl-6">
             <nav className="flex flex-col gap-0.5" aria-label="Navigare administrator">
               {ADMIN_NAV.map(({ href, label, icon: Icon }) => {
                 const isActive = href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);

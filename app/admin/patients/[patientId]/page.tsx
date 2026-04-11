@@ -2,25 +2,25 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { getPatientById } from "@/lib/actions/patient.actions";
-import { getPatientAppointments } from "@/lib/actions/appointment.actions";
-import { formatDateTime } from "@/lib/utils";
-import { calculateAge } from "@/lib/analysis-reference-ranges";
-import { Doctors } from "@/constants";
-import { StatusBadge } from "@/components/StatusBadge";
-import { LogoLink } from "@/components/LogoLink";
-import { MedicalLetterButton } from "@/components/MedicalLetterButton";
 import { AnalysisResultDisplay } from "@/components/AnalysisResultDisplay";
+import { LogoLink } from "@/components/LogoLink";
 import { MedicalDocumentsManager } from "@/components/MedicalDocumentsManager";
+import { MedicalLetterButton } from "@/components/MedicalLetterButton";
+import { MedicationAdministrationTimeline } from "@/components/MedicationAdministrationTimeline";
+import { StatusBadge } from "@/components/StatusBadge";
+import { Doctors } from "@/constants";
+import { getPatientAppointments } from "@/lib/actions/appointment.actions";
+import { getPatientById } from "@/lib/actions/patient.actions";
 import {
-  medicalRecordHelpers,
   allergyHelpers,
-  vaccinationHelpers,
-  familyHistoryHelpers,
-  labResultHelpers,
-  prescriptionHelpers,
   doctorReviewHelpers,
+  familyHistoryHelpers,
+  medicalRecordHelpers,
+  patientMedicationAdministrationHelpers,
+  prescriptionHelpers,
+  vaccinationHelpers,
 } from "@/lib/db-helpers";
+import { formatDateTime } from "@/lib/utils";
 
 const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) => {
   const patient = await getPatientById(patientId);
@@ -38,9 +38,8 @@ const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) =
   const allergies = allergyHelpers.getByPatientId(patientId);
   const vaccinations = vaccinationHelpers.getByPatientId(patientId);
   const familyHistory = familyHistoryHelpers.getByPatientId(patientId);
-  const labResults = labResultHelpers.getByPatientId(patientId);
-  
   const activePrescriptions = prescriptionHelpers.getActiveByPatientId(patientId);
+  const medicationAdministrations = patientMedicationAdministrationHelpers.getByPatientId(patientId);
   const patientReviews = doctorReviewHelpers.getByPatientId(patientId);
 
   // Calculează vârsta
@@ -220,6 +219,14 @@ const PatientDetailsPage = async ({ params: { patientId } }: SearchParamProps) =
 
         {/* Right Column - Medical History */}
         <div className="lg:col-span-2 space-y-6">
+          <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-6 shadow-lg">
+            <h2 className="sub-header mb-4 text-indigo-700">🕒 Medicație administrată pacientului</h2>
+            <MedicationAdministrationTimeline
+              entries={medicationAdministrations}
+              emptyMessage="Nu există administrări medicamentoase înregistrate pentru acest pacient."
+            />
+          </div>
+
           {/* Alergii și Reacții Adverse */}
           {allergies.length > 0 && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-6 shadow-lg">
