@@ -694,3 +694,79 @@ declare interface SurgeryFinancialCase {
   createdAt: Date | string;
   updatedAt: Date | string;
 }
+
+declare type FinancialTransactionType = "revenue" | "expense" | "deduction" | "reimbursement";
+declare type FinancialCategory =
+  | "surgery"
+  | "hospitalization"
+  | "imaging"
+  | "laboratory"
+  | "pharmacy"
+  | "medication_procurement"
+  | "ambulance_fuel"
+  | "ambulance_maintenance"
+  | "consumables"
+  | "equipment_maintenance"
+  | "utilities"
+  | "salary"
+  | "insurance"
+  | "it_infrastructure"
+  | "other";
+declare type FinancialCostCenter =
+  | "operating_room"
+  | "ambulance"
+  | "emergency"
+  | "hospitalization"
+  | "icu"
+  | "laboratory"
+  | "imaging"
+  | "pharmacy"
+  | "administration"
+  | "general";
+declare type FinancialRecordStatus = "pending" | "approved" | "paid" | "cancelled" | "reimbursed";
+
+declare interface FinancialTransaction {
+  $id: string;
+  transactionType: FinancialTransactionType;
+  category: FinancialCategory;
+  costCenter: FinancialCostCenter;
+  sourceType?: string | null;
+  sourceId?: string | null;
+  patientId?: string | null;
+  amount: number;
+  taxAmount: number;
+  deductibleAmount: number;
+  currency: string;
+  status: FinancialRecordStatus;
+  description: string;
+  occurredAt: Date | string;
+  createdBy?: string | null;
+  notes?: string | null;
+  metadata?: Record<string, any> | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  patient?: {
+    $id: string;
+    name: string;
+  } | null;
+}
+
+declare interface AmbulanceFuelLog {
+  $id: string;
+  ambulanceId: string;
+  liters: number;
+  costPerLiter: number;
+  totalCost: number;
+  odometerKm?: number | null;
+  fueledAt: Date | string;
+  stationName?: string | null;
+  fueledBy?: string | null;
+  notes?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  ambulance?: {
+    $id: string;
+    ambulanceNumber: string;
+    licensePlate: string;
+  } | null;
+}

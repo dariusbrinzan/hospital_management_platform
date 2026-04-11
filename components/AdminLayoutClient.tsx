@@ -3,6 +3,7 @@
 import {
   AlertCircle,
   BarChart3,
+  Banknote,
   Building2,
   Calendar,
   CalendarDays,
@@ -42,6 +43,7 @@ const ADMIN_NAV = [
   { href: "/admin/patients", label: "Pacienți", icon: Users },
   { href: "/admin/hospitalizations", label: "Spitalizări", icon: Building2 },
   { href: "/admin/imaging", label: "Imagistică", icon: ScanSearch },
+  { href: "/admin/finance", label: "Financiar", icon: Banknote },
   { href: "/admin/lab-import", label: "Import analize", icon: FileDown },
   { href: "/admin/reports", label: "Rapoarte", icon: BarChart3 },
   { href: "/admin/problem-reports", label: "Raportări probleme", icon: FileWarning },

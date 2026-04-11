@@ -1253,6 +1253,54 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_surgery_bookings_status ON surgery_bookings(bookingStatus);
   CREATE INDEX IF NOT EXISTS idx_surgery_financial_cases_paymentStatus ON surgery_financial_cases(paymentStatus);
 
+  CREATE TABLE IF NOT EXISTS financial_transactions (
+    id TEXT PRIMARY KEY,
+    transactionType TEXT NOT NULL, -- revenue, expense, deduction, reimbursement
+    category TEXT NOT NULL,
+    costCenter TEXT NOT NULL,
+    sourceType TEXT,
+    sourceId TEXT,
+    patientId TEXT,
+    amount REAL NOT NULL DEFAULT 0,
+    taxAmount REAL NOT NULL DEFAULT 0,
+    deductibleAmount REAL NOT NULL DEFAULT 0,
+    currency TEXT NOT NULL DEFAULT 'RON',
+    status TEXT NOT NULL DEFAULT 'pending', -- pending, approved, paid, cancelled, reimbursed
+    description TEXT NOT NULL,
+    occurredAt TEXT NOT NULL DEFAULT (datetime('now')),
+    createdBy TEXT,
+    notes TEXT,
+    metadata TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS ambulance_fuel_logs (
+    id TEXT PRIMARY KEY,
+    ambulanceId TEXT NOT NULL,
+    liters REAL NOT NULL,
+    costPerLiter REAL NOT NULL,
+    totalCost REAL NOT NULL,
+    odometerKm INTEGER,
+    fueledAt TEXT NOT NULL DEFAULT (datetime('now')),
+    stationName TEXT,
+    fueledBy TEXT,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (ambulanceId) REFERENCES ambulances(id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_financial_transactions_type ON financial_transactions(transactionType);
+  CREATE INDEX IF NOT EXISTS idx_financial_transactions_category ON financial_transactions(category);
+  CREATE INDEX IF NOT EXISTS idx_financial_transactions_cost_center ON financial_transactions(costCenter);
+  CREATE INDEX IF NOT EXISTS idx_financial_transactions_source ON financial_transactions(sourceType, sourceId);
+  CREATE INDEX IF NOT EXISTS idx_financial_transactions_status ON financial_transactions(status);
+  CREATE INDEX IF NOT EXISTS idx_financial_transactions_occurred_at ON financial_transactions(occurredAt);
+  CREATE INDEX IF NOT EXISTS idx_ambulance_fuel_logs_ambulance ON ambulance_fuel_logs(ambulanceId);
+  CREATE INDEX IF NOT EXISTS idx_ambulance_fuel_logs_fueled_at ON ambulance_fuel_logs(fueledAt);
+
   -- Tabele pentru Istoric Medical Complet
   CREATE TABLE IF NOT EXISTS medical_records (
     id TEXT PRIMARY KEY,
@@ -1745,6 +1793,79 @@ try {
   }
 } catch (error) {
   console.error("Error initializing ambulances:", error);
+}
+
+// Inițializare consum combustibil pentru ambulanțe + exemple financiare operaționale
+try {
+  const fuelCount = db.prepare("SELECT COUNT(*) as count FROM ambulance_fuel_logs").get() as { count: number };
+  if (fuelCount.count === 0) {
+    const ambulances = db.prepare("SELECT id, ambulanceNumber FROM ambulances ORDER BY ambulanceNumber LIMIT 2").all() as Array<{ id: string; ambulanceNumber: string }>;
+    const now = new Date();
+    ambulances.forEach((ambulance, index) => {
+      const logId = randomUUID();
+      const liters = index === 0 ? 68 : 54;
+      const costPerLiter = 7.42;
+      const totalCost = Number((liters * costPerLiter).toFixed(2));
+      const fueledAt = new Date(now.getTime() - (index + 1) * 24 * 60 * 60 * 1000).toISOString();
+      db.prepare(`
+        INSERT INTO ambulance_fuel_logs (
+          id, ambulanceId, liters, costPerLiter, totalCost, odometerKm,
+          fueledAt, stationName, fueledBy, notes, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        logId,
+        ambulance.id,
+        liters,
+        costPerLiter,
+        totalCost,
+        index === 0 ? 124380 : 119240,
+        fueledAt,
+        index === 0 ? "OMV Splai Independenței" : "Petrom Berceni",
+        index === 0 ? "Coordonator parc auto" : "Șef tură dispecerat",
+        `Alimentare preventivă pentru ${ambulance.ambulanceNumber}.`,
+        fueledAt,
+        fueledAt
+      );
+
+      db.prepare(`
+        INSERT INTO financial_transactions (
+          id, transactionType, category, costCenter, sourceType, sourceId, amount,
+          taxAmount, deductibleAmount, currency, status, description, occurredAt,
+          createdBy, notes, metadata, createdAt, updatedAt
+        ) VALUES (?, 'expense', 'ambulance_fuel', 'ambulance', 'ambulance_fuel_log', ?, ?, 0, 0, 'RON', 'paid', ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        randomUUID(),
+        logId,
+        totalCost,
+        `Combustibil pentru ${ambulance.ambulanceNumber}`,
+        fueledAt,
+        index === 0 ? "Coordonator parc auto" : "Șef tură dispecerat",
+        "Cheltuială operațională introdusă automat pentru demo.",
+        JSON.stringify({ ambulanceId: ambulance.id, liters, costPerLiter }),
+        fueledAt,
+        fueledAt
+      );
+    });
+
+    db.prepare(`
+      INSERT INTO financial_transactions (
+        id, transactionType, category, costCenter, amount, taxAmount, deductibleAmount,
+        currency, status, description, occurredAt, createdBy, notes, metadata, createdAt, updatedAt
+      ) VALUES (?, 'expense', 'utilities', 'general', ?, 0, 0, 'RON', 'approved', ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      randomUUID(),
+      18450,
+      "Factură energie și climatizare bloc operator / imagistică",
+      new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      "Administrator financiar",
+      "Cheltuială operațională lunară introdusă pentru demonstrarea centrului de cost general.",
+      JSON.stringify({ provider: "Electrica Furnizare", period: "aprilie 2026" }),
+      new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString()
+    );
+  }
+} catch (error) {
+  console.error("Error initializing finance demo data:", error);
 }
 
 // Inițializare săli ATI (1-3, fiecare cu 6 locuri)

@@ -4937,6 +4937,449 @@ export const surgeryBookingHelpers = {
   },
 };
 
+const mapFinancialTransactionRow = (row: any): FinancialTransaction => ({
+  $id: row.id,
+  transactionType: row.transactionType,
+  category: row.category,
+  costCenter: row.costCenter,
+  sourceType: row.sourceType,
+  sourceId: row.sourceId,
+  patientId: row.patientId,
+  amount: row.amount,
+  taxAmount: row.taxAmount,
+  deductibleAmount: row.deductibleAmount,
+  currency: row.currency,
+  status: row.status,
+  description: row.description,
+  occurredAt: parseDate(row.occurredAt),
+  createdBy: row.createdBy,
+  notes: row.notes,
+  metadata: row.metadata ? JSON.parse(row.metadata) : null,
+  createdAt: parseDate(row.createdAt),
+  updatedAt: parseDate(row.updatedAt),
+  patient: row.patient_name
+    ? {
+        $id: row.patientId,
+        name: row.patient_name,
+      }
+    : null,
+});
+
+const mapAmbulanceFuelLogRow = (row: any): AmbulanceFuelLog => ({
+  $id: row.id,
+  ambulanceId: row.ambulanceId,
+  liters: row.liters,
+  costPerLiter: row.costPerLiter,
+  totalCost: row.totalCost,
+  odometerKm: row.odometerKm,
+  fueledAt: parseDate(row.fueledAt),
+  stationName: row.stationName,
+  fueledBy: row.fueledBy,
+  notes: row.notes,
+  createdAt: parseDate(row.createdAt),
+  updatedAt: parseDate(row.updatedAt),
+  ambulance: row.ambulanceNumber
+    ? {
+        $id: row.ambulanceId,
+        ambulanceNumber: row.ambulanceNumber,
+        licensePlate: row.licensePlate,
+      }
+    : null,
+});
+
+function financeStatusFromSurgery(paymentStatus: SurgeryPaymentStatus): FinancialRecordStatus {
+  switch (paymentStatus) {
+    case "paid":
+      return "paid";
+    case "partially_paid":
+      return "approved";
+    case "exempt":
+      return "paid";
+    default:
+      return "pending";
+  }
+}
+
+export const financialTransactionHelpers = {
+  create: (data: {
+    transactionType: FinancialTransactionType;
+    category: FinancialCategory;
+    costCenter: FinancialCostCenter;
+    sourceType?: string | null;
+    sourceId?: string | null;
+    patientId?: string | null;
+    amount: number;
+    taxAmount?: number;
+    deductibleAmount?: number;
+    currency?: string;
+    status?: FinancialRecordStatus;
+    description: string;
+    occurredAt?: Date | string;
+    createdBy?: string;
+    notes?: string;
+    metadata?: Record<string, any> | null;
+  }) => {
+    if (!data.description?.trim()) {
+      throw new Error("Descrierea tranzacției este obligatorie.");
+    }
+
+    const amount = Number(data.amount);
+    if (!Number.isFinite(amount) || amount < 0) {
+      throw new Error("Valoarea tranzacției trebuie să fie un număr pozitiv.");
+    }
+
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO financial_transactions (
+        id, transactionType, category, costCenter, sourceType, sourceId, patientId,
+        amount, taxAmount, deductibleAmount, currency, status, description, occurredAt,
+        createdBy, notes, metadata, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      data.transactionType,
+      data.category,
+      data.costCenter,
+      data.sourceType ?? null,
+      data.sourceId ?? null,
+      data.patientId ?? null,
+      amount,
+      Number(data.taxAmount) || 0,
+      Number(data.deductibleAmount) || 0,
+      data.currency || "RON",
+      data.status || "pending",
+      data.description.trim(),
+      formatDate(data.occurredAt || now),
+      data.createdBy?.trim() || null,
+      data.notes?.trim() || null,
+      data.metadata ? JSON.stringify(data.metadata) : null,
+      now,
+      now
+    );
+
+    return financialTransactionHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const row = db.prepare(`
+      SELECT ft.*, p.name as patient_name
+      FROM financial_transactions ft
+      LEFT JOIN patients p ON p.id = ft.patientId
+      WHERE ft.id = ?
+    `).get(id) as any;
+
+    if (!row) return null;
+    return mapFinancialTransactionRow(row);
+  },
+
+  upsertBySource: (data: {
+    sourceType: string;
+    sourceId: string;
+    transactionType: FinancialTransactionType;
+    category: FinancialCategory;
+    costCenter: FinancialCostCenter;
+    patientId?: string | null;
+    amount: number;
+    taxAmount?: number;
+    deductibleAmount?: number;
+    currency?: string;
+    status?: FinancialRecordStatus;
+    description: string;
+    occurredAt?: Date | string;
+    createdBy?: string;
+    notes?: string;
+    metadata?: Record<string, any> | null;
+  }) => {
+    const existing = db.prepare(`
+      SELECT id FROM financial_transactions
+      WHERE sourceType = ? AND sourceId = ?
+      LIMIT 1
+    `).get(data.sourceType, data.sourceId) as { id: string } | undefined;
+    const now = new Date().toISOString();
+
+    if (existing) {
+      db.prepare(`
+        UPDATE financial_transactions
+        SET transactionType = ?, category = ?, costCenter = ?, patientId = ?, amount = ?, taxAmount = ?,
+            deductibleAmount = ?, currency = ?, status = ?, description = ?, occurredAt = ?, createdBy = ?,
+            notes = ?, metadata = ?, updatedAt = ?
+        WHERE id = ?
+      `).run(
+        data.transactionType,
+        data.category,
+        data.costCenter,
+        data.patientId ?? null,
+        Number(data.amount) || 0,
+        Number(data.taxAmount) || 0,
+        Number(data.deductibleAmount) || 0,
+        data.currency || "RON",
+        data.status || "pending",
+        data.description.trim(),
+        formatDate(data.occurredAt || now),
+        data.createdBy?.trim() || null,
+        data.notes?.trim() || null,
+        data.metadata ? JSON.stringify(data.metadata) : null,
+        now,
+        existing.id
+      );
+
+      return financialTransactionHelpers.getById(existing.id);
+    }
+
+    return financialTransactionHelpers.create(data);
+  },
+
+  deleteBySource: (sourceType: string, sourceId: string) => {
+    db.prepare(`
+      DELETE FROM financial_transactions
+      WHERE sourceType = ? AND sourceId = ?
+    `).run(sourceType, sourceId);
+    return { success: true };
+  },
+
+  getAll: (filters?: {
+    transactionType?: FinancialTransactionType;
+    category?: FinancialCategory;
+    costCenter?: FinancialCostCenter;
+    status?: FinancialRecordStatus;
+    limit?: number;
+  }) => {
+    let query = `
+      SELECT ft.*, p.name as patient_name
+      FROM financial_transactions ft
+      LEFT JOIN patients p ON p.id = ft.patientId
+      WHERE 1 = 1
+    `;
+    const params: any[] = [];
+
+    if (filters?.transactionType) {
+      query += " AND ft.transactionType = ?";
+      params.push(filters.transactionType);
+    }
+    if (filters?.category) {
+      query += " AND ft.category = ?";
+      params.push(filters.category);
+    }
+    if (filters?.costCenter) {
+      query += " AND ft.costCenter = ?";
+      params.push(filters.costCenter);
+    }
+    if (filters?.status) {
+      query += " AND ft.status = ?";
+      params.push(filters.status);
+    }
+
+    query += " ORDER BY ft.occurredAt DESC, ft.createdAt DESC";
+    if (filters?.limit) {
+      query += " LIMIT ?";
+      params.push(filters.limit);
+    }
+
+    const rows = db.prepare(query).all(...params) as any[];
+    return rows.map(mapFinancialTransactionRow);
+  },
+
+  getSummary: (days = 30) => {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const totals = db.prepare(`
+      SELECT
+        COALESCE(SUM(CASE WHEN transactionType = 'revenue' THEN amount ELSE 0 END), 0) as revenue,
+        COALESCE(SUM(CASE WHEN transactionType = 'expense' THEN amount ELSE 0 END), 0) as expense,
+        COALESCE(SUM(CASE WHEN transactionType = 'deduction' THEN amount ELSE 0 END), 0) as deduction,
+        COALESCE(SUM(CASE WHEN transactionType = 'reimbursement' THEN amount ELSE 0 END), 0) as reimbursement,
+        COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) as pendingCount
+      FROM financial_transactions
+      WHERE occurredAt >= ?
+    `).get(since) as any;
+
+    const byCategory = db.prepare(`
+      SELECT category, transactionType, ROUND(SUM(amount), 2) as total
+      FROM financial_transactions
+      WHERE occurredAt >= ?
+      GROUP BY category, transactionType
+      ORDER BY total DESC
+      LIMIT 12
+    `).all(since) as Array<{ category: string; transactionType: string; total: number }>;
+
+    return {
+      windowDays: days,
+      revenue: totals.revenue ?? 0,
+      expense: totals.expense ?? 0,
+      deduction: totals.deduction ?? 0,
+      reimbursement: totals.reimbursement ?? 0,
+      pendingCount: totals.pendingCount ?? 0,
+      balance: (totals.revenue ?? 0) + (totals.reimbursement ?? 0) - (totals.expense ?? 0) - (totals.deduction ?? 0),
+      byCategory,
+    };
+  },
+
+  syncSurgeryCaseFinancialEntries: (surgeryCaseId: string) => {
+    const surgeryCase = surgeryCaseHelpers.getById(surgeryCaseId);
+    const finance = surgeryFinancialHelpers.getBySurgeryCaseId(surgeryCaseId);
+    if (!surgeryCase || !finance) {
+      return { success: false };
+    }
+
+    const occurredAt = surgeryCase.preferredDate || surgeryCase.createdAt;
+    const status = financeStatusFromSurgery(finance.paymentStatus);
+    const commonMetadata = {
+      surgeryCaseId,
+      procedureName: surgeryCase.procedureName,
+      coverageType: finance.coverageType,
+    };
+
+    financialTransactionHelpers.upsertBySource({
+      sourceType: "surgery_finance_cass",
+      sourceId: surgeryCaseId,
+      transactionType: "revenue",
+      category: "surgery",
+      costCenter: "operating_room",
+      patientId: surgeryCase.patientId,
+      amount: finance.cassCoveredAmount,
+      status: finance.cassCoveredAmount > 0 ? status : "cancelled",
+      description: `Decontare CASS - ${surgeryCase.procedureName} (${surgeryCase.patient?.name || "Pacient"})`,
+      occurredAt,
+      createdBy: "Sistem",
+      notes: finance.billingNotes || undefined,
+      metadata: {
+        ...commonMetadata,
+        payer: "CASS",
+      },
+    });
+
+    if (finance.patientAmount > 0) {
+      financialTransactionHelpers.upsertBySource({
+        sourceType: "surgery_finance_patient",
+        sourceId: surgeryCaseId,
+        transactionType: "revenue",
+        category: "surgery",
+        costCenter: "operating_room",
+        patientId: surgeryCase.patientId,
+        amount: finance.patientAmount,
+        deductibleAmount: Math.max(0, finance.estimatedTotal - finance.cassCoveredAmount),
+        status,
+        description: `Contribuție pacient - ${surgeryCase.procedureName} (${surgeryCase.patient?.name || "Pacient"})`,
+        occurredAt,
+        createdBy: "Sistem",
+        notes: finance.billingNotes || undefined,
+        metadata: {
+          ...commonMetadata,
+          payer: "patient",
+        },
+      });
+    } else {
+      financialTransactionHelpers.deleteBySource("surgery_finance_patient", surgeryCaseId);
+    }
+
+    return { success: true };
+  },
+
+  syncSurgeryFinanceEntries: () => {
+    const surgeryRows = db.prepare("SELECT surgeryCaseId FROM surgery_financial_cases").all() as Array<{ surgeryCaseId: string }>;
+    surgeryRows.forEach((row) => financialTransactionHelpers.syncSurgeryCaseFinancialEntries(row.surgeryCaseId));
+    return { total: surgeryRows.length };
+  },
+};
+
+export const ambulanceFuelLogHelpers = {
+  create: (data: {
+    ambulanceId: string;
+    liters: number;
+    costPerLiter: number;
+    totalCost?: number;
+    odometerKm?: number;
+    fueledAt?: Date | string;
+    stationName?: string;
+    fueledBy?: string;
+    notes?: string;
+  }) => {
+    const ambulance = ambulanceHelpers.getById(data.ambulanceId);
+    if (!ambulance) {
+      throw new Error("Ambulanța selectată nu există.");
+    }
+
+    const liters = Number(data.liters);
+    const costPerLiter = Number(data.costPerLiter);
+    if (!Number.isFinite(liters) || liters <= 0) {
+      throw new Error("Cantitatea de combustibil trebuie să fie mai mare decât 0.");
+    }
+    if (!Number.isFinite(costPerLiter) || costPerLiter <= 0) {
+      throw new Error("Costul pe litru trebuie să fie mai mare decât 0.");
+    }
+
+    const totalCost = Number(data.totalCost) > 0 ? Number(data.totalCost) : Number((liters * costPerLiter).toFixed(2));
+    const id = generateId();
+    const now = new Date().toISOString();
+    const fueledAt = formatDate(data.fueledAt || now);
+
+    db.prepare(`
+      INSERT INTO ambulance_fuel_logs (
+        id, ambulanceId, liters, costPerLiter, totalCost, odometerKm, fueledAt,
+        stationName, fueledBy, notes, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      data.ambulanceId,
+      liters,
+      costPerLiter,
+      totalCost,
+      data.odometerKm ?? null,
+      fueledAt,
+      data.stationName?.trim() || null,
+      data.fueledBy?.trim() || null,
+      data.notes?.trim() || null,
+      now,
+      now
+    );
+
+    financialTransactionHelpers.upsertBySource({
+      sourceType: "ambulance_fuel_log",
+      sourceId: id,
+      transactionType: "expense",
+      category: "ambulance_fuel",
+      costCenter: "ambulance",
+      amount: totalCost,
+      status: "paid",
+      description: `Combustibil ${ambulance.ambulanceNumber}`,
+      occurredAt: fueledAt,
+      createdBy: data.fueledBy?.trim() || "Dispecerat",
+      notes: data.notes?.trim() || undefined,
+      metadata: {
+        ambulanceId: ambulance.$id,
+        ambulanceNumber: ambulance.ambulanceNumber,
+        liters,
+        costPerLiter,
+        odometerKm: data.odometerKm ?? null,
+      },
+    });
+
+    return ambulanceFuelLogHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const row = db.prepare(`
+      SELECT afl.*, a.ambulanceNumber, a.licensePlate
+      FROM ambulance_fuel_logs afl
+      INNER JOIN ambulances a ON a.id = afl.ambulanceId
+      WHERE afl.id = ?
+    `).get(id) as any;
+    if (!row) return null;
+    return mapAmbulanceFuelLogRow(row);
+  },
+
+  getAll: (limit = 30) => {
+    const rows = db.prepare(`
+      SELECT afl.*, a.ambulanceNumber, a.licensePlate
+      FROM ambulance_fuel_logs afl
+      INNER JOIN ambulances a ON a.id = afl.ambulanceId
+      ORDER BY afl.fueledAt DESC
+      LIMIT ?
+    `).all(limit) as any[];
+    return rows.map(mapAmbulanceFuelLogRow);
+  },
+};
+
 export const surgeryFinancialHelpers = {
   getBySurgeryCaseId: (surgeryCaseId: string) => {
     const row = db.prepare(`
@@ -5007,7 +5450,9 @@ export const surgeryFinancialHelpers = {
       );
     }
 
-    return surgeryFinancialHelpers.getBySurgeryCaseId(data.surgeryCaseId);
+    const result = surgeryFinancialHelpers.getBySurgeryCaseId(data.surgeryCaseId);
+    financialTransactionHelpers.syncSurgeryCaseFinancialEntries(data.surgeryCaseId);
+    return result;
   },
 };
 

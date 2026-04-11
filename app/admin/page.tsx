@@ -1,12 +1,9 @@
-import { AdminDashboardSection } from "@/components/AdminDashboardSection";
-import { getAdminDashboardSnippets } from "@/lib/actions/dashboard.actions";
-import { formatDateTime } from "@/lib/utils";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Calendar,
   AlertCircle,
   Users,
   BarChart3,
+  Banknote,
   Pill,
   Building2,
   ScanSearch,
@@ -14,6 +11,11 @@ import {
   FileWarning,
   Package,
 } from "lucide-react";
+
+import { AdminDashboardSection } from "@/components/AdminDashboardSection";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getAdminDashboardSnippets } from "@/lib/actions/dashboard.actions";
+import { formatDateTime } from "@/lib/utils";
 
 function fmt(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -31,6 +33,14 @@ function fmtDate(iso: string | null | undefined): string {
   } catch {
     return String(iso);
   }
+}
+
+function fmtCurrency(value: number | null | undefined): string {
+  return new Intl.NumberFormat("ro-RO", {
+    style: "currency",
+    currency: "RON",
+    maximumFractionDigits: 0,
+  }).format(value ?? 0);
 }
 
 const tableBase =
@@ -60,7 +70,7 @@ const AdminPage = async () => {
           </CardHeader>
           <CardContent className="px-6 pb-6">
             {/* KPI cards */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
         <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
           <CardContent className="flex items-center gap-3 p-4">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-400">
@@ -104,6 +114,17 @@ const AdminPage = async () => {
             <div className="min-w-0">
               <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{data.problemReports.total}</p>
               <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Raportări</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">
+              <Banknote className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{fmtCurrency(data.finance.balance)}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Sold 30 zile</p>
             </div>
           </CardContent>
         </Card>
@@ -329,6 +350,45 @@ const AdminPage = async () => {
               </div>
             ) : (
               <p className="text-slate-500 dark:text-slate-400">Nicio programare în curând.</p>
+            )}
+          </div>
+        </AdminDashboardSection>
+
+        <AdminDashboardSection title="Financiar" href="/admin/finance" icon={<Banknote className="size-5 shrink-0 opacity-80" />}>
+          <div className="space-y-3">
+            <p className="text-slate-700 dark:text-slate-300">
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{fmtCurrency(data.finance.revenue)}</strong>{" "}
+              venituri ·{" "}
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{fmtCurrency(data.finance.expense)}</strong>{" "}
+              cheltuieli ·{" "}
+              <strong className="font-semibold text-slate-900 dark:text-slate-100">{data.finance.pendingCount}</strong>{" "}
+              în așteptare
+            </p>
+            {data.finance.recent.length > 0 ? (
+              <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
+                <table className={tableBase}>
+                  <thead>
+                    <tr className={tableHeadRow}>
+                      <th className={tableHeadCell}>Operațiune</th>
+                      <th className={tableHeadCell}>Tip</th>
+                      <th className={tableHeadCell}>Sumă</th>
+                      <th className={tableHeadCell}>Data</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.finance.recent.map((t, i) => (
+                      <tr key={`finance-${i}-${t.description}-${t.occurredAt}`}>
+                        <td className={tableCell + " font-medium text-slate-900 dark:text-slate-100"}>{t.description}</td>
+                        <td className={tableCell + " " + tableCellMuted}>{t.transactionType}</td>
+                        <td className={tableCell + " " + tableCellMuted}>{fmtCurrency(t.amount)}</td>
+                        <td className={tableCell + " " + tableCellMuted}>{fmt(t.occurredAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-slate-500 dark:text-slate-400">Nu există încă tranzacții financiare.</p>
             )}
           </div>
         </AdminDashboardSection>

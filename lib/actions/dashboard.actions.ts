@@ -3,12 +3,14 @@
 import {
   consumableRequestsHelpers,
   emergencyHelpers,
+  financialTransactionHelpers,
   hospitalAdmissionHelpers,
   internalTransportHelpers,
   medicationStockHelpers,
   patientHelpers,
   problemReportsHelpers,
 } from "@/lib/db-helpers";
+
 import { getRecentAppointmentList } from "./appointment.actions";
 import { getUpcomingStudies } from "./imaging.actions";
 
@@ -95,6 +97,18 @@ export type DashboardSnippets = {
       createdAt: string;
     }>;
   };
+  finance: {
+    balance: number;
+    revenue: number;
+    expense: number;
+    pendingCount: number;
+    recent: Array<{
+      description: string;
+      transactionType: string;
+      amount: number;
+      occurredAt: string;
+    }>;
+  };
 };
 
 function toIso(date: unknown): string {
@@ -106,7 +120,9 @@ function toIso(date: unknown): string {
 }
 
 export async function getAdminDashboardSnippets(): Promise<DashboardSnippets> {
-  const [appointments, emergencyAll, lowStock, patients, admissions, upcomingStudies, problemReportsAll, consumablePending, transportPending] =
+  financialTransactionHelpers.syncSurgeryFinanceEntries();
+
+  const [appointments, emergencyAll, lowStock, patients, admissions, upcomingStudies, problemReportsAll, consumablePending, transportPending, financeSummary, financeRecent] =
     await Promise.all([
       getRecentAppointmentList(),
       Promise.resolve(emergencyHelpers.getAll()),
@@ -117,6 +133,8 @@ export async function getAdminDashboardSnippets(): Promise<DashboardSnippets> {
       Promise.resolve(problemReportsHelpers.getAll()),
       Promise.resolve(consumableRequestsHelpers.getAll(undefined, "pending")),
       Promise.resolve(internalTransportHelpers.getAll("pending")),
+      Promise.resolve(financialTransactionHelpers.getSummary(30)),
+      Promise.resolve(financialTransactionHelpers.getAll({ limit: 6 })),
     ]);
 
   const docs = appointments?.documents ?? [];
@@ -213,6 +231,18 @@ export async function getAdminDashboardSnippets(): Promise<DashboardSnippets> {
         toLocation: r.toLocation ?? "—",
         transportType: r.transportType ?? "—",
         createdAt: toIso(r.createdAt),
+      })),
+    },
+    finance: {
+      balance: financeSummary.balance,
+      revenue: financeSummary.revenue,
+      expense: financeSummary.expense,
+      pendingCount: financeSummary.pendingCount,
+      recent: financeRecent.slice(0, 4).map((t: any) => ({
+        description: t.description ?? "—",
+        transactionType: t.transactionType ?? "—",
+        amount: Number(t.amount) || 0,
+        occurredAt: toIso(t.occurredAt),
       })),
     },
   };

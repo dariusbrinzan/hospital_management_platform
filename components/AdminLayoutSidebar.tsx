@@ -30,6 +30,7 @@ const ADMIN_NAV = [
   { href: "/admin/patients", label: "Pacienți", icon: "👥" },
   { href: "/admin/hospitalizations", label: "Spitalizări", icon: "🏥" },
   { href: "/admin/imaging", label: "Imagistică", icon: "🩻" },
+  { href: "/admin/finance", label: "Financiar", icon: "💰" },
   { href: "/admin/lab-import", label: "Import analize", icon: "📋" },
   { href: "/admin/reports", label: "Rapoarte", icon: "📊" },
   { href: "/admin/problem-reports", label: "Raportări probleme", icon: "📝" },
