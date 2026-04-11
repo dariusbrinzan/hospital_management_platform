@@ -1,8 +1,9 @@
 "use server";
 
-import { appointmentHelpers } from "../db-helpers";
-import { generateTimeSlots, parseStringify } from "../utils";
 import { Doctors } from "@/constants";
+
+import { appointmentHelpers, doctorScheduleEventHelpers } from "../db-helpers";
+import { generateTimeSlots, parseStringify } from "../utils";
 
 /**
  * Obține slot-urile disponibile pentru un doctor într-o anumită zi
@@ -12,6 +13,15 @@ export const getAvailableSlots = async (
   date: Date
 ): Promise<{ time: Date; available: boolean }[]> => {
   try {
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    if (doctorScheduleEventHelpers.hasBlockingEvent(doctorName, dayStart, dayEnd, "appointment")) {
+      return [];
+    }
+
     // Verifică dacă doctorul este de analize medicale (folosește sloturi de 15 minute)
     const doctor = Doctors.find((d) => d.name === doctorName);
     const isAnalysisDoctor = doctor?.specialty === "Analize medicale";

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
+
 import {
   Select,
   SelectContent,
@@ -21,6 +22,7 @@ interface Doctor {
 const ADMIN_NAV = [
   { href: "/admin", label: "Dashboard", icon: "🏠" },
   { href: "/admin/appointments", label: "Programări", icon: "📅" },
+  { href: "/admin/doctor-calendar", label: "Calendar Medici", icon: "🗓️" },
   { href: "/admin/emergency", label: "Urgențe", icon: "🚨", primary: true },
   { href: "/admin/medications", label: "Medicamente", icon: "💊" },
   { href: "/admin/pharmacy", label: "Farmacie", icon: "📦" },

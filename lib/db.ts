@@ -1,7 +1,8 @@
-import Database from "better-sqlite3";
-import { join } from "path";
-import { mkdir } from "fs/promises";
 import { randomUUID } from "crypto";
+import { mkdir } from "fs/promises";
+import { join } from "path";
+
+import Database from "better-sqlite3";
 
 // Creează directorul pentru baza de date dacă nu există
 const dbDir = join(process.cwd(), "data");
@@ -583,6 +584,19 @@ db.exec(`
     updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS doctor_schedule_events (
+    id TEXT PRIMARY KEY,
+    doctorName TEXT NOT NULL,
+    eventType TEXT NOT NULL,
+    startDate TEXT NOT NULL,
+    endDate TEXT NOT NULL,
+    notes TEXT,
+    affectsAppointments INTEGER NOT NULL DEFAULT 1,
+    affectsDuty INTEGER NOT NULL DEFAULT 1,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS emergency_state_transitions (
     id TEXT PRIMARY KEY,
     emergencyCaseId TEXT NOT NULL,
@@ -612,6 +626,9 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_emergency_cases_priority ON emergency_cases(priority);
   CREATE INDEX IF NOT EXISTS idx_emergency_state_transitions_caseId ON emergency_state_transitions(emergencyCaseId);
   CREATE INDEX IF NOT EXISTS idx_emergency_documents_caseId ON emergency_documents(emergencyCaseId);
+  CREATE INDEX IF NOT EXISTS idx_doctor_schedule_events_doctor ON doctor_schedule_events(doctorName);
+  CREATE INDEX IF NOT EXISTS idx_doctor_schedule_events_start_end ON doctor_schedule_events(startDate, endDate);
+  CREATE INDEX IF NOT EXISTS idx_doctor_schedule_events_type ON doctor_schedule_events(eventType);
 
   -- Investigații imagistice (disponibilități + programări, integrate cu programări și urgențe)
   CREATE TABLE IF NOT EXISTS imaging_modalities (

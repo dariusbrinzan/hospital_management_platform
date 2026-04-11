@@ -1,35 +1,38 @@
 "use client";
 
+import {
+  AlertCircle,
+  BarChart3,
+  Building2,
+  Calendar,
+  CalendarDays,
+  FileDown,
+  FileWarning,
+  FlaskConical,
+  LayoutDashboard,
+  Menu,
+  Package,
+  Pill,
+  ScanSearch,
+  Shield,
+  ShoppingCart,
+  Users,
+  X,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Calendar,
-  AlertCircle,
-  Pill,
-  ShoppingCart,
-  FlaskConical,
-  Users,
-  Building2,
-  ScanSearch,
-  FileDown,
-  BarChart3,
-  FileWarning,
-  Package,
-  Menu,
-  X,
-  Shield,
-} from "lucide-react";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { logoutAdmin } from "@/lib/actions/auth.actions";
+
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
+import { logoutAdmin } from "@/lib/actions/auth.actions";
+import { cn } from "@/lib/utils";
 
 const ADMIN_NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/appointments", label: "Programări", icon: Calendar },
+  { href: "/admin/doctor-calendar", label: "Calendar Medici", icon: CalendarDays },
   { href: "/admin/emergency", label: "Urgențe", icon: AlertCircle },
   { href: "/admin/medications", label: "Medicamente", icon: Pill },
   { href: "/admin/pharmacy", label: "Farmacie", icon: ShoppingCart },

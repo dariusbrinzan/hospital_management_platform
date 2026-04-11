@@ -2,20 +2,31 @@
 
 import { revalidatePath } from "next/cache";
 
-import { Appointment } from "@/types/appwrite.types";
-
-import { appointmentHelpers, patientHelpers } from "../db-helpers";
+import { appointmentHelpers, doctorScheduleEventHelpers, patientHelpers } from "../db-helpers";
 import { formatDateTime, formatDoctorDisplayName, parseStringify } from "../utils";
+
+import { getDoctorSession } from "./auth.actions";
 import { createNotification } from "./notification.actions";
 import { getAvailableSlots } from "./slots.actions";
 import { processWaitlistForSlot } from "./waitlist.actions";
-import { getDoctorSession } from "./auth.actions";
 
 // CREATE APPOINTMENT
 export const createAppointment = async (
   appointment: CreateAppointmentParams
 ) => {
   try {
+    if (
+      appointment.primaryPhysician &&
+      doctorScheduleEventHelpers.hasBlockingEvent(
+        appointment.primaryPhysician,
+        appointment.schedule,
+        appointment.schedule,
+        "appointment"
+      )
+    ) {
+      throw new Error("Medicul selectat nu este disponibil în perioada aleasă.");
+    }
+
     const newAppointment = appointmentHelpers.create(appointment);
     revalidatePath("/admin");
     return parseStringify(newAppointment);
@@ -376,6 +387,17 @@ export const rescheduleAppointment = async (
       return { error: "Nu poți programa în trecut" };
     }
 
+    if (
+      doctorScheduleEventHelpers.hasBlockingEvent(
+        appointment.primaryPhysician,
+        newSchedule,
+        newSchedule,
+        "appointment"
+      )
+    ) {
+      return { error: "Medicul selectat nu este disponibil în data aleasă." };
+    }
+
     // Verifică disponibilitatea noului slot
     const availableSlots = await getAvailableSlots(appointment.primaryPhysician, newSchedule);
     const selectedSlotTime = newSchedule.getTime();
@@ -385,7 +407,6 @@ export const rescheduleAppointment = async (
 
     // Permite reprogramarea chiar dacă slot-ul pare ocupat, dacă e de către același pacient (eliberăm vechiul slot)
     const oldScheduleDate = new Date(appointment.schedule);
-    const isSameDay = oldScheduleDate.toDateString() === newSchedule.toDateString();
     const isSameSlot = oldScheduleDate.getTime() === selectedSlotTime;
 
     if (!isSlotAvailable && !isSameSlot) {

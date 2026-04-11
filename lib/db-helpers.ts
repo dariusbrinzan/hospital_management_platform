@@ -1,4 +1,7 @@
 import { randomUUID } from "crypto";
+
+import { Doctors } from "@/constants";
+
 import db from "./db";
 
 // Helper pentru a genera ID-uri unice
@@ -435,7 +438,7 @@ export const appointmentHelpers = {
     const created: any[] = [];
     const count = options.count ?? 52;
     const endDate = options.endDate ? new Date(options.endDate) : null;
-    let current = new Date(firstSchedule);
+    const current = new Date(firstSchedule);
     const interval = options.interval === "monthly" ? "month" : "week";
     let n = 0;
     while (n < count) {
@@ -1946,6 +1949,24 @@ export const doctorsOnDutyHelpers = {
     };
   },
 
+  getAll: () => {
+    const rows = db.prepare(`
+      SELECT * FROM doctors_on_duty
+      ORDER BY weekStartDate DESC, doctorName ASC
+    `).all() as any[];
+    return rows.map((d) => ({
+      $id: d.id,
+      doctorName: d.doctorName,
+      weekStartDate: parseDate(d.weekStartDate),
+      weekEndDate: parseDate(d.weekEndDate),
+      specialty: d.specialty,
+      isAvailable: d.isAvailable === 1,
+      maxConcurrentEmergencies: d.maxConcurrentEmergencies,
+      createdAt: parseDate(d.createdAt),
+      updatedAt: parseDate(d.updatedAt),
+    }));
+  },
+
   getAvailableDoctors: () => {
     const now = new Date().toISOString();
     const doctors = db.prepare(`
@@ -1962,18 +1983,20 @@ export const doctorsOnDutyHelpers = {
       ORDER BY currentEmergencies ASC
     `).all(now, now) as any[];
 
-    return doctors.map(d => ({
-      $id: d.id,
-      doctorName: d.doctorName,
-      weekStartDate: parseDate(d.weekStartDate),
-      weekEndDate: parseDate(d.weekEndDate),
-      specialty: d.specialty,
-      isAvailable: d.isAvailable === 1,
-      maxConcurrentEmergencies: d.maxConcurrentEmergencies,
-      currentEmergencies: d.currentEmergencies || 0,
-      createdAt: parseDate(d.createdAt),
-      updatedAt: parseDate(d.updatedAt),
-    }));
+    return doctors
+      .filter((d) => !doctorScheduleEventHelpers.hasBlockingEvent(d.doctorName, now, now, "duty"))
+      .map(d => ({
+        $id: d.id,
+        doctorName: d.doctorName,
+        weekStartDate: parseDate(d.weekStartDate),
+        weekEndDate: parseDate(d.weekEndDate),
+        specialty: d.specialty,
+        isAvailable: d.isAvailable === 1,
+        maxConcurrentEmergencies: d.maxConcurrentEmergencies,
+        currentEmergencies: d.currentEmergencies || 0,
+        createdAt: parseDate(d.createdAt),
+        updatedAt: parseDate(d.updatedAt),
+      }));
   },
 
   /** Verifică dacă un medic este în prezent de gardă (perioada curentă, disponibil). */
@@ -1985,7 +2008,8 @@ export const doctorsOnDutyHelpers = {
         AND weekStartDate <= ? AND weekEndDate >= ?
       LIMIT 1
     `).get(doctorName, now, now) as { "1"?: number } | undefined;
-    return !!row;
+    if (!row) return false;
+    return !doctorScheduleEventHelpers.hasBlockingEvent(doctorName, now, now, "duty");
   },
 
   /** Număr gărzi per medic într-o perioadă (weekStartDate în interval). */
@@ -2112,7 +2136,11 @@ export const doctorsOnDutyHelpers = {
     }
 
     // Selectează medicii cu cel mai mic workload
-    const selectedDoctors = sortedDoctors.slice(0, Math.min(doctorsCount, sortedDoctors.length));
+    const selectedDoctors = sortedDoctors
+      .filter((workload: { doctorName: string }) =>
+        !doctorScheduleEventHelpers.hasBlockingEvent(workload.doctorName, startDateStr, endDateStr, "duty")
+      )
+      .slice(0, Math.min(doctorsCount, sortedDoctors.length));
 
     // Creează înregistrări pentru fiecare medic selectat
     const rotation = selectedDoctors.map((workload: { doctorName: string }) => {
@@ -2141,8 +2169,7 @@ export const doctorsOnDutyHelpers = {
     minDoctorsPerWeek?: number;
     maxDoctorsPerWeek?: number;
   }) => {
-    const { Doctors } = require("@/constants");
-    const { doctorsPerWeek = 3, minDoctorsPerWeek = 2, maxDoctorsPerWeek = 5 } = options || {};
+    const { doctorsPerWeek = 3 } = options || {};
 
     // Calculează workload-ul pentru toți medicii
     const workloads = doctorsOnDutyHelpers.getAllWorkloads();
@@ -2180,7 +2207,16 @@ export const doctorsOnDutyHelpers = {
     }
 
     // Selectează medicii cu cel mai mic workload
-    const selectedDoctors = sortedDoctors.slice(0, Math.min(doctorsPerWeek, sortedDoctors.length));
+    const selectedDoctors = sortedDoctors
+      .filter((workload: { doctorName: string }) =>
+        !doctorScheduleEventHelpers.hasBlockingEvent(
+          workload.doctorName,
+          nextMonday.toISOString(),
+          nextSunday.toISOString(),
+          "duty"
+        )
+      )
+      .slice(0, Math.min(doctorsPerWeek, sortedDoctors.length));
 
     // Creează înregistrări pentru fiecare medic selectat
     const rotation = selectedDoctors.map((workload: { doctorName: string }) => {
@@ -2201,6 +2237,101 @@ export const doctorsOnDutyHelpers = {
       doctors: rotation,
       totalDoctors: rotation.length,
     };
+  },
+};
+
+export const doctorScheduleEventHelpers = {
+  create: (event: {
+    doctorName: string;
+    eventType: "vacation" | "medical_leave" | "time_off" | "guard";
+    startDate: Date | string;
+    endDate: Date | string;
+    notes?: string | null;
+    affectsAppointments?: boolean;
+    affectsDuty?: boolean;
+  }) => {
+    const id = generateId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO doctor_schedule_events (
+        id, doctorName, eventType, startDate, endDate, notes,
+        affectsAppointments, affectsDuty, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id,
+      event.doctorName,
+      event.eventType,
+      formatDate(event.startDate),
+      formatDate(event.endDate),
+      event.notes ?? null,
+      event.affectsAppointments === false ? 0 : 1,
+      event.affectsDuty === false ? 0 : 1,
+      now,
+      now
+    );
+    return doctorScheduleEventHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const row = db.prepare("SELECT * FROM doctor_schedule_events WHERE id = ?").get(id) as any;
+    if (!row) return null;
+    return {
+      $id: row.id,
+      doctorName: row.doctorName,
+      eventType: row.eventType,
+      startDate: parseDate(row.startDate),
+      endDate: parseDate(row.endDate),
+      notes: row.notes,
+      affectsAppointments: row.affectsAppointments === 1,
+      affectsDuty: row.affectsDuty === 1,
+      createdAt: parseDate(row.createdAt),
+      updatedAt: parseDate(row.updatedAt),
+    };
+  },
+
+  getAll: () => {
+    const rows = db.prepare(`
+      SELECT * FROM doctor_schedule_events
+      ORDER BY startDate DESC, doctorName ASC
+    `).all() as any[];
+    return rows.map((row) => ({
+      $id: row.id,
+      doctorName: row.doctorName,
+      eventType: row.eventType,
+      startDate: parseDate(row.startDate),
+      endDate: parseDate(row.endDate),
+      notes: row.notes,
+      affectsAppointments: row.affectsAppointments === 1,
+      affectsDuty: row.affectsDuty === 1,
+      createdAt: parseDate(row.createdAt),
+      updatedAt: parseDate(row.updatedAt),
+    }));
+  },
+
+  delete: (id: string) => {
+    db.prepare("DELETE FROM doctor_schedule_events WHERE id = ?").run(id);
+    return { success: true };
+  },
+
+  hasBlockingEvent: (
+    doctorName: string,
+    startDate: Date | string,
+    endDate: Date | string,
+    scope: "appointment" | "duty"
+  ): boolean => {
+    const start = formatDate(startDate);
+    const end = formatDate(endDate);
+    const flagColumn = scope === "appointment" ? "affectsAppointments" : "affectsDuty";
+    const row = db.prepare(`
+      SELECT 1
+      FROM doctor_schedule_events
+      WHERE doctorName = ?
+        AND ${flagColumn} = 1
+        AND startDate <= ?
+        AND endDate >= ?
+      LIMIT 1
+    `).get(doctorName, end, start) as { "1"?: number } | undefined;
+    return !!row;
   },
 };
 
