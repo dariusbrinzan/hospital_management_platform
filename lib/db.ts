@@ -1159,6 +1159,104 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_hospital_treatments_admissionId ON hospital_treatments(admissionId);
   CREATE INDEX IF NOT EXISTS idx_hospital_procedures_admissionId ON hospital_procedures(admissionId);
 
+  -- Foi de spitalizare și raportare CNAS
+  CREATE TABLE IF NOT EXISTS hospitalization_sheets (
+    id TEXT PRIMARY KEY,
+    patientId TEXT NOT NULL,
+    admissionId TEXT,
+    appointmentId TEXT,
+    sheetNumber TEXT NOT NULL,
+    sheetYear INTEGER NOT NULL,
+    hospitalizationType TEXT NOT NULL DEFAULT 'continuous', -- continuous, day
+    admissionType TEXT NOT NULL DEFAULT 'elective',
+    insuranceStatus TEXT NOT NULL DEFAULT 'insured',
+    cnasPayerType TEXT NOT NULL DEFAULT 'cass',
+    admissionDate TEXT NOT NULL,
+    dischargeDate TEXT NOT NULL,
+    admissionSection TEXT NOT NULL,
+    dischargeSection TEXT NOT NULL,
+    attendingPhysician TEXT NOT NULL,
+    admissionDiagnosis TEXT NOT NULL,
+    mainDiagnosis TEXT NOT NULL,
+    dischargeStatus TEXT NOT NULL,
+    dischargeType TEXT NOT NULL,
+    totalDays INTEGER NOT NULL DEFAULT 1,
+    expectedReimbursement REAL NOT NULL DEFAULT 0,
+    validationStatus TEXT NOT NULL DEFAULT 'draft', -- draft, valid, invalid
+    reportStatus TEXT NOT NULL DEFAULT 'draft', -- draft, batched, submitted, accepted, rejected
+    validationErrorsJson TEXT,
+    notes TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patientId) REFERENCES patients(id),
+    FOREIGN KEY (admissionId) REFERENCES hospital_admissions(id),
+    FOREIGN KEY (appointmentId) REFERENCES appointments(id),
+    UNIQUE(sheetNumber, sheetYear)
+  );
+
+  CREATE TABLE IF NOT EXISTS hospitalization_sheet_diagnoses (
+    id TEXT PRIMARY KEY,
+    sheetId TEXT NOT NULL,
+    diagnosisCode TEXT,
+    diagnosisName TEXT NOT NULL,
+    diagnosisKind TEXT NOT NULL DEFAULT 'secondary', -- admission, principal, secondary
+    presentOnAdmission INTEGER NOT NULL DEFAULT 0,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (sheetId) REFERENCES hospitalization_sheets(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS hospitalization_sheet_procedures (
+    id TEXT PRIMARY KEY,
+    sheetId TEXT NOT NULL,
+    procedureCode TEXT,
+    procedureName TEXT NOT NULL,
+    procedureKind TEXT NOT NULL DEFAULT 'diagnostic', -- diagnostic, therapeutic, surgical, administrative
+    performedAt TEXT,
+    performer TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (sheetId) REFERENCES hospitalization_sheets(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS hospitalization_reporting_batches (
+    id TEXT PRIMARY KEY,
+    batchMonth INTEGER NOT NULL,
+    batchYear INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft', -- draft, validated, submitted, accepted, partially_rejected, rejected
+    totalSheets INTEGER NOT NULL DEFAULT 0,
+    acceptedSheets INTEGER NOT NULL DEFAULT 0,
+    rejectedSheets INTEGER NOT NULL DEFAULT 0,
+    exportPayload TEXT,
+    responseSummary TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    validatedAt TEXT,
+    submittedAt TEXT,
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS hospitalization_reporting_batch_items (
+    id TEXT PRIMARY KEY,
+    batchId TEXT NOT NULL,
+    sheetId TEXT NOT NULL,
+    itemStatus TEXT NOT NULL DEFAULT 'batched', -- batched, submitted, accepted, rejected
+    responseMessage TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (batchId) REFERENCES hospitalization_reporting_batches(id),
+    FOREIGN KEY (sheetId) REFERENCES hospitalization_sheets(id),
+    UNIQUE(batchId, sheetId)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_hospitalization_sheets_patientId ON hospitalization_sheets(patientId);
+  CREATE INDEX IF NOT EXISTS idx_hospitalization_sheets_admissionId ON hospitalization_sheets(admissionId);
+  CREATE INDEX IF NOT EXISTS idx_hospitalization_sheets_report_status ON hospitalization_sheets(reportStatus);
+  CREATE INDEX IF NOT EXISTS idx_hospitalization_sheets_validation_status ON hospitalization_sheets(validationStatus);
+  CREATE INDEX IF NOT EXISTS idx_hospitalization_sheets_dischargeDate ON hospitalization_sheets(dischargeDate);
+  CREATE INDEX IF NOT EXISTS idx_hospitalization_sheet_diagnoses_sheetId ON hospitalization_sheet_diagnoses(sheetId);
+  CREATE INDEX IF NOT EXISTS idx_hospitalization_sheet_procedures_sheetId ON hospitalization_sheet_procedures(sheetId);
+  CREATE INDEX IF NOT EXISTS idx_hospitalization_reporting_batches_month_year ON hospitalization_reporting_batches(batchMonth, batchYear);
+  CREATE INDEX IF NOT EXISTS idx_hospitalization_reporting_batch_items_batchId ON hospitalization_reporting_batch_items(batchId);
+  CREATE INDEX IF NOT EXISTS idx_hospitalization_reporting_batch_items_sheetId ON hospitalization_reporting_batch_items(sheetId);
+
   -- Tabele pentru Bloc Operator
   CREATE TABLE IF NOT EXISTS operating_rooms (
     id TEXT PRIMARY KEY,

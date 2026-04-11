@@ -593,6 +593,97 @@ declare interface HospitalAdmission {
   };
 }
 
+declare type HospitalizationSheetType = "continuous" | "day";
+declare type HospitalizationValidationStatus = "draft" | "valid" | "invalid";
+declare type HospitalizationReportStatus = "draft" | "batched" | "submitted" | "accepted" | "rejected";
+declare type HospitalizationBatchStatus = "draft" | "validated" | "submitted" | "accepted" | "partially_rejected" | "rejected";
+declare type HospitalizationDiagnosisKind = "admission" | "principal" | "secondary";
+declare type HospitalizationProcedureKind = "diagnostic" | "therapeutic" | "surgical" | "administrative";
+
+declare interface HospitalizationSheet {
+  $id: string;
+  patientId: string;
+  admissionId?: string | null;
+  appointmentId?: string | null;
+  sheetNumber: string;
+  sheetYear: number;
+  hospitalizationType: HospitalizationSheetType;
+  admissionType: string;
+  insuranceStatus: string;
+  cnasPayerType: string;
+  admissionDate: Date | string;
+  dischargeDate: Date | string;
+  admissionSection: string;
+  dischargeSection: string;
+  attendingPhysician: string;
+  admissionDiagnosis: string;
+  mainDiagnosis: string;
+  dischargeStatus: string;
+  dischargeType: string;
+  totalDays: number;
+  expectedReimbursement: number;
+  validationStatus: HospitalizationValidationStatus;
+  reportStatus: HospitalizationReportStatus;
+  validationErrors: string[];
+  notes?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  patient?: {
+    $id: string;
+    name: string;
+    insuranceProvider?: string | null;
+    insurancePolicyNumber?: string | null;
+  } | null;
+}
+
+declare interface HospitalizationSheetDiagnosis {
+  $id: string;
+  sheetId: string;
+  diagnosisCode?: string | null;
+  diagnosisName: string;
+  diagnosisKind: HospitalizationDiagnosisKind;
+  presentOnAdmission: boolean;
+  createdAt: Date | string;
+}
+
+declare interface HospitalizationSheetProcedure {
+  $id: string;
+  sheetId: string;
+  procedureCode?: string | null;
+  procedureName: string;
+  procedureKind: HospitalizationProcedureKind;
+  performedAt?: Date | string | null;
+  performer?: string | null;
+  createdAt: Date | string;
+}
+
+declare interface HospitalizationReportingBatch {
+  $id: string;
+  batchMonth: number;
+  batchYear: number;
+  status: HospitalizationBatchStatus;
+  totalSheets: number;
+  acceptedSheets: number;
+  rejectedSheets: number;
+  exportPayload?: string | null;
+  responseSummary?: string | null;
+  createdAt: Date | string;
+  validatedAt?: Date | string | null;
+  submittedAt?: Date | string | null;
+  updatedAt: Date | string;
+}
+
+declare interface HospitalizationReportingBatchItem {
+  $id: string;
+  batchId: string;
+  sheetId: string;
+  itemStatus: HospitalizationReportStatus;
+  responseMessage?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  sheet?: HospitalizationSheet | null;
+}
+
 // Bloc operator / intervenții chirurgicale
 declare type OperatingRoomStatus = "available" | "reserved" | "in_use" | "cleaning" | "maintenance";
 declare type SurgeryUrgency = "elective" | "priority" | "emergency";

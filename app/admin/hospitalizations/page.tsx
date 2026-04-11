@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/actions/auth.actions";
-import { hospitalRoomHelpers, hospitalAdmissionHelpers } from "@/lib/db-helpers";
+
 import { AdminPageLayout } from "@/components/AdminPageLayout";
-import { HospitalRoomsDashboard } from "@/components/HospitalRoomsDashboard";
 import { AdmissionForm } from "@/components/forms/AdmissionForm";
+import { HospitalRoomsDashboard } from "@/components/HospitalRoomsDashboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { requireAdmin } from "@/lib/actions/auth.actions";
+import { hospitalAdmissionHelpers, hospitalRoomHelpers } from "@/lib/db-helpers";
 
 const HospitalizationsPage = async ({ searchParams }: SearchParamProps) => {
   await requireAdmin();
@@ -33,9 +34,14 @@ const HospitalizationsPage = async ({ searchParams }: SearchParamProps) => {
             </p>
           </div>
           {!showForm ? (
-            <Button asChild className="w-fit rounded-lg bg-teal-600 hover:bg-teal-700">
-              <Link href="/admin/hospitalizations?new=true">+ Internare nouă</Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" className="w-fit rounded-lg border-slate-300 dark:border-slate-600">
+                <Link href="/admin/cnas-reporting">Foi și raportare CNAS</Link>
+              </Button>
+              <Button asChild className="w-fit rounded-lg bg-teal-600 hover:bg-teal-700">
+                <Link href="/admin/hospitalizations?new=true">+ Internare nouă</Link>
+              </Button>
+            </div>
           ) : (
             <Button asChild variant="outline" className="w-fit rounded-lg border-slate-300 dark:border-slate-600">
               <Link href="/admin/hospitalizations">← Înapoi</Link>

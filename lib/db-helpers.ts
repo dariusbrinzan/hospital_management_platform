@@ -3111,7 +3111,7 @@ export const labResultHelpers = {
       ORDER BY lr.performedDate DESC
       LIMIT 100
     `).all(doctorName, sinceStr) as any[];
-    const patientIds = [...new Set(rows.map((r) => r.patientId))];
+    const patientIds = Array.from(new Set(rows.map((r) => r.patientId)));
     const patients = patientIds.length ? (db.prepare("SELECT id, name FROM patients WHERE id IN (" + patientIds.map(() => "?").join(",") + ")").all(...patientIds) as any[]) : [];
     const patientMap = new Map(patients.map((p) => [p.id, p.name]));
     return rows.map((l) => ({
@@ -4461,6 +4461,609 @@ export const hospitalAdmissionHelpers = {
       notes: p.notes,
       createdAt: parseDate(p.createdAt),
     }));
+  },
+};
+
+const mapHospitalizationSheetRow = (row: any): HospitalizationSheet => ({
+  $id: row.id,
+  patientId: row.patientId,
+  admissionId: row.admissionId,
+  appointmentId: row.appointmentId,
+  sheetNumber: row.sheetNumber,
+  sheetYear: row.sheetYear,
+  hospitalizationType: row.hospitalizationType,
+  admissionType: row.admissionType,
+  insuranceStatus: row.insuranceStatus,
+  cnasPayerType: row.cnasPayerType,
+  admissionDate: parseDate(row.admissionDate),
+  dischargeDate: parseDate(row.dischargeDate),
+  admissionSection: row.admissionSection,
+  dischargeSection: row.dischargeSection,
+  attendingPhysician: row.attendingPhysician,
+  admissionDiagnosis: row.admissionDiagnosis,
+  mainDiagnosis: row.mainDiagnosis,
+  dischargeStatus: row.dischargeStatus,
+  dischargeType: row.dischargeType,
+  totalDays: row.totalDays,
+  expectedReimbursement: row.expectedReimbursement,
+  validationStatus: row.validationStatus,
+  reportStatus: row.reportStatus,
+  validationErrors: row.validationErrorsJson ? JSON.parse(row.validationErrorsJson) : [],
+  notes: row.notes,
+  createdAt: parseDate(row.createdAt),
+  updatedAt: parseDate(row.updatedAt),
+  patient: row.patient_name
+    ? {
+        $id: row.patientId,
+        name: row.patient_name,
+        insuranceProvider: row.patient_insurance_provider,
+        insurancePolicyNumber: row.patient_insurance_policy_number,
+      }
+    : null,
+});
+
+const mapHospitalizationDiagnosisRow = (row: any): HospitalizationSheetDiagnosis => ({
+  $id: row.id,
+  sheetId: row.sheetId,
+  diagnosisCode: row.diagnosisCode,
+  diagnosisName: row.diagnosisName,
+  diagnosisKind: row.diagnosisKind,
+  presentOnAdmission: row.presentOnAdmission === 1,
+  createdAt: parseDate(row.createdAt),
+});
+
+const mapHospitalizationProcedureRow = (row: any): HospitalizationSheetProcedure => ({
+  $id: row.id,
+  sheetId: row.sheetId,
+  procedureCode: row.procedureCode,
+  procedureName: row.procedureName,
+  procedureKind: row.procedureKind,
+  performedAt: row.performedAt ? parseDate(row.performedAt) : null,
+  performer: row.performer,
+  createdAt: parseDate(row.createdAt),
+});
+
+const mapHospitalizationBatchRow = (row: any): HospitalizationReportingBatch => ({
+  $id: row.id,
+  batchMonth: row.batchMonth,
+  batchYear: row.batchYear,
+  status: row.status,
+  totalSheets: row.totalSheets,
+  acceptedSheets: row.acceptedSheets,
+  rejectedSheets: row.rejectedSheets,
+  exportPayload: row.exportPayload,
+  responseSummary: row.responseSummary,
+  createdAt: parseDate(row.createdAt),
+  validatedAt: row.validatedAt ? parseDate(row.validatedAt) : null,
+  submittedAt: row.submittedAt ? parseDate(row.submittedAt) : null,
+  updatedAt: parseDate(row.updatedAt),
+});
+
+const mapHospitalizationBatchItemRow = (row: any): HospitalizationReportingBatchItem => ({
+  $id: row.id,
+  batchId: row.batchId,
+  sheetId: row.sheetId,
+  itemStatus: row.itemStatus,
+  responseMessage: row.responseMessage,
+  createdAt: parseDate(row.batchItemCreatedAt),
+  updatedAt: parseDate(row.batchItemUpdatedAt),
+  sheet: row.sheet_id
+    ? {
+        $id: row.sheet_id,
+        patientId: row.sheet_patientId,
+        admissionId: row.sheet_admissionId,
+        appointmentId: row.sheet_appointmentId,
+        sheetNumber: row.sheet_sheetNumber,
+        sheetYear: row.sheet_sheetYear,
+        hospitalizationType: row.sheet_hospitalizationType,
+        admissionType: row.sheet_admissionType,
+        insuranceStatus: row.sheet_insuranceStatus,
+        cnasPayerType: row.sheet_cnasPayerType,
+        admissionDate: parseDate(row.sheet_admissionDate),
+        dischargeDate: parseDate(row.sheet_dischargeDate),
+        admissionSection: row.sheet_admissionSection,
+        dischargeSection: row.sheet_dischargeSection,
+        attendingPhysician: row.sheet_attendingPhysician,
+        admissionDiagnosis: row.sheet_admissionDiagnosis,
+        mainDiagnosis: row.sheet_mainDiagnosis,
+        dischargeStatus: row.sheet_dischargeStatus,
+        dischargeType: row.sheet_dischargeType,
+        totalDays: row.sheet_totalDays,
+        expectedReimbursement: row.sheet_expectedReimbursement,
+        validationStatus: row.sheet_validationStatus,
+        reportStatus: row.sheet_reportStatus,
+        validationErrors: row.sheet_validationErrorsJson ? JSON.parse(row.sheet_validationErrorsJson) : [],
+        notes: row.sheet_notes,
+        createdAt: parseDate(row.sheet_createdAt),
+        updatedAt: parseDate(row.sheet_updatedAt),
+        patient: row.sheet_patient_name
+          ? {
+              $id: row.sheet_patientId,
+              name: row.sheet_patient_name,
+              insuranceProvider: row.sheet_patient_insurance_provider,
+              insurancePolicyNumber: row.sheet_patient_insurance_policy_number,
+            }
+          : null,
+      }
+    : null,
+});
+
+function calculateHospitalizationTotalDays(admissionDate: Date | string, dischargeDate: Date | string) {
+  const start = new Date(admissionDate);
+  const end = new Date(dischargeDate);
+  const diffDays = Math.ceil((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+  return Math.max(1, diffDays);
+}
+
+function getHospitalizationSheetValidationErrors(sheet: HospitalizationSheet) {
+  const errors: string[] = [];
+  if (!sheet.patientId) errors.push("Pacientul este obligatoriu.");
+  if (!sheet.attendingPhysician?.trim()) errors.push("Medicul curant este obligatoriu.");
+  if (!sheet.admissionSection?.trim()) errors.push("Secția de internare este obligatorie.");
+  if (!sheet.dischargeSection?.trim()) errors.push("Secția de externare este obligatorie.");
+  if (!sheet.admissionDiagnosis?.trim()) errors.push("Diagnosticul la internare este obligatoriu.");
+  if (!sheet.mainDiagnosis?.trim()) errors.push("Diagnosticul principal la externare este obligatoriu.");
+  if (!sheet.dischargeType?.trim()) errors.push("Tipul externării este obligatoriu.");
+  if (!sheet.dischargeStatus?.trim()) errors.push("Starea la externare este obligatorie.");
+  if (!sheet.insuranceStatus?.trim()) errors.push("Statutul de asigurat este obligatoriu.");
+
+  const admissionDate = new Date(sheet.admissionDate);
+  const dischargeDate = new Date(sheet.dischargeDate);
+  if (Number.isNaN(admissionDate.getTime()) || Number.isNaN(dischargeDate.getTime())) {
+    errors.push("Datele de internare și externare trebuie completate corect.");
+  } else if (dischargeDate < admissionDate) {
+    errors.push("Data externării nu poate fi înaintea internării.");
+  }
+
+  const uniqueConflict = db.prepare(`
+    SELECT id FROM hospitalization_sheets
+    WHERE sheetNumber = ? AND sheetYear = ? AND id != ?
+    LIMIT 1
+  `).get(sheet.sheetNumber, sheet.sheetYear, sheet.$id) as { id: string } | undefined;
+  if (uniqueConflict) {
+    errors.push("Numărul foii este deja folosit în același an.");
+  }
+
+  return errors;
+}
+
+export const hospitalizationSheetHelpers = {
+  generateNextSheetNumber: (year?: number) => {
+    const currentYear = year || new Date().getFullYear();
+    const row = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM hospitalization_sheets
+      WHERE sheetYear = ?
+    `).get(currentYear) as { count: number };
+    return `${currentYear}-${String((row?.count ?? 0) + 1).padStart(5, "0")}`;
+  },
+
+  create: (data: {
+    patientId: string;
+    admissionId?: string | null;
+    appointmentId?: string | null;
+    hospitalizationType: HospitalizationSheetType;
+    admissionType: string;
+    insuranceStatus: string;
+    cnasPayerType: string;
+    admissionDate: Date | string;
+    dischargeDate: Date | string;
+    admissionSection: string;
+    dischargeSection: string;
+    attendingPhysician: string;
+    admissionDiagnosis: string;
+    mainDiagnosis: string;
+    dischargeStatus: string;
+    dischargeType: string;
+    expectedReimbursement?: number;
+    notes?: string;
+    diagnoses?: Array<{
+      diagnosisCode?: string;
+      diagnosisName: string;
+      diagnosisKind: HospitalizationDiagnosisKind;
+      presentOnAdmission?: boolean;
+    }>;
+    procedures?: Array<{
+      procedureCode?: string;
+      procedureName: string;
+      procedureKind: HospitalizationProcedureKind;
+      performedAt?: Date | string | null;
+      performer?: string;
+    }>;
+  }) => {
+    const patient = patientHelpers.getById(data.patientId);
+    if (!patient) {
+      throw new Error("Pacientul selectat nu există.");
+    }
+
+    const id = generateId();
+    const now = new Date().toISOString();
+    const admissionDate = formatDate(data.admissionDate);
+    const dischargeDate = formatDate(data.dischargeDate);
+    const sheetYear = new Date(admissionDate).getFullYear();
+    const totalDays = calculateHospitalizationTotalDays(admissionDate, dischargeDate);
+    const sheetNumber = hospitalizationSheetHelpers.generateNextSheetNumber(sheetYear);
+
+    const insertTx = db.transaction(() => {
+      db.prepare(`
+        INSERT INTO hospitalization_sheets (
+          id, patientId, admissionId, appointmentId, sheetNumber, sheetYear, hospitalizationType,
+          admissionType, insuranceStatus, cnasPayerType, admissionDate, dischargeDate, admissionSection,
+          dischargeSection, attendingPhysician, admissionDiagnosis, mainDiagnosis, dischargeStatus,
+          dischargeType, totalDays, expectedReimbursement, validationStatus, reportStatus,
+          validationErrorsJson, notes, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 'draft', ?, ?, ?, ?)
+      `).run(
+        id,
+        data.patientId,
+        data.admissionId ?? null,
+        data.appointmentId ?? null,
+        sheetNumber,
+        sheetYear,
+        data.hospitalizationType,
+        data.admissionType,
+        data.insuranceStatus,
+        data.cnasPayerType,
+        admissionDate,
+        dischargeDate,
+        data.admissionSection.trim(),
+        data.dischargeSection.trim(),
+        data.attendingPhysician.trim(),
+        data.admissionDiagnosis.trim(),
+        data.mainDiagnosis.trim(),
+        data.dischargeStatus.trim(),
+        data.dischargeType.trim(),
+        totalDays,
+        Number(data.expectedReimbursement) || 0,
+        JSON.stringify([]),
+        data.notes?.trim() || null,
+        now,
+        now
+      );
+
+      (data.diagnoses || []).forEach((diagnosis) => {
+        if (!diagnosis.diagnosisName?.trim()) return;
+        db.prepare(`
+          INSERT INTO hospitalization_sheet_diagnoses (
+            id, sheetId, diagnosisCode, diagnosisName, diagnosisKind, presentOnAdmission, createdAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          generateId(),
+          id,
+          diagnosis.diagnosisCode?.trim() || null,
+          diagnosis.diagnosisName.trim(),
+          diagnosis.diagnosisKind,
+          diagnosis.presentOnAdmission ? 1 : 0,
+          now
+        );
+      });
+
+      (data.procedures || []).forEach((procedure) => {
+        if (!procedure.procedureName?.trim()) return;
+        db.prepare(`
+          INSERT INTO hospitalization_sheet_procedures (
+            id, sheetId, procedureCode, procedureName, procedureKind, performedAt, performer, createdAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          generateId(),
+          id,
+          procedure.procedureCode?.trim() || null,
+          procedure.procedureName.trim(),
+          procedure.procedureKind,
+          procedure.performedAt ? formatDate(procedure.performedAt) : null,
+          procedure.performer?.trim() || null,
+          now
+        );
+      });
+    });
+
+    insertTx();
+    hospitalizationSheetHelpers.validate(id);
+    return hospitalizationSheetHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const row = db.prepare(`
+      SELECT
+        hs.*,
+        p.name as patient_name,
+        p.insuranceProvider as patient_insurance_provider,
+        p.insurancePolicyNumber as patient_insurance_policy_number
+      FROM hospitalization_sheets hs
+      INNER JOIN patients p ON p.id = hs.patientId
+      WHERE hs.id = ?
+    `).get(id) as any;
+    if (!row) return null;
+    return mapHospitalizationSheetRow(row);
+  },
+
+  getAll: () => {
+    const rows = db.prepare(`
+      SELECT
+        hs.*,
+        p.name as patient_name,
+        p.insuranceProvider as patient_insurance_provider,
+        p.insurancePolicyNumber as patient_insurance_policy_number
+      FROM hospitalization_sheets hs
+      INNER JOIN patients p ON p.id = hs.patientId
+      ORDER BY hs.dischargeDate DESC, hs.createdAt DESC
+    `).all() as any[];
+    return rows.map(mapHospitalizationSheetRow);
+  },
+
+  getDiagnoses: (sheetId: string) => {
+    const rows = db.prepare(`
+      SELECT * FROM hospitalization_sheet_diagnoses
+      WHERE sheetId = ?
+      ORDER BY
+        CASE diagnosisKind
+          WHEN 'admission' THEN 1
+          WHEN 'principal' THEN 2
+          ELSE 3
+        END,
+        createdAt ASC
+    `).all(sheetId) as any[];
+    return rows.map(mapHospitalizationDiagnosisRow);
+  },
+
+  getProcedures: (sheetId: string) => {
+    const rows = db.prepare(`
+      SELECT * FROM hospitalization_sheet_procedures
+      WHERE sheetId = ?
+      ORDER BY COALESCE(performedAt, createdAt) ASC
+    `).all(sheetId) as any[];
+    return rows.map(mapHospitalizationProcedureRow);
+  },
+
+  validate: (id: string) => {
+    const sheet = hospitalizationSheetHelpers.getById(id);
+    if (!sheet) throw new Error("Foaia de spitalizare nu a fost găsită.");
+
+    const errors = getHospitalizationSheetValidationErrors(sheet);
+    const now = new Date().toISOString();
+    const validationStatus = errors.length === 0 ? "valid" : "invalid";
+
+    db.prepare(`
+      UPDATE hospitalization_sheets
+      SET validationStatus = ?, validationErrorsJson = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(validationStatus, JSON.stringify(errors), now, id);
+
+    return {
+      sheet: hospitalizationSheetHelpers.getById(id),
+      errors,
+      validationStatus,
+    };
+  },
+
+  getEligibleForBatch: (month: number, year: number) => {
+    const rows = db.prepare(`
+      SELECT
+        hs.*,
+        p.name as patient_name,
+        p.insuranceProvider as patient_insurance_provider,
+        p.insurancePolicyNumber as patient_insurance_policy_number
+      FROM hospitalization_sheets hs
+      INNER JOIN patients p ON p.id = hs.patientId
+      WHERE hs.validationStatus = 'valid'
+        AND hs.reportStatus IN ('draft', 'rejected')
+        AND CAST(strftime('%m', hs.dischargeDate) AS INTEGER) = ?
+        AND CAST(strftime('%Y', hs.dischargeDate) AS INTEGER) = ?
+      ORDER BY hs.dischargeDate ASC
+    `).all(month, year) as any[];
+    return rows.map(mapHospitalizationSheetRow);
+  },
+};
+
+export const hospitalizationReportingBatchHelpers = {
+  create: (month: number, year: number) => {
+    const eligibleSheets = hospitalizationSheetHelpers.getEligibleForBatch(month, year);
+    if (eligibleSheets.length === 0) {
+      throw new Error("Nu există foi validate eligibile pentru luna selectată.");
+    }
+
+    const now = new Date().toISOString();
+    const id = generateId();
+    const exportPayload = JSON.stringify(
+      eligibleSheets.map((sheet) => ({
+        sheetNumber: sheet.sheetNumber,
+        patientId: sheet.patientId,
+        hospitalizationType: sheet.hospitalizationType,
+        admissionDate: sheet.admissionDate,
+        dischargeDate: sheet.dischargeDate,
+        mainDiagnosis: sheet.mainDiagnosis,
+        expectedReimbursement: sheet.expectedReimbursement,
+      }))
+    );
+
+    const tx = db.transaction(() => {
+      db.prepare(`
+        INSERT INTO hospitalization_reporting_batches (
+          id, batchMonth, batchYear, status, totalSheets, acceptedSheets, rejectedSheets,
+          exportPayload, responseSummary, createdAt, validatedAt, updatedAt
+        ) VALUES (?, ?, ?, 'validated', ?, 0, 0, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        month,
+        year,
+        eligibleSheets.length,
+        exportPayload,
+        `Batch validat local cu ${eligibleSheets.length} foi eligibile.`,
+        now,
+        now,
+        now
+      );
+
+      eligibleSheets.forEach((sheet) => {
+        db.prepare(`
+          INSERT INTO hospitalization_reporting_batch_items (
+            id, batchId, sheetId, itemStatus, responseMessage, createdAt, updatedAt
+          ) VALUES (?, ?, ?, 'batched', ?, ?, ?)
+        `).run(
+          generateId(),
+          id,
+          sheet.$id,
+          "Pregătit pentru exportul lunar.",
+          now,
+          now
+        );
+
+        db.prepare(`
+          UPDATE hospitalization_sheets
+          SET reportStatus = 'batched', updatedAt = ?
+          WHERE id = ?
+        `).run(now, sheet.$id);
+      });
+    });
+
+    tx();
+    return hospitalizationReportingBatchHelpers.getById(id);
+  },
+
+  getById: (id: string) => {
+    const row = db.prepare(`
+      SELECT * FROM hospitalization_reporting_batches
+      WHERE id = ?
+    `).get(id) as any;
+    if (!row) return null;
+    return mapHospitalizationBatchRow(row);
+  },
+
+  getAll: () => {
+    const rows = db.prepare(`
+      SELECT * FROM hospitalization_reporting_batches
+      ORDER BY batchYear DESC, batchMonth DESC, createdAt DESC
+    `).all() as any[];
+    return rows.map(mapHospitalizationBatchRow);
+  },
+
+  getItems: (batchId: string) => {
+    const rows = db.prepare(`
+      SELECT
+        bi.id,
+        bi.batchId,
+        bi.sheetId,
+        bi.itemStatus,
+        bi.responseMessage,
+        bi.createdAt as batchItemCreatedAt,
+        bi.updatedAt as batchItemUpdatedAt,
+        hs.id as sheet_id,
+        hs.patientId as sheet_patientId,
+        hs.admissionId as sheet_admissionId,
+        hs.appointmentId as sheet_appointmentId,
+        hs.sheetNumber as sheet_sheetNumber,
+        hs.sheetYear as sheet_sheetYear,
+        hs.hospitalizationType as sheet_hospitalizationType,
+        hs.admissionType as sheet_admissionType,
+        hs.insuranceStatus as sheet_insuranceStatus,
+        hs.cnasPayerType as sheet_cnasPayerType,
+        hs.admissionDate as sheet_admissionDate,
+        hs.dischargeDate as sheet_dischargeDate,
+        hs.admissionSection as sheet_admissionSection,
+        hs.dischargeSection as sheet_dischargeSection,
+        hs.attendingPhysician as sheet_attendingPhysician,
+        hs.admissionDiagnosis as sheet_admissionDiagnosis,
+        hs.mainDiagnosis as sheet_mainDiagnosis,
+        hs.dischargeStatus as sheet_dischargeStatus,
+        hs.dischargeType as sheet_dischargeType,
+        hs.totalDays as sheet_totalDays,
+        hs.expectedReimbursement as sheet_expectedReimbursement,
+        hs.validationStatus as sheet_validationStatus,
+        hs.reportStatus as sheet_reportStatus,
+        hs.validationErrorsJson as sheet_validationErrorsJson,
+        hs.notes as sheet_notes,
+        hs.createdAt as sheet_createdAt,
+        hs.updatedAt as sheet_updatedAt,
+        p.name as sheet_patient_name,
+        p.insuranceProvider as sheet_patient_insurance_provider,
+        p.insurancePolicyNumber as sheet_patient_insurance_policy_number
+      FROM hospitalization_reporting_batch_items bi
+      INNER JOIN hospitalization_sheets hs ON hs.id = bi.sheetId
+      INNER JOIN patients p ON p.id = hs.patientId
+      WHERE bi.batchId = ?
+      ORDER BY hs.dischargeDate ASC
+    `).all(batchId) as any[];
+    return rows.map(mapHospitalizationBatchItemRow);
+  },
+
+  submit: (batchId: string) => {
+    const batch = hospitalizationReportingBatchHelpers.getById(batchId);
+    if (!batch) throw new Error("Batch-ul de raportare nu a fost găsit.");
+
+    const items = hospitalizationReportingBatchHelpers.getItems(batchId);
+    if (items.length === 0) throw new Error("Batch-ul nu conține foi de spitalizare.");
+
+    const now = new Date().toISOString();
+    let acceptedSheets = 0;
+    let rejectedSheets = 0;
+
+    const tx = db.transaction(() => {
+      items.forEach((item) => {
+        const sheet = item.sheet;
+        if (!sheet) return;
+        const shouldReject = sheet.insuranceStatus.toLowerCase().includes("neasigurat");
+        const nextStatus = shouldReject ? "rejected" : "accepted";
+        const responseMessage = shouldReject
+          ? "Caz respins la simularea raportării: pacient neasigurat / neeligibil pentru decontare."
+          : "Caz acceptat în lotul lunar de raportare.";
+
+        db.prepare(`
+          UPDATE hospitalization_reporting_batch_items
+          SET itemStatus = ?, responseMessage = ?, updatedAt = ?
+          WHERE id = ?
+        `).run(nextStatus, responseMessage, now, item.$id);
+
+        db.prepare(`
+          UPDATE hospitalization_sheets
+          SET reportStatus = ?, updatedAt = ?
+          WHERE id = ?
+        `).run(nextStatus, now, sheet.$id);
+
+        if (shouldReject) {
+          rejectedSheets += 1;
+        } else {
+          acceptedSheets += 1;
+          financialTransactionHelpers.upsertBySource({
+            sourceType: "hospitalization_claim",
+            sourceId: sheet.$id,
+            transactionType: "revenue",
+            category: "hospitalization",
+            costCenter: "hospitalization",
+            patientId: sheet.patientId,
+            amount: sheet.expectedReimbursement,
+            status: "approved",
+            description: `Decontare CNAS spitalizare - Foaia ${sheet.sheetNumber} (${sheet.patient?.name || "Pacient"})`,
+            occurredAt: sheet.dischargeDate,
+            createdBy: "Sistem raportare CNAS",
+            notes: `Batch ${batch.batchMonth}/${batch.batchYear} acceptat local.`,
+            metadata: {
+              batchId,
+              sheetNumber: sheet.sheetNumber,
+              hospitalizationType: sheet.hospitalizationType,
+            },
+          });
+        }
+      });
+
+      const batchStatus =
+        rejectedSheets === 0 ? "accepted" : acceptedSheets === 0 ? "rejected" : "partially_rejected";
+      db.prepare(`
+        UPDATE hospitalization_reporting_batches
+        SET status = ?, acceptedSheets = ?, rejectedSheets = ?, submittedAt = ?, responseSummary = ?, updatedAt = ?
+        WHERE id = ?
+      `).run(
+        batchStatus,
+        acceptedSheets,
+        rejectedSheets,
+        now,
+        `Simulare transmitere finalizată: ${acceptedSheets} acceptate, ${rejectedSheets} respinse.`,
+        now,
+        batchId
+      );
+    });
+
+    tx();
+    return hospitalizationReportingBatchHelpers.getById(batchId);
   },
 };
 

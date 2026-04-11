@@ -19,7 +19,14 @@ interface Doctor {
   specialty?: string;
 }
 
-const ADMIN_NAV = [
+type AdminNavItem = {
+  href: string;
+  label: string;
+  icon: string;
+  primary?: boolean;
+};
+
+const ADMIN_NAV: readonly AdminNavItem[] = [
   { href: "/admin", label: "Dashboard", icon: "🏠" },
   { href: "/admin/appointments", label: "Programări", icon: "📅" },
   { href: "/admin/doctor-calendar", label: "Calendar Medici", icon: "🗓️" },
@@ -29,6 +36,7 @@ const ADMIN_NAV = [
   { href: "/admin/laborator", label: "Laborator", icon: "🔬" },
   { href: "/admin/patients", label: "Pacienți", icon: "👥" },
   { href: "/admin/hospitalizations", label: "Spitalizări", icon: "🏥" },
+  { href: "/admin/cnas-reporting", label: "Raportare CNAS", icon: "🧾" },
   { href: "/admin/imaging", label: "Imagistică", icon: "🩻" },
   { href: "/admin/finance", label: "Financiar", icon: "💰" },
   { href: "/admin/lab-import", label: "Import analize", icon: "📋" },
@@ -86,20 +94,20 @@ export function AdminLayoutSidebar({ doctors }: AdminLayoutSidebarProps) {
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
-        className={`fixed bottom-4 right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg hover:bg-teal-700 lg:hidden ${mobileOpen ? "invisible" : ""}`}
+        className={`fixed bottom-4 right-4 z-30 flex size-12 items-center justify-center rounded-full bg-teal-600 text-white shadow-lg hover:bg-teal-700 lg:hidden ${mobileOpen ? "invisible" : ""}`}
         aria-label="Deschide meniul"
       >
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <svg className="size-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
 
       <aside
-        className={`
-          fixed left-0 top-0 z-50 flex h-full w-72 flex-shrink-0 flex-col overflow-y-auto border-r border-slate-200 bg-white shadow-lg
-          transition-transform duration-200 ease-out lg:sticky lg:z-auto lg:translate-x-0 lg:shadow-none dark:border-slate-800 dark:bg-slate-900
-          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
-        `}
+        className={[
+          "fixed left-0 top-0 z-50 flex h-full w-72 flex-col overflow-y-auto border-r border-slate-200 bg-white shadow-lg transition-transform duration-200 ease-out dark:border-slate-800 dark:bg-slate-900 lg:sticky lg:z-auto lg:translate-x-0 lg:shadow-none",
+          "shrink-0",
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
+        ].join(" ")}
       >
         <div className="flex flex-col p-4 lg:p-5">
           <div className="flex items-center justify-between pb-3 lg:hidden">
@@ -110,7 +118,7 @@ export function AdminLayoutSidebar({ doctors }: AdminLayoutSidebarProps) {
               className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
               aria-label="Închide meniul"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
