@@ -1,6 +1,6 @@
 "use client";
 
-import { BanknoteArrowDown, BanknoteArrowUp, CarFront, Landmark, Wallet } from "lucide-react";
+import { Car, Landmark, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -250,7 +250,7 @@ export function AdminFinanceDashboard({
         <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-              <BanknoteArrowUp className="size-4" />
+              <TrendingUp className="size-4" />
               <p className="text-sm font-medium">Venituri</p>
             </div>
             <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(summary.revenue)}</p>
@@ -259,7 +259,7 @@ export function AdminFinanceDashboard({
         <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
-              <BanknoteArrowDown className="size-4" />
+              <TrendingDown className="size-4" />
               <p className="text-sm font-medium">Cheltuieli</p>
             </div>
             <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(summary.expense)}</p>
@@ -416,7 +416,7 @@ export function AdminFinanceDashboard({
         <Card className="border-slate-200/80 shadow-sm dark:border-slate-800">
           <CardHeader>
             <div className="flex items-center gap-2 text-teal-600 dark:text-teal-400">
-              <CarFront className="size-5" />
+              <Car className="size-5" />
               <p className="text-sm font-medium">Combustibil ambulanțe</p>
             </div>
             <CardTitle>Alimentare parc auto</CardTitle>

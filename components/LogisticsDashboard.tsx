@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   createConsumableRequest,
   updateConsumableRequestStatus,
@@ -11,9 +15,6 @@ import {
   updateInternalTransportStatus,
   updateRoomCleaningStatus,
 } from "@/lib/actions/logistics.actions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime } from "@/lib/utils";
 
 const DEPT_LABELS: Record<string, string> = {
@@ -267,7 +268,7 @@ function ConsumableSection({ requests, onUpdate }: { requests: ConsumableRequest
                 <p className="text-12-regular text-dark-500 mt-1">
                   {items.map((i) => i.name + (i.quantity ? ` (${i.quantity})` : "")).join(", ") || "—"}
                 </p>
-                <p className="text-12-regular text-dark-400">{formatDateTime(r.createdAt)}</p>
+                <p className="text-12-regular text-dark-400">{formatDateTime(r.createdAt).dateTime}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`rounded-full px-2 py-1 text-12-regular ${r.status === "fulfilled" ? "bg-green-100 text-green-800" : r.status === "approved" ? "bg-blue-100 text-blue-800" : "bg-amber-100 text-amber-800"}`}>
@@ -529,7 +530,7 @@ function TransportSection({ requests, onUpdate }: { requests: TransportRequest[]
             <div>
               <span className="text-14-medium text-dark-900">{r.patientName}</span>
               <p className="text-12-regular text-dark-500">{r.fromLocation} → {r.toLocation}</p>
-              <p className="text-12-regular text-dark-400">{formatDateTime(r.createdAt)} · {r.transportType}</p>
+              <p className="text-12-regular text-dark-400">{formatDateTime(r.createdAt).dateTime} · {r.transportType}</p>
             </div>
             <div className="flex items-center gap-2">
               <span className={`rounded-full px-2 py-1 text-12-regular ${r.status === "completed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>
